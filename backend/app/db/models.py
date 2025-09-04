@@ -181,3 +181,19 @@ class OutOfScopeHost(Base):
     
     # Relationships
     scan = relationship("Scan")
+
+class ParseError(Base):
+    __tablename__ = "parse_errors"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    file_type = Column(String)  # nmap_xml, eyewitness_json, masscan_xml, etc.
+    file_size = Column(Integer)  # in bytes
+    error_type = Column(String, nullable=False)  # parsing_error, validation_error, format_error
+    error_message = Column(Text, nullable=False)
+    error_details = Column(JSON)  # Additional error context (line numbers, stack trace, etc.)
+    file_preview = Column(Text)  # First few lines/characters of the file for debugging
+    user_message = Column(Text)  # User-friendly explanation of the error
+    status = Column(String, default="unresolved")  # unresolved, reviewed, fixed, ignored
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

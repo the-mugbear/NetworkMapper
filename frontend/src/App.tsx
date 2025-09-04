@@ -11,6 +11,7 @@ import Hosts from './pages/Hosts';
 import HostDetail from './pages/HostDetail';
 import Scopes from './pages/Scopes';
 import ScopeDetail from './pages/ScopeDetail';
+import ParseErrors from './pages/ParseErrors';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/hosts/:hostId" element={<HostDetail />} />
             <Route path="/scopes" element={<Scopes />} />
             <Route path="/scopes/:scopeId" element={<ScopeDetail />} />
+            <Route path="/parse-errors" element={<ParseErrors />} />
           </Routes>
         </Layout>
         <VersionFooter />

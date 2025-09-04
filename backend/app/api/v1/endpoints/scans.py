@@ -14,7 +14,7 @@ def get_scans(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    # Get scans with summary statistics
+    # Get scans with summary statistics - simplified to avoid join ambiguity
     scans_query = (
         db.query(
             models.Scan.id,
@@ -22,13 +22,11 @@ def get_scans(
             models.Scan.scan_type,
             models.Scan.created_at,
             func.count(models.Host.id).label('total_hosts'),
-            func.sum(case((models.Host.state == 'up', 1), else_=0)).label('up_hosts'),
-            func.count(models.Port.id).label('total_ports'),
-            func.sum(case((models.Port.state == 'open', 1), else_=0)).label('open_ports')
+            func.sum(case((models.Host.state == 'up', 1), else_=0)).label('up_hosts')
         )
-        .outerjoin(models.Host)
-        .outerjoin(models.Port)
-        .group_by(models.Scan.id)
+        .select_from(models.Scan)
+        .outerjoin(models.Host, models.Scan.id == models.Host.scan_id)
+        .group_by(models.Scan.id, models.Scan.filename, models.Scan.scan_type, models.Scan.created_at)
         .order_by(desc(models.Scan.created_at))
         .offset(skip)
         .limit(limit)
@@ -36,19 +34,33 @@ def get_scans(
     
     results = scans_query.all()
     
-    return [
-        ScanSummary(
+    # Calculate port stats separately for each scan to avoid join complexity
+    scan_summaries = []
+    for result in results:
+        # Get port statistics for this specific scan
+        port_stats = (
+            db.query(
+                func.count(models.Port.id).label('total_ports'),
+                func.sum(case((models.Port.state == 'open', 1), else_=0)).label('open_ports')
+            )
+            .select_from(models.Port)
+            .join(models.Host, models.Port.host_id == models.Host.id)
+            .filter(models.Host.scan_id == result.id)
+            .first()
+        )
+        
+        scan_summaries.append(ScanSummary(
             id=result.id,
             filename=result.filename,
             scan_type=result.scan_type,
             created_at=result.created_at,
             total_hosts=result.total_hosts or 0,
             up_hosts=result.up_hosts or 0,
-            total_ports=result.total_ports or 0,
-            open_ports=result.open_ports or 0
-        )
-        for result in results
-    ]
+            total_ports=port_stats.total_ports if port_stats else 0,
+            open_ports=port_stats.open_ports if port_stats else 0
+        ))
+    
+    return scan_summaries
 
 @router.get("/{scan_id}", response_model=Scan)
 def get_scan(scan_id: int, db: Session = Depends(get_db)):

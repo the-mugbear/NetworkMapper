@@ -48,6 +48,31 @@ export interface SubnetStats {
   host_count: number;
 }
 
+export interface ParseError {
+  id: number;
+  filename: string;
+  file_type: string | null;
+  file_size: number | null;
+  error_type: string;
+  error_message: string;
+  error_details: any;
+  file_preview: string | null;
+  user_message: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ParseErrorSummary {
+  id: number;
+  filename: string;
+  file_type: string | null;
+  error_type: string;
+  user_message: string | null;
+  status: string;
+  created_at: string;
+}
+
 export interface DashboardStats {
   total_scans: number;
   total_hosts: number;
@@ -338,6 +363,50 @@ export const getEyewitnessResults = async (scanId: number): Promise<EyewitnessRe
 
 export const getDNSRecords = async (hostname: string): Promise<DNSRecord[]> => {
   const response = await api.get(`/dns/records?hostname=${hostname}`);
+  return response.data;
+};
+
+// Parse Error API functions
+export const getParseErrors = async (params: {
+  skip?: number;
+  limit?: number;
+  status?: string;
+} = {}): Promise<ParseErrorSummary[]> => {
+  const queryParams = new URLSearchParams();
+  
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      queryParams.append(key, value.toString());
+    }
+  });
+  
+  const response = await api.get(`/parse-errors/?${queryParams}`);
+  return response.data;
+};
+
+export const getParseError = async (errorId: number): Promise<ParseError> => {
+  const response = await api.get(`/parse-errors/${errorId}`);
+  return response.data;
+};
+
+export const updateParseErrorStatus = async (errorId: number, status: string): Promise<{ message: string }> => {
+  const response = await api.put(`/parse-errors/${errorId}/status?status=${status}`);
+  return response.data;
+};
+
+export const deleteParseError = async (errorId: number): Promise<{ message: string }> => {
+  const response = await api.delete(`/parse-errors/${errorId}`);
+  return response.data;
+};
+
+export const getParseErrorStats = async (): Promise<{
+  total_errors: number;
+  unresolved: number;
+  reviewed: number;
+  fixed: number;
+  ignored: number;
+}> => {
+  const response = await api.get('/parse-errors/stats/summary');
   return response.data;
 };
 

@@ -9,6 +9,7 @@ from app.parsers.eyewitness_parser import EyewitnessParser
 from app.parsers.masscan_parser import MasscanParser
 from app.schemas.schemas import FileUploadResponse
 from app.services.dns_service import DNSService
+from app.services.parse_error_service import log_parse_error
 
 router = APIRouter()
 
@@ -46,51 +47,69 @@ async def upload_scan_file(
     
     try:
         # Determine parser based on file content and name
-        parser = None
         scan = None
+        message = ""
+        parsing_attempts = []
         
-        # Check if it's an Nmap XML file
+        # Try different parsers based on file type and name
         if file.filename.lower().endswith('.xml'):
-            try:
-                # Try Nmap parser first
-                parser = NmapXMLParser(db)
-                scan = parser.parse_file(temp_file_path, file.filename)
-                message = "Nmap XML file uploaded and parsed successfully"
-            except Exception:
-                try:
-                    # Try Masscan XML parser
-                    parser = MasscanParser(db)
-                    scan = parser.parse_file(temp_file_path, file.filename)
-                    message = "Masscan XML file uploaded and parsed successfully"
-                except Exception as e:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Error parsing XML file: {str(e)}"
-                    )
-        
-        # Check for Eyewitness files
+            # Try Nmap parser first
+            parsing_attempts.append(("nmap_xml", NmapXMLParser, "Nmap XML file"))
+            # Then try Masscan XML parser
+            parsing_attempts.append(("masscan_xml", MasscanParser, "Masscan XML file"))
+            
         elif (file.filename.lower().endswith('.json') or file.filename.lower().endswith('.csv')) and \
              ('eyewitness' in file.filename.lower() or 'report' in file.filename.lower()):
-            parser = EyewitnessParser(db)
-            scan = parser.parse_file(temp_file_path, file.filename)
-            message = "Eyewitness report uploaded and parsed successfully"
-        
-        # Check for Masscan output files
+            file_type = "eyewitness_json" if file.filename.lower().endswith('.json') else "eyewitness_csv"
+            parsing_attempts.append((file_type, EyewitnessParser, "Eyewitness report"))
+            
         elif file.filename.lower().endswith('.json') and 'masscan' in file.filename.lower():
-            parser = MasscanParser(db)
-            scan = parser.parse_file(temp_file_path, file.filename)
-            message = "Masscan JSON file uploaded and parsed successfully"
-        
-        # Default to trying Masscan list format for .txt files
+            parsing_attempts.append(("masscan_json", MasscanParser, "Masscan JSON file"))
+            
         elif file.filename.lower().endswith('.txt'):
-            parser = MasscanParser(db)
-            scan = parser.parse_file(temp_file_path, file.filename)
-            message = "Masscan output file uploaded and parsed successfully"
+            parsing_attempts.append(("masscan_list", MasscanParser, "Masscan output file"))
         
         else:
+            # Log unsupported file type error
+            parse_error = log_parse_error(
+                db=db,
+                filename=file.filename,
+                file_content=content,
+                error_type="format_error",
+                file_type="unknown",
+                custom_message=f"Unsupported file type or format. Supported formats: Nmap XML, Masscan XML/JSON/List, Eyewitness JSON/CSV"
+            )
             raise HTTPException(
                 status_code=400,
-                detail="Unable to determine file type. Please ensure filename contains tool identifier (nmap, masscan, eyewitness)"
+                detail=f"Unsupported file format. Error ID: {parse_error.id} - Check parse errors for details."
+            )
+        
+        # Try each parser until one succeeds
+        last_error = None
+        for file_type, parser_class, success_message in parsing_attempts:
+            try:
+                parser = parser_class(db)
+                scan = parser.parse_file(temp_file_path, file.filename)
+                message = f"{success_message} uploaded and parsed successfully"
+                break
+            except Exception as e:
+                last_error = e
+                continue
+        
+        # If all parsers failed, log the error
+        if not scan:
+            parse_error = log_parse_error(
+                db=db,
+                filename=file.filename,
+                file_content=content,
+                error=last_error,
+                error_type="parsing_error",
+                file_type=parsing_attempts[0][0] if parsing_attempts else "unknown"
+            )
+            
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to parse file. Error ID: {parse_error.id} - Check parse errors for detailed information and suggestions."
             )
         
         # Enrich with DNS data if requested

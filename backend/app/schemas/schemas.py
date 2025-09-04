@@ -235,3 +235,37 @@ class OutOfScopeHost(OutOfScopeHostBase):
     
     class Config:
         from_attributes = True
+
+class ParseErrorBase(BaseModel):
+    filename: str
+    file_type: Optional[str] = None
+    file_size: Optional[int] = None
+    error_type: str
+    error_message: str
+    error_details: Optional[dict] = None
+    file_preview: Optional[str] = None
+    user_message: Optional[str] = None
+    status: Optional[str] = "unresolved"
+
+class ParseErrorCreate(ParseErrorBase):
+    pass
+
+class ParseError(ParseErrorBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class ParseErrorSummary(BaseModel):
+    id: int
+    filename: str
+    file_type: Optional[str] = None
+    error_type: str
+    user_message: Optional[str] = None
+    status: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True

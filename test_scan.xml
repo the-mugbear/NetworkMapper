@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.92 scan initiated Thu Sep  4 10:00:00 2025 as: nmap -sV -oX test_scan.xml 192.168.1.0/24 10.0.0.0/8 172.16.0.0/12 192.168.2.100 -->
+<nmaprun scanner="nmap" args="nmap -sV -oX test_scan.xml 192.168.1.0/24 10.0.0.0/8 172.16.0.0/12 192.168.2.100" start="1725434400" startstr="Thu Sep  4 10:00:00 2025" version="7.92" xmloutputversion="1.05">
+<scaninfo type="syn" protocol="tcp" numservices="1000" services="1-1000"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<host starttime="1725434401" endtime="1725434405">
+<status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="192.168.1.1" addrtype="ipv4"/>
+<hostnames>
+<hostname name="gateway.example.com" type="PTR"/>
+</hostnames>
+<ports>
+<port protocol="tcp" portid="22">
+<state state="open" reason="syn-ack" reason_ttl="0"/>
+<service name="ssh" product="OpenSSH" version="8.2p1 Ubuntu 4ubuntu0.1" extrainfo="Ubuntu Linux; protocol 2.0" method="probed" conf="10"/>
+</port>
+<port protocol="tcp" portid="80">
+<state state="open" reason="syn-ack" reason_ttl="0"/>
+<service name="http" product="Apache httpd" version="2.4.41" extrainfo="(Ubuntu)" method="probed" conf="10"/>
+</port>
+</ports>
+<os>
+<portused state="open" proto="tcp" portid="22"/>
+<portused state="closed" proto="tcp" portid="1"/>
+<osmatch name="Linux 5.4" accuracy="100" line="63434">
+<osclass type="general purpose" vendor="Linux" osfamily="Linux" osgen="5.X" accuracy="100"/>
+</osmatch>
+</os>
+</host>
+<host starttime="1725434402" endtime="1725434406">
+<status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="10.1.2.3" addrtype="ipv4"/>
+<hostnames>
+<hostname name="db-server.internal.corp" type="PTR"/>
+</hostnames>
+<ports>
+<port protocol="tcp" portid="5432">
+<state state="open" reason="syn-ack" reason_ttl="0"/>
+<service name="postgresql" product="PostgreSQL" version="12.4" method="probed" conf="10"/>
+</port>
+</ports>
+</host>
+<host starttime="1725434403" endtime="1725434407">
+<status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="172.20.30.40" addrtype="ipv4"/>
+<hostnames>
+</hostnames>
+<ports>
+<port protocol="tcp" portid="443">
+<state state="open" reason="syn-ack" reason_ttl="0"/>
+<service name="https" product="nginx" method="probed" conf="10"/>
+</port>
+</ports>
+</host>
+<host starttime="1725434404" endtime="1725434408">
+<status state="up" reason="syn-ack" reason_ttl="0"/>
+<address addr="192.168.2.100" addrtype="ipv4"/>
+<hostnames>
+</hostnames>
+<ports>
+<port protocol="tcp" portid="8080">
+<state state="open" reason="syn-ack" reason_ttl="0"/>
+<service name="http-proxy" product="HAProxy" version="2.2.2" method="probed" conf="10"/>
+</port>
+</ports>
+</host>
+<runstats>
+<finished time="1725434410" timestr="Thu Sep  4 10:00:10 2025" elapsed="10" summary="Nmap done at Thu Sep  4 10:00:10 2025; 4 IP addresses (4 hosts up) scanned in 10.00 seconds" exit="success"/>
+<hosts up="4" down="0" total="4"/>
+</runstats>
+</nmaprun>

@@ -7,7 +7,8 @@ services:
       POSTGRES_DB: networkMapper
       POSTGRES_USER: nmapuser
       POSTGRES_PASSWORD: nmappass
-    # Remove port exposure - only backend needs database access
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -19,7 +20,8 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://nmapuser:nmappass@db:5432/networkMapper
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      # Allow access from any origin on the local network
+      CORS_ORIGINS: http://localhost:3000,http://192.168.7.231:3000,http://192.168.7.*:3000
     depends_on:
       - db
     volumes:
@@ -32,7 +34,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000}
+      # Use the host machine's IP instead of localhost
+      REACT_APP_API_URL: http://192.168.7.231:8000
     depends_on:
       - backend
     networks:

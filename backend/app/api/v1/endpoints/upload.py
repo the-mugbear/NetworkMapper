@@ -1,5 +1,7 @@
 import os
 import tempfile
+import time
+import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -10,6 +12,8 @@ from app.parsers.masscan_parser import MasscanParser
 from app.schemas.schemas import FileUploadResponse
 from app.services.dns_service import DNSService
 from app.services.parse_error_service import log_parse_error
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -88,11 +92,20 @@ async def upload_scan_file(
         last_error = None
         for file_type, parser_class, success_message in parsing_attempts:
             try:
+                logger.info(f"Attempting to parse {file.filename} with {parser_class.__name__}")
+                parse_start_time = time.time()
+                
                 parser = parser_class(db)
                 scan = parser.parse_file(temp_file_path, file.filename)
-                message = f"{success_message} uploaded and parsed successfully"
+                
+                parse_elapsed = time.time() - parse_start_time
+                logger.info(f"Successfully parsed {file.filename} with {parser_class.__name__} in {parse_elapsed:.2f} seconds")
+                
+                message = f"{success_message} uploaded and parsed successfully (parsed in {parse_elapsed:.2f}s)"
                 break
             except Exception as e:
+                parse_elapsed = time.time() - parse_start_time
+                logger.warning(f"Failed to parse {file.filename} with {parser_class.__name__} after {parse_elapsed:.2f} seconds: {str(e)}")
                 last_error = e
                 continue
         

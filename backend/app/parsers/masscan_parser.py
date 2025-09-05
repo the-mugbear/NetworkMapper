@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db import models
 from app.services.subnet_correlation import SubnetCorrelationService
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -16,16 +17,24 @@ class MasscanParser:
 
     def parse_file(self, file_path: str, filename: str) -> models.Scan:
         """Parse Masscan output files (XML, JSON, or list format)"""
+        start_time = time.time()
+        logger.info(f"Starting Masscan parse of {filename}")
+        
         try:
             if filename.lower().endswith('.xml'):
-                return self._parse_xml_file(file_path, filename)
+                result = self._parse_xml_file(file_path, filename)
             elif filename.lower().endswith('.json'):
-                return self._parse_json_file(file_path, filename)
+                result = self._parse_json_file(file_path, filename)
             else:
                 # Assume list format (default masscan output)
-                return self._parse_list_file(file_path, filename)
+                result = self._parse_list_file(file_path, filename)
+            
+            elapsed_time = time.time() - start_time
+            logger.info(f"Successfully parsed Masscan {filename} in {elapsed_time:.2f} seconds")
+            return result
         except Exception as e:
-            logger.error(f"Error parsing Masscan file {filename}: {str(e)}")
+            elapsed_time = time.time() - start_time
+            logger.error(f"Error parsing Masscan file {filename} after {elapsed_time:.2f} seconds: {str(e)}")
             raise
 
     def _parse_xml_file(self, file_path: str, filename: str) -> models.Scan:

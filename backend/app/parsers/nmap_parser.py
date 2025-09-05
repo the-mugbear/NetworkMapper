@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db import models
 from app.services.subnet_correlation import SubnetCorrelationService
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -14,17 +15,28 @@ class NmapXMLParser:
         self.correlation_service = SubnetCorrelationService(db)
 
     def parse_file(self, file_path: str, filename: str) -> models.Scan:
+        start_time = time.time()
+        logger.info(f"Starting parse of {filename}")
+        
         try:
             with open(file_path, 'rb') as f:
+                logger.info(f"Loading XML tree for {filename}")
                 tree = etree.parse(f)
                 root = tree.getroot()
+                logger.info(f"XML tree loaded successfully for {filename}")
                 
-            return self._parse_root(root, filename)
+            result = self._parse_root(root, filename)
+            elapsed_time = time.time() - start_time
+            logger.info(f"Successfully parsed {filename} in {elapsed_time:.2f} seconds")
+            return result
         except Exception as e:
-            logger.error(f"Error parsing XML file {filename}: {str(e)}")
+            elapsed_time = time.time() - start_time
+            logger.error(f"Error parsing XML file {filename} after {elapsed_time:.2f} seconds: {str(e)}")
             raise
 
     def _parse_root(self, root: etree.Element, filename: str) -> models.Scan:
+        logger.info(f"Creating scan record for {filename}")
+        
         # Create scan record
         scan = models.Scan(
             filename=filename,
@@ -51,25 +63,54 @@ class NmapXMLParser:
         # Parse command line arguments
         scan.command_line = root.get('args', '')
         
-        # Save scan to get ID
+        # Save scan to get ID - this is the only commit until the end
+        logger.info(f"Saving initial scan record to database")
         self.db.add(scan)
         self.db.commit()
         self.db.refresh(scan)
+        logger.info(f"Scan record created with ID: {scan.id}")
         
         # Parse scan info details
+        logger.info(f"Parsing scan info details")
         self._parse_scan_info(root, scan.id)
         
-        # Parse hosts
-        for host_elem in root.findall('host'):
-            self._parse_host(host_elem, scan.id)
+        # Count total hosts for progress tracking
+        host_elements = root.findall('host')
+        total_hosts = len(host_elements)
+        logger.info(f"Found {total_hosts} hosts to parse")
+        
+        # Parse hosts with progress logging
+        hosts_parsed = 0
+        start_time = time.time()
+        
+        for i, host_elem in enumerate(host_elements, 1):
+            if i % 100 == 0 or i == 1:  # Log progress every 100 hosts or first host
+                elapsed = time.time() - start_time
+                rate = i / elapsed if elapsed > 0 else 0
+                logger.info(f"Processing host {i}/{total_hosts} ({i/total_hosts*100:.1f}%) - Rate: {rate:.1f} hosts/sec")
+            
+            try:
+                self._parse_host(host_elem, scan.id)
+                hosts_parsed += 1
+            except Exception as e:
+                logger.warning(f"Failed to parse host {i}: {str(e)}")
+        
+        # Commit all parsed data at once for better performance
+        logger.info(f"Committing all parsed data to database ({hosts_parsed} hosts processed)")
+        self.db.commit()
         
         # Correlate all hosts from this scan to subnets
+        logger.info(f"Starting subnet correlation for scan {scan.id}")
         try:
+            correlation_start = time.time()
             mappings_created = self.correlation_service.correlate_scan_hosts_to_subnets(scan.id)
-            logger.info(f"Created {mappings_created} host-subnet mappings for scan {scan.id}")
+            correlation_time = time.time() - correlation_start
+            logger.info(f"Created {mappings_created} host-subnet mappings for scan {scan.id} in {correlation_time:.2f} seconds")
         except Exception as e:
             logger.warning(f"Failed to correlate hosts to subnets for scan {scan.id}: {str(e)}")
             
+        total_time = time.time() - start_time
+        logger.info(f"Completed parsing {filename}: {hosts_parsed}/{total_hosts} hosts in {total_time:.2f} seconds")
         return scan
 
     def _parse_scan_info(self, root: etree.Element, scan_id: int):
@@ -169,7 +210,8 @@ class NmapXMLParser:
         )
         
         self.db.add(host)
-        self.db.commit()
+        # Note: No commit here - we'll commit all data at the end for better performance
+        self.db.flush()  # Get the host ID without committing
         self.db.refresh(host)
         
         # Parse ports (only open and meaningful closed ports)
@@ -230,7 +272,8 @@ class NmapXMLParser:
         )
         
         self.db.add(port)
-        self.db.commit()
+        # Note: No commit here - we'll commit all data at the end for better performance  
+        self.db.flush()  # Get the port ID without committing
         self.db.refresh(port)
         
         # Parse port scripts

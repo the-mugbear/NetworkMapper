@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.db import models
 from app.services.subnet_correlation import SubnetCorrelationService
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +18,23 @@ class EyewitnessParser:
 
     def parse_file(self, file_path: str, filename: str) -> models.Scan:
         """Parse Eyewitness report files (JSON or CSV format)"""
+        start_time = time.time()
+        logger.info(f"Starting Eyewitness parse of {filename}")
+        
         try:
             if filename.lower().endswith('.json'):
-                return self._parse_json_file(file_path, filename)
+                result = self._parse_json_file(file_path, filename)
             elif filename.lower().endswith('.csv'):
-                return self._parse_csv_file(file_path, filename)
+                result = self._parse_csv_file(file_path, filename)
             else:
                 raise ValueError("Unsupported Eyewitness file format. Expected .json or .csv")
+            
+            elapsed_time = time.time() - start_time
+            logger.info(f"Successfully parsed Eyewitness {filename} in {elapsed_time:.2f} seconds")
+            return result
         except Exception as e:
-            logger.error(f"Error parsing Eyewitness file {filename}: {str(e)}")
+            elapsed_time = time.time() - start_time
+            logger.error(f"Error parsing Eyewitness file {filename} after {elapsed_time:.2f} seconds: {str(e)}")
             raise
 
     def _parse_json_file(self, file_path: str, filename: str) -> models.Scan:
@@ -49,8 +58,11 @@ class EyewitnessParser:
         # Parse results
         results = data.get('results', [])
         out_of_scope_count = 0
+        logger.info(f"Processing {len(results)} Eyewitness results")
         
-        for result_data in results:
+        for i, result_data in enumerate(results, 1):
+            if i % 100 == 0 or i == 1:  # Log progress every 100 results
+                logger.info(f"Processing Eyewitness result {i}/{len(results)} ({i/len(results)*100:.1f}%)")
             try:
                 # Extract IP address from URL
                 ip_address = self._extract_ip_from_url(result_data.get('url', ''))
@@ -115,8 +127,12 @@ class EyewitnessParser:
         
         with open(file_path, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
+            rows = list(reader)  # Load all rows to count them
+            logger.info(f"Processing {len(rows)} Eyewitness CSV rows")
             
-            for row in reader:
+            for i, row in enumerate(rows, 1):
+                if i % 100 == 0 or i == 1:  # Log progress every 100 rows
+                    logger.info(f"Processing CSV row {i}/{len(rows)} ({i/len(rows)*100:.1f}%)")
                 try:
                     # Extract IP address from URL
                     url = row.get('URL', row.get('url', ''))
@@ -161,7 +177,7 @@ class EyewitnessParser:
         
         self.db.commit()
         
-        logger.info(f"Processed Eyewitness CSV results, {out_of_scope_count} out of scope")
+        logger.info(f"Processed {len(rows)} Eyewitness CSV results, {out_of_scope_count} out of scope")
         return scan
 
     def _extract_ip_from_url(self, url: str) -> Optional[str]:

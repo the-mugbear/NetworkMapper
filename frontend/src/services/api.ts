@@ -46,6 +46,12 @@ export interface SubnetStats {
   scope_name: string;
   description: string | null;
   host_count: number;
+  total_addresses?: number;
+  usable_addresses?: number;
+  utilization_percentage?: number;
+  risk_level?: string;
+  network_address?: string;
+  is_private?: boolean;
 }
 
 export interface ParseError {
@@ -197,6 +203,11 @@ export const getHosts = async (params: {
   scan_id?: number;
   state?: string;
   search?: string;
+  ports?: string;
+  services?: string;
+  port_states?: string;
+  has_open_ports?: boolean;
+  os_filter?: string;
   skip?: number;
   limit?: number;
 }): Promise<Host[]> => {
@@ -220,6 +231,11 @@ export const getHost = async (hostId: number): Promise<Host> => {
 export const getHostsByScan = async (scanId: number, state?: string): Promise<Host[]> => {
   const queryParams = state ? `?state=${state}` : '';
   const response = await api.get(`/hosts/scan/${scanId}${queryParams}`);
+  return response.data;
+};
+
+export const getHostFilterData = async () => {
+  const response = await api.get('/hosts/filters/ports');
   return response.data;
 };
 

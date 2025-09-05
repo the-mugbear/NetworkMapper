@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.parsers.nmap_parser import NmapXMLParser
 from app.parsers.eyewitness_parser import EyewitnessParser
 from app.parsers.masscan_parser import MasscanParser
+from app.parsers.dns_parser import DNSParser
 from app.schemas.schemas import FileUploadResponse
 from app.services.dns_service import DNSService
 from app.services.parse_error_service import log_parse_error
@@ -73,6 +74,14 @@ async def upload_scan_file(
         elif file.filename.lower().endswith('.txt'):
             parsing_attempts.append(("masscan_list", MasscanParser, "Masscan output file"))
         
+        elif file.filename.lower().endswith('.csv') and ('dns' in file.filename.lower() or 'ptr' in file.filename.lower()):
+            # DNS records CSV file
+            parsing_attempts.append(("dns_csv", DNSParser, "DNS records CSV file"))
+        
+        elif file.filename.lower().endswith('.csv'):
+            # Generic CSV - try DNS parser as fallback for CSV files
+            parsing_attempts.append(("dns_csv", DNSParser, "DNS records CSV file"))
+        
         else:
             # Log unsupported file type error
             parse_error = log_parse_error(
@@ -81,7 +90,7 @@ async def upload_scan_file(
                 file_content=content,
                 error_type="format_error",
                 file_type="unknown",
-                custom_message=f"Unsupported file type or format. Supported formats: Nmap XML, Masscan XML/JSON/List, Eyewitness JSON/CSV"
+                custom_message=f"Unsupported file type or format. Supported formats: Nmap XML, Masscan XML/JSON/List, Eyewitness JSON/CSV, DNS Records CSV"
             )
             raise HTTPException(
                 status_code=400,

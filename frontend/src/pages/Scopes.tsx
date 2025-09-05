@@ -40,6 +40,7 @@ import {
   exportOutOfScopeReport,
   ScopeSummary 
 } from '../services/api';
+import ExportDialog from '../components/ExportDialog';
 
 const Scopes: React.FC = () => {
   const navigate = useNavigate();
@@ -54,6 +55,12 @@ const Scopes: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [scopeName, setScopeName] = useState('');
   const [scopeDescription, setScopeDescription] = useState('');
+
+  // Export dialog state
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportDialogType, setExportDialogType] = useState<'scope' | 'out-of-scope'>('scope');
+  const [exportItemId, setExportItemId] = useState<number | undefined>();
+  const [exportItemName, setExportItemName] = useState<string>('');
 
   useEffect(() => {
     loadScopes();
@@ -139,6 +146,26 @@ const Scopes: React.FC = () => {
     }
   };
 
+  const handleOpenScopeExport = (scopeId: number, scopeName: string) => {
+    setExportDialogType('scope');
+    setExportItemId(scopeId);
+    setExportItemName(scopeName);
+    setShowExportDialog(true);
+  };
+
+  const handleOpenOutOfScopeExport = () => {
+    setExportDialogType('out-of-scope');
+    setExportItemId(undefined);
+    setExportItemName('Out-of-Scope Findings');
+    setShowExportDialog(true);
+  };
+
+  const handleCloseExportDialog = () => {
+    setShowExportDialog(false);
+    setExportItemId(undefined);
+    setExportItemName('');
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -168,7 +195,7 @@ const Scopes: React.FC = () => {
             variant="contained"
             color="error"
             startIcon={<ExportIcon />}
-            onClick={() => exportOutOfScopeReport('html')}
+            onClick={handleOpenOutOfScopeExport}
           >
             Export Out-of-Scope
           </Button>
@@ -321,7 +348,7 @@ const Scopes: React.FC = () => {
                   <Button
                     size="small"
                     startIcon={<ExportIcon />}
-                    onClick={() => exportScopeReport(scope.id, 'html')}
+                    onClick={() => handleOpenScopeExport(scope.id, scope.name)}
                     color="success"
                   >
                     Export
@@ -340,6 +367,16 @@ const Scopes: React.FC = () => {
           ))}
         </Grid>
       )}
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={showExportDialog}
+        onClose={handleCloseExportDialog}
+        title={exportDialogType === 'scope' ? 'Scope Report' : 'Out-of-Scope Report'}
+        exportType={exportDialogType}
+        itemId={exportItemId}
+        itemName={exportItemName}
+      />
     </Box>
   );
 };

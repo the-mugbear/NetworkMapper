@@ -4,6 +4,7 @@ from sqlalchemy import func, desc, case
 from app.db.session import get_db
 from app.db import models
 from app.schemas.schemas import DashboardStats, ScanSummary, SubnetStats
+from app.services.subnet_calculator import SubnetCalculator
 
 router = APIRouter()
 
@@ -38,7 +39,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         for result in recent_results
     ]
     
-    # Get subnet statistics - simplified without complex joins
+    # Get enhanced subnet statistics with calculations
     subnet_stats = []
     
     try:
@@ -51,16 +52,27 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
                 models.HostSubnetMapping.subnet_id == subnet.id
             ).scalar() or 0
             
+            # Calculate subnet metrics using the new calculator
+            metrics = SubnetCalculator.calculate_subnet_metrics(subnet.cidr)
+            utilization = SubnetCalculator.calculate_utilization_percentage(host_count, subnet.cidr)
+            risk_info = SubnetCalculator.get_subnet_risk_level(utilization, host_count)
+            
             subnet_stats.append(SubnetStats(
                 id=subnet.id,
                 cidr=subnet.cidr,
                 scope_name=subnet.scope.name,
                 description=subnet.description,
-                host_count=host_count
+                host_count=host_count,
+                total_addresses=metrics['total_addresses'],
+                usable_addresses=metrics['usable_addresses'],
+                utilization_percentage=round(utilization, 2),
+                risk_level=risk_info['risk_level'],
+                network_address=metrics['network_address'],
+                is_private=metrics['is_private']
             ))
             
-        # Sort by host count descending
-        subnet_stats.sort(key=lambda x: x.host_count, reverse=True)
+        # Sort by utilization percentage descending, then by host count
+        subnet_stats.sort(key=lambda x: (x.utilization_percentage, x.host_count), reverse=True)
         
     except Exception as e:
         print(f"Subnet stats error: {e}")

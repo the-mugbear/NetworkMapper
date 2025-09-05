@@ -116,6 +116,12 @@ class SubnetStats(BaseModel):
     scope_name: str
     description: Optional[str] = None
     host_count: int
+    total_addresses: Optional[int] = None
+    usable_addresses: Optional[int] = None
+    utilization_percentage: Optional[float] = None
+    risk_level: Optional[str] = None
+    network_address: Optional[str] = None
+    is_private: Optional[bool] = None
     
     class Config:
         from_attributes = True

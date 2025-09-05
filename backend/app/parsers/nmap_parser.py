@@ -28,6 +28,7 @@ class NmapXMLParser:
         # Create scan record
         scan = models.Scan(
             filename=filename,
+            tool_name='nmap',
             version=root.get('version'),
             xml_output_version=root.get('xmloutputversion'),
         )
@@ -94,6 +95,58 @@ class NmapXMLParser:
             
         ip_address = address_elem.get('addr')
         
+        # Get host state
+        status_elem = host_elem.find('status')
+        state = status_elem.get('state') if status_elem is not None else 'unknown'
+        state_reason = status_elem.get('reason') if status_elem is not None else ''
+        
+        # Skip hosts that are down or filtered - they provide no useful information
+        if state in ['down', 'filtered']:
+            return
+            
+        # Check if host has any meaningful data (open/closed ports, host scripts, or OS info)
+        has_meaningful_data = False
+        
+        # Check for ports with useful information
+        ports_elem = host_elem.find('ports')
+        open_ports = []
+        closed_ports = []
+        if ports_elem is not None:
+            for port_elem in ports_elem.findall('port'):
+                port_state_elem = port_elem.find('state')
+                if port_state_elem is not None:
+                    port_state = port_state_elem.get('state')
+                    if port_state == 'open':
+                        open_ports.append(port_elem)
+                        has_meaningful_data = True
+                    elif port_state in ['closed', 'unfiltered']:
+                        closed_ports.append(port_elem)
+                        # Only consider closed ports meaningful if there are many (indicates active host)
+                        if len(closed_ports) >= 3:
+                            has_meaningful_data = True
+        
+        # Check for host scripts (always meaningful)
+        hostscript_elem = host_elem.find('hostscript')
+        if hostscript_elem is not None and len(hostscript_elem.findall('script')) > 0:
+            has_meaningful_data = True
+        
+        # Check for OS detection (always meaningful)
+        os_elem = host_elem.find('os')
+        if os_elem is not None and len(os_elem.findall('osmatch')) > 0:
+            has_meaningful_data = True
+        
+        # Skip hosts with no meaningful data (no open ports, no scripts, no OS info)
+        if not has_meaningful_data and state not in ['up']:
+            return
+        
+        # For 'up' hosts with no meaningful data, only keep if they have a hostname or are explicitly up
+        if not has_meaningful_data and state == 'up':
+            hostnames_elem = host_elem.find('hostnames')
+            has_hostname = (hostnames_elem is not None and 
+                          hostnames_elem.find('hostname') is not None)
+            if not has_hostname:
+                return
+        
         # Get hostname
         hostname = None
         hostnames_elem = host_elem.find('hostnames')
@@ -102,15 +155,10 @@ class NmapXMLParser:
             if hostname_elem is not None:
                 hostname = hostname_elem.get('name')
         
-        # Get host state
-        status_elem = host_elem.find('status')
-        state = status_elem.get('state') if status_elem is not None else 'unknown'
-        state_reason = status_elem.get('reason') if status_elem is not None else ''
-        
         # Parse OS detection
         os_info = self._parse_os(host_elem)
         
-        # Create host record
+        # Create host record (only for meaningful hosts)
         host = models.Host(
             scan_id=scan_id,
             ip_address=ip_address,
@@ -124,14 +172,18 @@ class NmapXMLParser:
         self.db.commit()
         self.db.refresh(host)
         
-        # Parse ports
-        ports_elem = host_elem.find('ports')
+        # Parse ports (only open and meaningful closed ports)
         if ports_elem is not None:
-            for port_elem in ports_elem.findall('port'):
+            # Parse open ports (always included)
+            for port_elem in open_ports:
                 self._parse_port(port_elem, host.id)
+            
+            # Parse closed ports only if there are open ports or many closed ports
+            if len(open_ports) > 0 or len(closed_ports) >= 5:
+                for port_elem in closed_ports[:20]:  # Limit closed ports to reduce noise
+                    self._parse_port(port_elem, host.id)
         
         # Parse host scripts
-        hostscript_elem = host_elem.find('hostscript')
         if hostscript_elem is not None:
             for script_elem in hostscript_elem.findall('script'):
                 self._parse_host_script(script_elem, host.id)

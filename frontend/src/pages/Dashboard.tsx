@@ -27,6 +27,7 @@ import {
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { getDashboardStats, getPortStats, getOsStats } from '../services/api';
 import type { DashboardStats, Scan, SubnetStats } from '../services/api';
+import RiskAssessmentWidget from '../components/RiskAssessmentWidget';
 
 ChartJS.register(
   CategoryScale,
@@ -243,6 +244,11 @@ export default function Dashboard() {
           </Paper>
         </Grid>
 
+        {/* Risk Assessment Widget */}
+        <Grid item xs={12} md={6}>
+          <RiskAssessmentWidget subnetStats={stats?.subnet_stats || []} />
+        </Grid>
+
         {/* Subnet Statistics Table */}
         <Grid item xs={12}>
           <Paper>
@@ -257,8 +263,11 @@ export default function Dashboard() {
                       <TableRow>
                         <TableCell>Subnet (CIDR)</TableCell>
                         <TableCell>Scope</TableCell>
-                        <TableCell>Description</TableCell>
-                        <TableCell align="right">Discovered Hosts</TableCell>
+                        <TableCell align="right">Addresses</TableCell>
+                        <TableCell align="right">Discovered</TableCell>
+                        <TableCell align="right">Utilization</TableCell>
+                        <TableCell>Risk Level</TableCell>
+                        <TableCell>Network Type</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -277,13 +286,53 @@ export default function Dashboard() {
                               size="small" 
                             />
                           </TableCell>
-                          <TableCell>{subnet.description || 'No description'}</TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2">
+                              {subnet.usable_addresses ? `${subnet.usable_addresses} usable` : 'N/A'}
+                            </Typography>
+                            {subnet.total_addresses && (
+                              <Typography variant="caption" color="textSecondary">
+                                ({subnet.total_addresses} total)
+                              </Typography>
+                            )}
+                          </TableCell>
                           <TableCell align="right">
                             <Chip
                               label={subnet.host_count}
                               color={subnet.host_count > 0 ? 'success' : 'default'}
                               size="small"
                             />
+                          </TableCell>
+                          <TableCell align="right">
+                            {subnet.utilization_percentage !== undefined ? (
+                              <Box display="flex" alignItems="center" justifyContent="flex-end">
+                                <Typography variant="body2" fontWeight="medium">
+                                  {subnet.utilization_percentage.toFixed(1)}%
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Typography variant="body2" color="textSecondary">N/A</Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {subnet.risk_level && (
+                              <Chip
+                                label={subnet.risk_level.toUpperCase()}
+                                color={
+                                  subnet.risk_level === 'critical' ? 'error' :
+                                  subnet.risk_level === 'high' ? 'warning' :
+                                  subnet.risk_level === 'medium' ? 'info' :
+                                  subnet.risk_level === 'low' ? 'success' : 'default'
+                                }
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color={subnet.is_private ? 'success.main' : 'warning.main'}>
+                              {subnet.is_private ? 'Private' : 'Public'}
+                            </Typography>
                           </TableCell>
                         </TableRow>
                       ))}

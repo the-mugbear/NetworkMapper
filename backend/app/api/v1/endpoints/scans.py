@@ -1,10 +1,11 @@
-from typing import List
+from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, case
 from app.db.session import get_db
 from app.db import models
 from app.schemas.schemas import Scan, ScanSummary, EyewitnessResult, OutOfScopeHost, DNSRecord
+from app.services.command_explanation_service import CommandExplanationService
 
 router = APIRouter()
 
@@ -111,3 +112,51 @@ def get_all_out_of_scope_hosts(db: Session = Depends(get_db)):
     """Get all out-of-scope hosts across all scans"""
     hosts = db.query(models.OutOfScopeHost).all()
     return hosts
+
+@router.get("/{scan_id}/command-explanation", response_model=Dict[str, Any])
+def get_scan_command_explanation(scan_id: int, db: Session = Depends(get_db)):
+    """Get detailed explanation of the scan command and its arguments"""
+    scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    # If no command line available, return basic info
+    if not scan.command_line:
+        return {
+            "has_command": False,
+            "tool": scan.tool_name or "Unknown",
+            "message": "No command line information available for this scan"
+        }
+    
+    # Analyze the command
+    explanation_service = CommandExplanationService()
+    analysis = explanation_service.analyze_command(scan.command_line, scan.tool_name)
+    
+    if not analysis:
+        return {
+            "has_command": True,
+            "tool": scan.tool_name or "Unknown",
+            "command": scan.command_line,
+            "message": "Unable to parse command line arguments"
+        }
+    
+    # Convert the analysis to a dictionary format for JSON response
+    return {
+        "has_command": True,
+        "tool": analysis.tool,
+        "command": analysis.command,
+        "target": analysis.target,
+        "scan_type": analysis.scan_type,
+        "summary": analysis.summary,
+        "risk_assessment": analysis.risk_assessment,
+        "arguments": [
+            {
+                "arg": arg.arg,
+                "description": arg.description,
+                "category": arg.category,
+                "risk_level": arg.risk_level,
+                "examples": arg.examples
+            }
+            for arg in analysis.arguments
+        ]
+    }

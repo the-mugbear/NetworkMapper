@@ -69,6 +69,25 @@ class MasscanParser:
             status_elem = host_elem.find('status')
             state = status_elem.get('state') if status_elem is not None else 'unknown'
             
+            # Skip hosts that are down or filtered - they provide no useful information
+            if state in ['down', 'filtered']:
+                continue
+            
+            # Check if host has any meaningful data (open ports)
+            has_meaningful_data = False
+            ports_elem = host_elem.find('ports')
+            if ports_elem is not None:
+                for port_elem in ports_elem.findall('port'):
+                    state_elem = port_elem.find('state')
+                    port_state = state_elem.get('state') if state_elem is not None else 'unknown'
+                    if port_state == 'open':
+                        has_meaningful_data = True
+                        break
+            
+            # Skip hosts with no meaningful data
+            if not has_meaningful_data:
+                continue
+            
             if matching_subnets:
                 # Create or get host record
                 if ip_address not in hosts_data:
@@ -160,6 +179,18 @@ class MasscanParser:
             if not ip_address:
                 continue
             
+            # Check if host has any meaningful data (open ports)
+            has_meaningful_data = False
+            for port_info in entry.get('ports', []):
+                port_status = port_info.get('status', 'open')
+                if port_status == 'open':
+                    has_meaningful_data = True
+                    break
+            
+            # Skip hosts with no meaningful data
+            if not has_meaningful_data:
+                continue
+            
             # Check if IP is in scope
             matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)
             
@@ -243,6 +274,10 @@ class MasscanParser:
                     protocol = parts[1]  # tcp, udp
                     port_number = int(parts[2])
                     ip_address = parts[3]
+                    
+                    # Skip non-open ports for optimization (closed/filtered provide limited value)
+                    if state not in ['open']:
+                        continue
                     
                     # Check if IP is in scope
                     matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)

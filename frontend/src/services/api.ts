@@ -382,6 +382,29 @@ export const getDNSRecords = async (hostname: string): Promise<DNSRecord[]> => {
   return response.data;
 };
 
+export interface CommandExplanation {
+  has_command: boolean;
+  tool: string;
+  command?: string;
+  target?: string;
+  scan_type?: string;
+  summary?: string;
+  risk_assessment?: string;
+  message?: string;
+  arguments?: Array<{
+    arg: string;
+    description: string;
+    category: string;
+    risk_level: string;
+    examples: string[];
+  }>;
+}
+
+export const getScanCommandExplanation = async (scanId: number): Promise<CommandExplanation> => {
+  const response = await api.get(`/scans/${scanId}/command-explanation`);
+  return response.data;
+};
+
 // Parse Error API functions
 export const getParseErrors = async (params: {
   skip?: number;

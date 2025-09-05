@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.db import models
 from app.services.dns_service import DNSService
+from app.services.report_templates import ReportTemplates
+from app.services.subnet_calculator import SubnetCalculator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,6 +26,9 @@ class ExportService:
         
         # Gather all data for the scope
         report_data = self._gather_scope_data(scope)
+        
+        # Enhance scope data with subnet calculations
+        report_data = self._enhance_scope_data_with_calculations(report_data)
         
         if format_type.lower() == 'json':
             return self._format_json_report(report_data)
@@ -382,126 +387,70 @@ class ExportService:
         }
 
     def _format_html_report(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Format data as HTML"""
-        html_content = self._generate_html_report(data)
+        """Format data as professional HTML report"""
+        html_content = ReportTemplates.generate_professional_html_report(data)
         
         return {
             'content_type': 'text/html',
             'data': html_content,
-            'filename': f"{data['report_type']}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.html"
+            'filename': f"NetworkMapper_{data['report_type']}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.html"
         }
 
-    def _generate_html_report(self, data: Dict[str, Any]) -> str:
-        """Generate HTML report"""
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>NetworkMapper Report</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                .header {{ background-color: #f0f0f0; padding: 20px; border-radius: 5px; }}
-                .section {{ margin: 20px 0; }}
-                table {{ border-collapse: collapse; width: 100%; }}
-                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                th {{ background-color: #f2f2f2; }}
-                .out-of-scope {{ background-color: #ffe6e6; }}
-                .stats {{ display: flex; gap: 20px; }}
-                .stat-box {{ background: #e6f3ff; padding: 15px; border-radius: 5px; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>NetworkMapper Report</h1>
-                <p><strong>Report Type:</strong> {data['report_type']}</p>
-                <p><strong>Generated:</strong> {data['generated_at']}</p>
-            </div>
-        """
+    def _enhance_scope_data_with_calculations(self, report_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Enhance scope report data with subnet calculations"""
+        scope = report_data.get('scope', {})
+        subnets = scope.get('subnets', [])
         
-        if data['report_type'] == 'scope_report':
-            scope = data['scope']
-            stats = data['statistics']
-            
-            html += f"""
-            <div class="section">
-                <h2>Scope: {scope['name']}</h2>
-                <p>{scope['description'] or 'No description provided'}</p>
+        # Calculate enhanced metrics for each subnet
+        enhanced_subnets = []
+        for subnet in subnets:
+            cidr = subnet.get('cidr', '')
+            if cidr:
+                # Get subnet metrics
+                metrics = SubnetCalculator.calculate_subnet_metrics(cidr)
                 
-                <div class="stats">
-                    <div class="stat-box">
-                        <strong>{stats['total_subnets']}</strong><br>Subnets
-                    </div>
-                    <div class="stat-box">
-                        <strong>{stats['total_hosts']}</strong><br>Hosts
-                    </div>
-                    <div class="stat-box">
-                        <strong>{stats['total_scans']}</strong><br>Scans
-                    </div>
-                    <div class="stat-box">
-                        <strong>{stats['out_of_scope_hosts']}</strong><br>Out of Scope
-                    </div>
-                </div>
-            </div>
-            
-            <div class="section">
-                <h3>Subnets</h3>
-                <table>
-                    <tr><th>CIDR</th><th>Description</th></tr>
-            """
-            
-            for subnet in scope['subnets']:
-                html += f"<tr><td>{subnet['cidr']}</td><td>{subnet['description'] or ''}</td></tr>"
-            
-            html += "</table></div>"
-        
-        # Add hosts table
-        if 'hosts' in data and data['hosts']:
-            html += """
-            <div class="section">
-                <h3>Hosts</h3>
-                <table>
-                    <tr><th>IP Address</th><th>Hostname</th><th>OS</th><th>Open Ports</th><th>DNS Records</th></tr>
-            """
-            
-            for host in data['hosts']:
-                ports_str = ', '.join([f"{p['port_number']}/{p['protocol']}" for p in host['ports']])
-                dns_str = ', '.join([f"{r['record_type']}" for r in host['dns_records']])
+                # Count hosts in this subnet (simplified)
+                discovered_hosts = len([h for h in report_data.get('hosts', []) 
+                                      if self._ip_in_subnet(h.get('ip_address', ''), cidr)])
                 
-                html += f"""
-                <tr>
-                    <td>{host['ip_address']}</td>
-                    <td>{host['hostname'] or ''}</td>
-                    <td>{host['os_name'] or ''}</td>
-                    <td>{ports_str}</td>
-                    <td>{dns_str}</td>
-                </tr>
-                """
-            
-            html += "</table></div>"
+                utilization = SubnetCalculator.calculate_utilization_percentage(discovered_hosts, cidr)
+                risk_info = SubnetCalculator.get_subnet_risk_level(utilization, discovered_hosts)
+                
+                enhanced_subnet = subnet.copy()
+                enhanced_subnet.update({
+                    'total_addresses': metrics['total_addresses'],
+                    'usable_addresses': metrics['usable_addresses'],
+                    'discovered_hosts': discovered_hosts,
+                    'utilization_percentage': utilization,
+                    'risk_level': risk_info['risk_level'],
+                    'risk_description': risk_info['risk_description'],
+                    'is_private': metrics['is_private']
+                })
+                enhanced_subnets.append(enhanced_subnet)
         
-        # Add out-of-scope hosts
-        if 'out_of_scope_hosts' in data and data['out_of_scope_hosts']:
-            html += """
-            <div class="section">
-                <h3>Out of Scope Hosts</h3>
-                <table>
-                    <tr><th>IP Address</th><th>Tool</th><th>Reason</th></tr>
-            """
-            
-            for oos in data['out_of_scope_hosts']:
-                html += f"""
-                <tr class="out-of-scope">
-                    <td>{oos['ip_address']}</td>
-                    <td>{oos['tool_source'] or ''}</td>
-                    <td>{oos['reason'] or ''}</td>
-                </tr>
-                """
-            
-            html += "</table></div>"
+        # Update scope with enhanced subnet data
+        report_data['scope']['subnets'] = enhanced_subnets
         
-        html += """
-        </body>
-        </html>
-        """
+        # Calculate scope-level aggregates
+        if enhanced_subnets:
+            aggregates = SubnetCalculator.calculate_scope_aggregates([
+                {
+                    'total_addresses': s['total_addresses'],
+                    'usable_addresses': s['usable_addresses'],
+                    'discovered_hosts': s['discovered_hosts'],
+                    'utilization_percentage': s['utilization_percentage'],
+                    'risk_level': s['risk_level']
+                }
+                for s in enhanced_subnets
+            ])
+            report_data['scope_aggregates'] = aggregates
         
-        return html
+        return report_data
+    
+    def _ip_in_subnet(self, ip: str, cidr: str) -> bool:
+        """Simple check if IP is in subnet (basic implementation)"""
+        try:
+            import ipaddress
+            return ipaddress.ip_address(ip) in ipaddress.ip_network(cidr, strict=False)
+        except (ipaddress.AddressValueError, ValueError):
+            return False

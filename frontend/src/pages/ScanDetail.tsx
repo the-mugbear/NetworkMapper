@@ -22,9 +22,11 @@ import {
   ArrowBack as BackIcon,
   Computer as HostIcon,
   Security as PortIcon,
+  Terminal as TerminalIcon,
 } from '@mui/icons-material';
 import { getScan, getHostsByScan } from '../services/api';
 import type { Host } from '../services/api';
+import CommandExplanation from '../components/CommandExplanation';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -198,6 +200,7 @@ export default function ScanDetail() {
           <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab label="Hosts" icon={<HostIcon />} />
             <Tab label="All Ports" icon={<PortIcon />} />
+            <Tab label="Command" icon={<TerminalIcon />} />
           </Tabs>
         </Box>
 
@@ -276,6 +279,10 @@ export default function ScanDetail() {
               </TableBody>
             </Table>
           </TableContainer>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={2}>
+          <CommandExplanation scanId={parseInt(scanId!)} />
         </TabPanel>
       </Paper>
     </Box>

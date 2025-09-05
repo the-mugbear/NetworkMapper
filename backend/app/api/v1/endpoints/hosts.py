@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, and_, distinct, func
 from app.db.session import get_db
 from app.db import models
@@ -22,7 +22,10 @@ def get_hosts(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.Host).distinct()
+    query = db.query(models.Host).options(
+        selectinload(models.Host.ports).selectinload(models.Port.scripts),
+        selectinload(models.Host.host_scripts)
+    ).distinct()
     
     # Track if we need to join with ports table
     needs_port_join = bool(ports or services or port_states or has_open_ports)
@@ -90,7 +93,10 @@ def get_hosts(
 
 @router.get("/{host_id}", response_model=Host)
 def get_host(host_id: int, db: Session = Depends(get_db)):
-    host = db.query(models.Host).filter(models.Host.id == host_id).first()
+    host = db.query(models.Host).options(
+        selectinload(models.Host.ports).selectinload(models.Port.scripts),
+        selectinload(models.Host.host_scripts)
+    ).filter(models.Host.id == host_id).first()
     if not host:
         raise HTTPException(status_code=404, detail="Host not found")
     return host
@@ -101,7 +107,10 @@ def get_hosts_by_scan(
     state: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(models.Host).filter(models.Host.scan_id == scan_id)
+    query = db.query(models.Host).options(
+        selectinload(models.Host.ports).selectinload(models.Port.scripts),
+        selectinload(models.Host.host_scripts)
+    ).filter(models.Host.scan_id == scan_id)
     
     if state:
         query = query.filter(models.Host.state == state)

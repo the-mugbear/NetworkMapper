@@ -1,134 +1,83 @@
-INFO:     172.18.0.1:56442 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
-INFO:     172.18.0.1:42072 - "GET /api/v1/scopes/ HTTP/1.1" 200 OK
-INFO:     172.18.0.1:56440 - "GET /api/v1/dashboard/port-stats HTTP/1.1" 200 OK
-INFO:     172.18.0.1:37450 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
-INFO:     172.18.0.1:56416 - "GET /api/v1/scopes/ HTTP/1.1" 200 OK
-INFO:     172.18.0.1:56442 - "GET /api/v1/dashboard/port-stats HTTP/1.1" 200 OK
-INFO:     172.18.0.1:42072 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
-INFO:     172.18.0.1:56442 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 426, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 84, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
-    await super().__call__(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 93, in __call__
-    await self.simple_response(scope, receive, send, request_headers=headers)
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/cors.py", line 148, in simple_response
-    await self.app(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    await app(scope, receive, sender)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
-    await route.handle(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
-    await self.app(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
-    raise exc
-  File "/usr/local/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    await app(scope, receive, sender)
-  File "/usr/local/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
-    response = await func(request)
-               ^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/fastapi/routing.py", line 193, in run_endpoint_function
-    return await run_in_threadpool(dependant.call, **values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/starlette/concurrency.py", line 42, in run_in_threadpool
-INFO:     172.18.0.1:56400 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
-    return await anyio.to_thread.run_sync(func, *args)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/to_thread.py", line 56, in run_sync
-    return await get_async_backend().run_sync_in_worker_thread(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 2476, in run_sync_in_worker_thread
-    return await future
-           ^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 967, in run
-    result = context.run(func, *args)
-             ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/app/app/api/v1/endpoints/scans.py", line 37, in get_scans
-    results = scans_query.all()
-              ^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2693, in all
-    return self._iter().all()  # type: ignore
-           ^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/query.py", line 2847, in _iter
-    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
-                                                  ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2308, in execute
-    return self._execute_internal(
-           ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2190, in _execute_internal
-    result: Result[Any] = compile_state_cls.orm_execute_statement(
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 293, in orm_execute_statement
-    result = conn.execute(
-             ^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
-    return meth(
-           ^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 516, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1631, in _execute_clauseelement
-    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
-                                                ^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 704, in _compile_w_cache
-    compiled_sql = self._compiler(
-                   ^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 316, in _compiler
-    return dialect.statement_compiler(dialect, self, **kw)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 1426, in __init__
-    Compiled.__init__(self, dialect, statement, **kwargs)
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 867, in __init__
-    self.string = self.process(self.statement, **compile_kwargs)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 912, in process
-    return obj._compiler_dispatch(self, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/visitors.py", line 143, in _compiler_dispatch
-    return meth(self, **kw)  # type: ignore  # noqa: E501
-           ^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/compiler.py", line 4590, in visit_select
-    compile_state = select_stmt._compile_state_factory(
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/sql/base.py", line 687, in create_for_statement
-    return klass.create_for_statement(statement, compiler, **kw)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1162, in create_for_statement
-    self._setup_for_generate()
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1197, in _setup_for_generate
-    self._join(query._setup_joins, self._entities)
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1834, in _join
-    self._join_left_to_right(
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 1869, in _join_left_to_right
-    ) = self._join_determine_implicit_left_side(
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 2024, in _join_determine_implicit_left_side
-    raise sa_exc.InvalidRequestError(
-sqlalchemy.exc.InvalidRequestError: Can't determine which FROM clause to join from, there are multiple FROMS which can join to this entity. Please use the .select_from() method to establish an explicit left side, as well as providing an explicit ON clause if not present already to help resolve the ambiguity.
-INFO:     172.18.0.1:56430 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
-INFO:     172.18.0.1:37466 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
-INFO:     172.18.0.1:56408 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+fetch('http://10.32.56.174:8000/api/v1/dashboard/stats', {
+  method: 'GET',
+  headers: { 'Content-Type': 'application/json' }
+})
+.then(r => console.log('CORS OK:', r.status))…
+Promise { <state>: "pending" }
 
+XHROPTIONS
+http://10.32.56.174:8000/api/v1/dashboard/stats
+CORS Missing Allow Origin
+
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://10.32.56.174:8000/api/v1/dashboard/stats. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 400.
+
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://10.32.56.174:8000/api/v1/dashboard/stats. (Reason: CORS request did not succeed). Status code: (null).
+
+CORS Error: TypeError: NetworkError when attempting to fetch resource.
+
+└─$ docker exec networkmapper2-backend-1 bash -c 'echo $CORS_ORIGINS'     
+http://localhost:3000,http://10.32.56.174:3000
+
+└─$ docker ps                                                        
+CONTAINER ID   IMAGE                     COMMAND                  CREATED         STATUS         PORTS                                       NAMES
+52df1298c4b7   networkmapper2-frontend   "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   networkmapper2-frontend-1
+b4519c020784   networkmapper2-backend    "uvicorn app.main:ap…"   4 minutes ago   Up 4 minutes   0.0.0.0:8000->8000/tcp, :::8000->8000/tcp   networkmapper2-backend-1
+64e598901028   postgres:15               "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   5432/tcp                                    networkmapper2-db-1
+
+🔍 Backend container is running. Checking logs for CORS origins...
+⚠️  No CORS origins found in backend logs
+
+🔍 Detecting current host IP addresses...
+Method 1 - Default route:
+10.32.56.174
+Method 2 - Hostname -I:
+  10.32.56.174
+Method 3 - All network interfaces:
+  10.32.56.174
+  172.17.0.1
+  192.168.96.1
+
+🔍 Testing API connectivity...
+✅ Backend API is reachable at http://10.32.56.174:8000
+🔍 Testing CORS preflight for file upload...
+❌ CORS preflight failed for http://10.32.56.174:3000 (HTTP 400)
+  This means the origin http://10.32.56.174:3000 is not in the backend's CORS_ORIGINS list
+
+🔍 Suggested fixes:
+🔍 Manual CORS testing:
+1. Open browser developer tools (F12)
+2. Go to Console tab
+3. Run this JavaScript test:
+
+fetch('http://10.32.56.174:8000/api/v1/dashboard/stats', {
+  method: 'GET',
+  headers: { 'Content-Type': 'application/json' }
+})
+.then(r => console.log('CORS OK:', r.status))
+.catch(e => console.log('CORS Error:', e))
+
+🔍 Debug complete!
+
+
+react-dom.development.js:29895 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+deprecations.ts:9 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+warnOnce @ deprecations.ts:9
+deprecations.ts:9 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+warnOnce @ deprecations.ts:9
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/port-stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+Dashboard.tsx:71 Error fetching dashboard data: AxiosError
+fetchData @ Dashboard.tsx:71
+:8000/api/v1/dashboard/port-stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/os-stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/v1/dashboard/os-stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/os-stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+Dashboard.tsx:71 Error fetching dashboard data: AxiosError
+fetchData @ Dashboard.tsx:71
+:8000/api/v1/dashboard/os-stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/port-stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/v1/dashboard/port-stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/v1/dashboard/stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/v1/dashboard/stats:1  Failed to load resource: net::ERR_FAILED
+favicon.ico:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)

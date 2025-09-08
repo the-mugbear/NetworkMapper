@@ -25,7 +25,7 @@ async def upload_scan_file(
     db: Session = Depends(get_db)
 ):
     # Extended allowed extensions for multiple tools
-    allowed_extensions = ['.xml', '.json', '.csv', '.txt']
+    allowed_extensions = ['.xml', '.json', '.csv', '.txt', '.gnmap']
     
     if not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
         raise HTTPException(
@@ -73,6 +73,26 @@ async def upload_scan_file(
             
         elif file.filename.lower().endswith('.txt'):
             parsing_attempts.append(("masscan_list", MasscanParser, "Masscan output file"))
+            
+        elif file.filename.lower().endswith('.gnmap'):
+            # Lazy import to avoid dependency issues at module load time
+            try:
+                from app.parsers.gnmap_parser import GnmapParser
+                parsing_attempts.append(("nmap_gnmap", GnmapParser, "Nmap .gnmap file"))
+            except ImportError as e:
+                logger.warning(f"GnmapParser not available: {str(e)}")
+                parse_error = log_parse_error(
+                    db=db,
+                    filename=file.filename,
+                    file_content=content,
+                    error_type="import_error",
+                    file_type="nmap_gnmap",
+                    custom_message=f"GnmapParser dependencies not available: {str(e)}"
+                )
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Gnmap parser not available. Error ID: {parse_error.id}"
+                )
         
         elif file.filename.lower().endswith('.csv') and ('dns' in file.filename.lower() or 'ptr' in file.filename.lower()):
             # DNS records CSV file
@@ -90,7 +110,7 @@ async def upload_scan_file(
                 file_content=content,
                 error_type="format_error",
                 file_type="unknown",
-                custom_message=f"Unsupported file type or format. Supported formats: Nmap XML, Masscan XML/JSON/List, Eyewitness JSON/CSV, DNS Records CSV"
+                custom_message=f"Unsupported file type or format. Supported formats: Nmap XML/.gnmap, Masscan XML/JSON/List, Eyewitness JSON/CSV, DNS Records CSV"
             )
             raise HTTPException(
                 status_code=400,

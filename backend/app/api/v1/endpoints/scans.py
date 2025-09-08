@@ -57,8 +57,8 @@ def get_scans(
             created_at=result.created_at,
             total_hosts=result.total_hosts or 0,
             up_hosts=result.up_hosts or 0,
-            total_ports=port_stats.total_ports if port_stats else 0,
-            open_ports=port_stats.open_ports if port_stats else 0
+            total_ports=port_stats.total_ports if port_stats and port_stats.total_ports else 0,
+            open_ports=port_stats.open_ports if port_stats and port_stats.open_ports else 0
         ))
     
     return scan_summaries

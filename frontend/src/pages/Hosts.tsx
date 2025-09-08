@@ -17,10 +17,12 @@ import {
   Security as SecurityIcon,
   NetworkCheck as NetworkCheckIcon,
   Storage as StorageIcon,
+  FileDownload as FileDownloadIcon,
 } from '@mui/icons-material';
 import { getHosts, getHostFilterData } from '../services/api';
 import type { Host } from '../services/api';
 import HostFilters, { HostFilterOptions } from '../components/HostFilters';
+import ReportsDialog from '../components/ReportsDialog';
 
 export default function Hosts() {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ export default function Hosts() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<HostFilterOptions>({});
   const [filterData, setFilterData] = useState<any>(null);
+  const [reportsDialogOpen, setReportsDialogOpen] = useState(false);
 
   const fetchHosts = async () => {
     try {
@@ -125,9 +128,19 @@ export default function Hosts() {
         <Typography variant="h4">
           Discovered Hosts
         </Typography>
-        <Badge badgeContent={hosts.length} color="primary" showZero>
-          <ComputerIcon />
-        </Badge>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            onClick={() => setReportsDialogOpen(true)}
+            disabled={loading || hosts.length === 0}
+          >
+            Export Report
+          </Button>
+          <Badge badgeContent={hosts.length} color="primary" showZero>
+            <ComputerIcon />
+          </Badge>
+        </Box>
       </Box>
 
       {/* Advanced Filters */}
@@ -257,6 +270,14 @@ export default function Hosts() {
           })}
         </Grid>
       )}
+
+      {/* Reports Dialog */}
+      <ReportsDialog
+        open={reportsDialogOpen}
+        onClose={() => setReportsDialogOpen(false)}
+        filters={filters}
+        totalHosts={hosts.length}
+      />
     </Box>
   );
 }

@@ -38,6 +38,7 @@ import {
   Search as SearchIcon,
   BookmarkBorder as BookmarkIcon,
   Star as StarIcon,
+  Storage as StorageIcon,
 } from '@mui/icons-material';
 
 export interface HostFilterOptions {
@@ -94,6 +95,45 @@ const COMMON_FILTER_PRESETS = [
   }
 ];
 
+const SERVICE_SEARCH_PRESETS = [
+  {
+    name: 'SSH',
+    icon: <SecurityIcon />,
+    description: 'Search for SSH services',
+    searchTerm: 'ssh'
+  },
+  {
+    name: 'HTTP/Web',
+    icon: <NetworkCheckIcon />,
+    description: 'Search for web services',
+    searchTerm: 'http'
+  },
+  {
+    name: 'SNMP',
+    icon: <NetworkCheckIcon />,
+    description: 'Search for SNMP services',
+    searchTerm: 'snmp'
+  },
+  {
+    name: 'RDP',
+    icon: <ComputerIcon />,
+    description: 'Search for Remote Desktop',
+    searchTerm: 'rdp'
+  },
+  {
+    name: 'FTP',
+    icon: <StorageIcon />,
+    description: 'Search for FTP services',
+    searchTerm: 'ftp'
+  },
+  {
+    name: 'MySQL',
+    icon: <StorageIcon />,
+    description: 'Search for MySQL databases',
+    searchTerm: 'mysql'
+  }
+];
+
 const PORT_STATE_OPTIONS = [
   { value: 'open', label: 'Open', color: 'success' },
   { value: 'closed', label: 'Closed', color: 'default' },
@@ -139,6 +179,10 @@ const HostFilters: React.FC<HostFiltersProps> = ({
 
   const applyPreset = (preset: typeof COMMON_FILTER_PRESETS[0]) => {
     onFiltersChange({ ...filters, ...preset.filters });
+  };
+
+  const applyServiceSearch = (preset: typeof SERVICE_SEARCH_PRESETS[0]) => {
+    onFiltersChange({ ...filters, search: preset.searchTerm });
   };
 
   const getPortOptions = () => {
@@ -207,12 +251,14 @@ const HostFilters: React.FC<HostFiltersProps> = ({
         {/* Quick Search */}
         <TextField
           fullWidth
-          label="Search hosts (IP, hostname, OS)"
+          label="Search hosts"
+          placeholder="Enter IP, hostname, OS, port number, or service name (ssh, http, snmp, etc.)"
           value={filters.search || ''}
           onChange={(e) => handleFilterChange('search', e.target.value)}
           InputProps={{
             startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
           }}
+          helperText="Try: ssh, http, snmp, rdp, ftp, smtp, mysql, web, 22, 80, 443"
           sx={{ mb: 2 }}
         />
 
@@ -221,7 +267,7 @@ const HostFilters: React.FC<HostFiltersProps> = ({
           <Typography variant="subtitle2" gutterBottom>
             Quick Filters
           </Typography>
-          <Box display="flex" gap={1} flexWrap="wrap">
+          <Box display="flex" gap={1} flexWrap="wrap" mb={1}>
             {COMMON_FILTER_PRESETS.map((preset, index) => (
               <Tooltip key={index} title={preset.description}>
                 <Chip
@@ -231,6 +277,25 @@ const HostFilters: React.FC<HostFiltersProps> = ({
                   variant="outlined"
                   size="small"
                   clickable
+                />
+              </Tooltip>
+            ))}
+          </Box>
+          
+          <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+            Service Search
+          </Typography>
+          <Box display="flex" gap={1} flexWrap="wrap">
+            {SERVICE_SEARCH_PRESETS.map((preset, index) => (
+              <Tooltip key={`service-${index}`} title={preset.description}>
+                <Chip
+                  icon={preset.icon}
+                  label={preset.name}
+                  onClick={() => applyServiceSearch(preset)}
+                  variant="outlined"
+                  size="small"
+                  clickable
+                  color="secondary"
                 />
               </Tooltip>
             ))}

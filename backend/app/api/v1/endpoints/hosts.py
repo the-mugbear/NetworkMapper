@@ -6,6 +6,68 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas.schemas import Host
 
+# Common service name to port mappings for enhanced search
+SERVICE_PORT_MAPPINGS = {
+    # Web services
+    'http': [80, 8000, 8080, 8081, 8008, 8888],
+    'https': [443, 8443, 8444],
+    'web': [80, 443, 8000, 8080, 8081, 8008, 8443, 8444, 8888],
+    
+    # Remote access
+    'ssh': [22],
+    'telnet': [23],
+    'rdp': [3389],
+    'vnc': [5900, 5901, 5902, 5903, 5904, 5905],
+    
+    # File transfer
+    'ftp': [21, 20],
+    'sftp': [22],  # Usually runs over SSH
+    'ftps': [990, 989],
+    'tftp': [69],
+    
+    # Email
+    'smtp': [25, 587, 465],
+    'pop3': [110, 995],
+    'imap': [143, 993],
+    'mail': [25, 110, 143, 587, 465, 995, 993],
+    
+    # DNS
+    'dns': [53],
+    
+    # Network management
+    'snmp': [161, 162],
+    'ntp': [123],
+    'syslog': [514],
+    
+    # Databases
+    'mysql': [3306],
+    'postgresql': [5432],
+    'postgres': [5432],
+    'mssql': [1433],
+    'sqlserver': [1433],
+    'oracle': [1521],
+    'mongodb': [27017],
+    'redis': [6379],
+    
+    # Windows services
+    'netbios': [137, 138, 139],
+    'smb': [445, 139],
+    'cifs': [445],
+    'winrm': [5985, 5986],
+    'rpc': [135],
+    'ldap': [389, 636],
+    'kerberos': [88],
+    
+    # Other common services
+    'dhcp': [67, 68],
+    'printer': [515, 631, 9100],
+    'ipp': [631],
+    'upnp': [1900],
+    'sip': [5060, 5061],
+    'rtsp': [554],
+    'irc': [6667, 6697],
+}
+
 router = APIRouter()
 
 @router.get("/", response_model=List[Host])
@@ -77,16 +139,48 @@ def get_hosts(
             subquery = db.query(models.Host.id).join(models.Port).filter(models.Port.state == 'open')
             query = query.filter(~models.Host.id.in_(subquery))
     
-    # Search functionality
+    # Search functionality - enhanced to include ports and services
     if search:
-        query = query.filter(
-            or_(
-                models.Host.ip_address.contains(search),
-                models.Host.hostname.contains(search),
-                models.Host.os_name.contains(search),
-                models.Host.os_family.contains(search)
-            )
-        )
+        search_conditions = [
+            models.Host.ip_address.contains(search),
+            models.Host.hostname.contains(search),
+            models.Host.os_name.contains(search),
+            models.Host.os_family.contains(search)
+        ]
+        
+        search_lower = search.lower().strip()
+        
+        # Check if search term is numeric (could be a port number)
+        if search.isdigit():
+            # Join with ports table if not already joined for port number search
+            if not needs_port_join:
+                query = query.join(models.Port, models.Host.id == models.Port.host_id)
+            search_conditions.append(models.Port.port_number == int(search))
+        
+        # Check if search term matches a known service name
+        service_ports = SERVICE_PORT_MAPPINGS.get(search_lower)
+        port_join_needed = False
+        
+        if service_ports:
+            # Join with ports table if not already joined
+            if not needs_port_join:
+                query = query.join(models.Port, models.Host.id == models.Port.host_id)
+                port_join_needed = True
+            # Add condition to search for any of the mapped ports
+            search_conditions.append(models.Port.port_number.in_(service_ports))
+        
+        # Check if search term could be a service name (for partial matches or unmapped services)
+        if not search.isdigit():
+            # Join with ports table if not already joined for service search
+            if not needs_port_join and not port_join_needed:
+                query = query.join(models.Port, models.Host.id == models.Port.host_id, isouter=True)
+            
+            search_conditions.extend([
+                models.Port.service_name.ilike(f'%{search}%'),
+                models.Port.service_product.ilike(f'%{search}%')
+            ])
+        
+        query = query.filter(or_(*search_conditions))
     
     hosts = query.offset(skip).limit(limit).all()
     return hosts

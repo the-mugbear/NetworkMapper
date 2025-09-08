@@ -449,4 +449,44 @@ export const getParseErrorStats = async (): Promise<{
   return response.data;
 };
 
+// Reports API
+export const generateHostsReport = async (
+  format: 'csv' | 'html' | 'json',
+  filters: {
+    scan_id?: number;
+    state?: string;
+    search?: string;
+    ports?: string;
+    services?: string;
+    port_states?: string;
+    has_open_ports?: boolean;
+    os_filter?: string;
+  }
+) => {
+  const queryParams = new URLSearchParams();
+  
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined) {
+      queryParams.append(key, value.toString());
+    }
+  });
+  
+  const response = await api.get(`/reports/hosts/${format}?${queryParams}`, {
+    responseType: 'blob'
+  });
+  
+  // Create download
+  const blob = new Blob([response.data]);
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `hosts_report_${new Date().toISOString().split('T')[0]}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  
+  return response.data;
+};
+
 export default api;

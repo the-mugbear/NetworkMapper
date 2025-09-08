@@ -42,17 +42,28 @@ fi
 print_info "Stopping and removing all containers..."
 docker-compose down --remove-orphans
 
-# Remove old images to force fresh build (prevents stale data issues)
-print_info "Removing old container images to prevent stale data..."
-docker-compose down --rmi local --remove-orphans || true
+# Aggressive cache busting - remove ALL related images and caches
+print_info "Performing aggressive cache cleanup to prevent stale code..."
 
-# Clean up any dangling images and containers
-print_info "Cleaning up Docker system..."
-docker system prune -f
+# Remove all NetworkMapper images (including intermediate layers)
+docker images | grep -E "(networkmapper|networkMapper)" | awk '{print $3}' | xargs -r docker rmi -f || true
 
-# Load environment variables and build/start containers with clean slate
-print_info "Building and starting containers with network configuration..."
-docker-compose --env-file .env.network up --build --force-recreate -d
+# Remove all unused images, containers, networks, and build cache
+print_info "Cleaning Docker build cache and unused resources..."
+docker system prune -a -f --volumes
+
+# Remove Docker build cache entirely
+print_info "Clearing Docker buildx cache..."
+docker builder prune -a -f || true
+
+# Load environment variables and build with no-cache flag and cache-busting
+print_info "Building containers with NO CACHE to ensure fresh code..."
+CACHE_BUST_VALUE=$(date +%s)
+print_info "Using cache-bust value: $CACHE_BUST_VALUE"
+
+docker-compose --env-file .env.network build --no-cache --pull \
+    --build-arg CACHE_BUST=$CACHE_BUST_VALUE
+docker-compose --env-file .env.network up --force-recreate -d
 
 # Wait a moment for containers to start
 print_info "Waiting for containers to start..."
@@ -67,12 +78,37 @@ print_info "Verifying backend CORS configuration..."
 sleep 5
 docker-compose logs backend | grep "CORS origins" | tail -1 || echo "⚠️  CORS logging not found"
 
-# Test API connectivity
-print_info "Testing API connectivity..."
+# Test API connectivity and verify version
+print_info "Testing API connectivity and verifying version..."
 if curl -s "http://$CONFIGURED_IP:8000/health" > /dev/null; then
     print_success "Backend API is responding"
+    
+    # Verify backend version
+    API_VERSION=$(curl -s "http://$CONFIGURED_IP:8000/" 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+    if [[ "$API_VERSION" == "1.1.0" ]]; then
+        print_success "Backend version verified: $API_VERSION"
+    else
+        print_error "Backend version mismatch! Expected 1.1.0, got: $API_VERSION"
+        print_warning "This indicates Docker cache issues - code may not be updated"
+    fi
 else
     print_error "Backend API is not responding"
+fi
+
+# Test frontend and check for .gnmap support
+print_info "Verifying frontend deployment..."
+if curl -s "http://$CONFIGURED_IP:3000" > /dev/null; then
+    print_success "Frontend is responding"
+    
+    # Check if frontend contains .gnmap support
+    FRONTEND_CONTENT=$(curl -s "http://$CONFIGURED_IP:3000" 2>/dev/null || echo "")
+    if echo "$FRONTEND_CONTENT" | grep -q "gnmap"; then
+        print_success "Frontend contains .gnmap support"
+    else
+        print_warning "Frontend may not have .gnmap support - possible cache issue"
+    fi
+else
+    print_error "Frontend is not responding"
 fi
 
 echo ""

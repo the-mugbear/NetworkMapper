@@ -8,11 +8,14 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Cache-busting argument
+ARG CACHE_BUST=default_value
+
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code (cache-busted)
 COPY . .
 
 # Create uploads directory

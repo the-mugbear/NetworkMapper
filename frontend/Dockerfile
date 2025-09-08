@@ -5,6 +5,9 @@ WORKDIR /app
 # Install git for version info
 RUN apk add --no-cache git
 
+# Cache-busting argument
+ARG CACHE_BUST=default_value
+
 # Copy package files
 COPY package*.json ./
 COPY generate-build-info.js ./
@@ -12,7 +15,7 @@ COPY generate-build-info.js ./
 # Install dependencies
 RUN npm install
 
-# Copy source code
+# Copy source code (cache-busted)
 COPY . .
 
 # Generate build info

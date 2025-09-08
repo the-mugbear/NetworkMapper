@@ -51,7 +51,7 @@ export default function Upload() {
       'application/xml': ['.xml'],
       'application/json': ['.json'],
       'text/csv': ['.csv'],
-      'text/plain': ['.txt'],
+      'text/plain': ['.txt', '.gnmap'],
     },
     maxFiles: 1,
     disabled: uploading,
@@ -97,7 +97,7 @@ export default function Upload() {
               {isDragActive ? 'Drop the file here' : 'Drag & drop a scan file here, or click to select'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Supported formats: .xml (Nmap/Masscan), .json (Masscan/Eyewitness), .csv (Eyewitness), .txt (Masscan)
+              Supported formats: .xml (Nmap/Masscan), .gnmap (Nmap), .json (Masscan/Eyewitness), .csv (Eyewitness), .txt (Masscan)
             </Typography>
             <Button variant="outlined" sx={{ mt: 2 }}>
               Select File
@@ -135,7 +135,8 @@ export default function Upload() {
         </Typography>
         <Typography variant="body2" component="div">
           <ol>
-            <li><strong>Nmap:</strong> <code>nmap -oX scan.xml target</code></li>
+            <li><strong>Nmap XML:</strong> <code>nmap -oX scan.xml target</code></li>
+            <li><strong>Nmap Grepable:</strong> <code>nmap -oG scan.gnmap target</code></li>
             <li><strong>Masscan:</strong> <code>masscan -p1-65535 --rate 1000 -oX scan.xml target</code></li>
             <li><strong>Eyewitness:</strong> Use the CSV or JSON export from EyeWitness reports</li>
             <li>Upload the generated file using the form above</li>

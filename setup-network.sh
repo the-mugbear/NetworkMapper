@@ -38,21 +38,42 @@ if [[ -z "$CONFIGURED_IP" ]]; then
     exit 1
 fi
 
-# Stop current containers
-print_info "Stopping current containers..."
-docker-compose down
+# Stop and remove all containers, networks, and volumes
+print_info "Stopping and removing all containers..."
+docker-compose down --remove-orphans
 
-# Load environment variables and start containers  
-print_info "Starting containers with network configuration..."
-docker-compose --env-file .env.network up -d
+# Remove old images to force fresh build (prevents stale data issues)
+print_info "Removing old container images to prevent stale data..."
+docker-compose down --rmi local --remove-orphans || true
+
+# Clean up any dangling images and containers
+print_info "Cleaning up Docker system..."
+docker system prune -f
+
+# Load environment variables and build/start containers with clean slate
+print_info "Building and starting containers with network configuration..."
+docker-compose --env-file .env.network up --build --force-recreate -d
 
 # Wait a moment for containers to start
 print_info "Waiting for containers to start..."
-sleep 10
+sleep 15
 
 # Check container status
 print_info "Container Status:"
 docker-compose ps
+
+# Verify backend is running with correct CORS settings
+print_info "Verifying backend CORS configuration..."
+sleep 5
+docker-compose logs backend | grep "CORS origins" | tail -1 || echo "⚠️  CORS logging not found"
+
+# Test API connectivity
+print_info "Testing API connectivity..."
+if curl -s "http://$CONFIGURED_IP:8000/health" > /dev/null; then
+    print_success "Backend API is responding"
+else
+    print_error "Backend API is not responding"
+fi
 
 echo ""
 print_success "NetworkMapper is now accessible on the network!"

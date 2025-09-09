@@ -147,22 +147,45 @@ class GnmapParser:
 
     def _parse_hosts(self, lines: List[str]) -> List[Dict[str, Any]]:
         """Parse host data from .gnmap lines"""
-        hosts_data = []
+        hosts_data = {}  # Use dict to merge status and port lines by IP
         
         for line in lines:
             line = line.strip()
             
             # Skip comments and empty lines
-            if line.startswith('#') or not line:
+            if line.startswith('#') or not line or line.startswith('Nmap') or line.startswith('Ports scanned'):
                 continue
                 
             # Parse Host lines
             if line.startswith('Host:'):
                 host_data = self._parse_host_line(line)
                 if host_data:
-                    hosts_data.append(host_data)
+                    ip = host_data['ip_address']
+                    
+                    # Merge with existing host data or create new
+                    if ip in hosts_data:
+                        # Merge data - prefer non-empty values
+                        existing = hosts_data[ip]
+                        existing['hostname'] = existing.get('hostname') or host_data.get('hostname')
+                        # Prefer actual state over 'unknown'
+                        if host_data.get('state') and host_data['state'] != 'unknown':
+                            existing['state'] = host_data['state']
+                        elif not existing.get('state') or existing['state'] == 'unknown':
+                            existing['state'] = host_data.get('state', 'unknown')
+                        existing['state_reason'] = host_data.get('state_reason') or existing.get('state_reason', '')
+                        if host_data.get('ports'):
+                            existing['ports'] = host_data['ports']
+                    else:
+                        hosts_data[ip] = host_data
         
-        return hosts_data
+        # Convert dict back to list and filter out down hosts with no ports
+        result = []
+        for host_data in hosts_data.values():
+            # Only include hosts that are up or have port data
+            if host_data.get('state') == 'up' or host_data.get('ports'):
+                result.append(host_data)
+        
+        return result
 
     def _parse_host_line(self, line: str) -> Optional[Dict[str, Any]]:
         """Parse a single Host: line from .gnmap format"""
@@ -200,9 +223,7 @@ class GnmapParser:
                     if ports_info:
                         ports_data = self._parse_ports_info(ports_info)
             
-            # Skip hosts with no meaningful data (down hosts with no ports)
-            if state == 'down' or (state not in ['up'] and not ports_data):
-                return None
+            # Don't skip here - let the merge logic handle filtering
             
             return {
                 'ip_address': ip_address,

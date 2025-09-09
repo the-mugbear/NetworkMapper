@@ -43,18 +43,30 @@ print_info "Stopping and removing all containers..."
 docker-compose down --remove-orphans
 
 # Aggressive cache busting - remove ALL related images and caches
-print_info "Performing aggressive cache cleanup to prevent stale code..."
+print_info "Performing NUCLEAR cache cleanup to prevent stale code..."
 
-# Remove all NetworkMapper images (including intermediate layers)
+# Stop and remove everything related to the project
+docker-compose down --remove-orphans --volumes
+
+# Remove all NetworkMapper images (including intermediate layers and base images)
+print_info "Removing ALL NetworkMapper-related images..."
 docker images | grep -E "(networkmapper|networkMapper)" | awk '{print $3}' | xargs -r docker rmi -f || true
 
-# Remove all unused images, containers, networks, and build cache
-print_info "Cleaning Docker build cache and unused resources..."
+# Remove ALL dangling and unused images
+print_info "Removing ALL unused Docker resources..."
 docker system prune -a -f --volumes
 
-# Remove Docker build cache entirely
-print_info "Clearing Docker buildx cache..."
+# Remove Docker build cache entirely (multiple attempts)
+print_info "Clearing ALL Docker build caches..."
 docker builder prune -a -f || true
+
+# Remove any remaining build cache with buildkit
+print_info "Clearing buildkit cache..."
+docker buildx prune -a -f || true
+
+# Force removal of any cached layers by touching Dockerfiles
+print_info "Invalidating Dockerfile cache by updating timestamps..."
+touch frontend/Dockerfile backend/Dockerfile
 
 # Load environment variables and build with no-cache flag and cache-busting
 print_info "Building containers with NO CACHE to ensure fresh code..."
@@ -85,11 +97,12 @@ if curl -s "http://$CONFIGURED_IP:8000/health" > /dev/null; then
     
     # Verify backend version
     API_VERSION=$(curl -s "http://$CONFIGURED_IP:8000/" 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-    if [[ "$API_VERSION" == "1.1.0" ]]; then
+    if [[ "$API_VERSION" == "1.2.0" ]]; then
         print_success "Backend version verified: $API_VERSION"
     else
-        print_error "Backend version mismatch! Expected 1.1.0, got: $API_VERSION"
-        print_warning "This indicates Docker cache issues - code may not be updated"
+        print_error "Backend version mismatch! Expected 1.2.0, got: $API_VERSION"
+        print_error "This indicates Docker cache issues - code may not be updated"
+        print_info "Try running: docker system prune -a -f && docker builder prune -a -f"
     fi
 else
     print_error "Backend API is not responding"
@@ -100,12 +113,21 @@ print_info "Verifying frontend deployment..."
 if curl -s "http://$CONFIGURED_IP:3000" > /dev/null; then
     print_success "Frontend is responding"
     
-    # Check if frontend contains .gnmap support
+    # Check frontend version in footer
     FRONTEND_CONTENT=$(curl -s "http://$CONFIGURED_IP:3000" 2>/dev/null || echo "")
+    if echo "$FRONTEND_CONTENT" | grep -q "1\.4\.0"; then
+        print_success "Frontend version verified: 1.4.0"
+    else
+        print_error "Frontend version not found or incorrect - expected 1.4.0"
+        print_error "This indicates Docker cache issues - frontend code may not be updated"
+    fi
+    
+    # Check if frontend contains .gnmap support
     if echo "$FRONTEND_CONTENT" | grep -q "gnmap"; then
         print_success "Frontend contains .gnmap support"
     else
-        print_warning "Frontend may not have .gnmap support - possible cache issue"
+        print_error "Frontend missing .gnmap support - Docker cache issue detected"
+        print_info "Frontend code is not properly updated"
     fi
 else
     print_error "Frontend is not responding"

@@ -15,6 +15,9 @@ ARG CACHE_BUST=default_value
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Use cache-bust to invalidate layers
+RUN echo "Cache bust: $CACHE_BUST" > /tmp/cache_bust.txt
+
 # Copy application code (cache-busted)
 COPY . .
 

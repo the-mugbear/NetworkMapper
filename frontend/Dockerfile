@@ -15,6 +15,9 @@ COPY generate-build-info.js ./
 # Install dependencies
 RUN npm install
 
+# Use cache-bust to invalidate layers
+RUN echo "Cache bust: $CACHE_BUST" > /tmp/cache_bust.txt
+
 # Copy source code (cache-busted)
 COPY . .
 

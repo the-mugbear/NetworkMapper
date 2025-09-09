@@ -23,6 +23,7 @@ import {
   Assessment as ScansIcon,
   NetworkCheck as ScopesIcon,
   Error as ErrorIcon,
+  Security as SecurityIcon,
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
 } from '@mui/icons-material';
@@ -39,6 +40,7 @@ const menuItems = [
   { text: 'Scans', icon: <ScansIcon />, path: '/scans' },
   { text: 'Hosts', icon: <HostsIcon />, path: '/hosts' },
   { text: 'Scopes', icon: <ScopesIcon />, path: '/scopes' },
+  { text: 'Risk Assessment', icon: <SecurityIcon />, path: '/risk-assessment' },
   { text: 'Parse Errors', icon: <ErrorIcon />, path: '/parse-errors' },
 ];
 

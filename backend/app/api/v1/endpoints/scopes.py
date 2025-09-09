@@ -1,7 +1,7 @@
 import os
 import tempfile
-from typing import List
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
+from typing import List, Optional
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.db.session import get_db
@@ -98,11 +98,40 @@ def get_scopes(db: Session = Depends(get_db)):
     ]
 
 @router.get("/{scope_id}", response_model=ScopeSchema)
-def get_scope(scope_id: int, db: Session = Depends(get_db)):
-    """Get a specific scope with all its subnets."""
+def get_scope(
+    scope_id: int, 
+    with_findings_only: Optional[bool] = Query(True, description="Only show subnets with correlated host findings"),
+    db: Session = Depends(get_db)
+):
+    """Get a specific scope with its subnets, optionally filtered by findings."""
     scope = db.query(Scope).filter(Scope.id == scope_id).first()
     if not scope:
         raise HTTPException(status_code=404, detail="Scope not found")
+    
+    # If filtering by findings, modify the subnets to only include those with host mappings
+    if with_findings_only:
+        # Get subnets that have at least one host mapping
+        scope_dict = {
+            "id": scope.id,
+            "name": scope.name,
+            "description": scope.description,
+            "created_at": scope.created_at,
+            "updated_at": scope.updated_at,
+            "subnets": []
+        }
+        
+        # Query subnets with host counts
+        subnets_with_hosts = db.query(
+            Subnet,
+            func.count(HostSubnetMapping.id).label('host_count')
+        ).outerjoin(HostSubnetMapping).filter(
+            Subnet.scope_id == scope_id
+        ).group_by(Subnet.id).having(
+            func.count(HostSubnetMapping.id) > 0
+        ).all()
+        
+        scope_dict["subnets"] = [subnet for subnet, _ in subnets_with_hosts]
+        return scope_dict
     
     return scope
 

@@ -1,4 +1,5 @@
 from typing import List, Optional
+import ipaddress
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, and_, distinct, func
@@ -80,6 +81,7 @@ def get_hosts(
     port_states: Optional[str] = Query(None, description="Comma-separated list of port states (e.g., 'open,closed')"),
     has_open_ports: Optional[bool] = Query(None, description="Filter hosts that have any open ports"),
     os_filter: Optional[str] = Query(None, description="Filter by operating system"),
+    subnet: Optional[str] = Query(None, description="Filter by subnet CIDR (e.g., '192.168.1.0/24')"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db)
@@ -111,6 +113,32 @@ def get_hosts(
                 models.Host.os_family.ilike(f'%{os_filter}%')
             )
         )
+    
+    # Filter by subnet if provided
+    if subnet:
+        try:
+            # Parse the subnet CIDR notation
+            network = ipaddress.ip_network(subnet, strict=False)
+            
+            # Get all IP addresses in the network range
+            ip_conditions = []
+            for host_ip in network.hosts():
+                ip_conditions.append(models.Host.ip_address == str(host_ip))
+            
+            # For small networks, use direct IP matching
+            # For large networks, use prefix matching
+            if network.num_addresses <= 1000:
+                if ip_conditions:
+                    query = query.filter(or_(*ip_conditions))
+            else:
+                # For larger networks, use prefix matching as fallback
+                network_prefix = str(network.network_address)
+                prefix_len = len(network_prefix.split('.')[0])  # Basic IPv4 prefix matching
+                query = query.filter(models.Host.ip_address.like(f'{network_prefix.split(".")[0]}.%'))
+                
+        except (ipaddress.AddressValueError, ValueError):
+            # If subnet parsing fails, try to use it as a simple IP prefix
+            query = query.filter(models.Host.ip_address.like(f'{subnet}%'))
     
     # Port-based filters
     if ports:

@@ -12,6 +12,7 @@ import HostDetail from './pages/HostDetail';
 import Scopes from './pages/Scopes';
 import ScopeDetail from './pages/ScopeDetail';
 import ParseErrors from './pages/ParseErrors';
+import RiskAssessment from './pages/RiskAssessment';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
             <Route path="/scopes" element={<Scopes />} />
             <Route path="/scopes/:scopeId" element={<ScopeDetail />} />
             <Route path="/parse-errors" element={<ParseErrors />} />
+            <Route path="/risk-assessment" element={<RiskAssessment />} />
           </Routes>
         </Layout>
         <VersionFooter />

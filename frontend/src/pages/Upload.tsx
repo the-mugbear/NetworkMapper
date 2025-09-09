@@ -22,10 +22,15 @@ export default function Upload() {
   const [success, setSuccess] = useState<string | null>(null);
   const [enrichDns, setEnrichDns] = useState(false);
 
-  const onDrop = async (acceptedFiles: File[]) => {
+  const onDrop = async (acceptedFiles: File[], rejectedFiles: any[]) => {
+    console.log('onDrop called:', { acceptedFiles, rejectedFiles });
     const file = acceptedFiles[0];
-    if (!file) return;
+    if (!file) {
+      console.log('No accepted file');
+      return;
+    }
 
+    console.log('File details:', { name: file.name, type: file.type, size: file.size });
     setUploading(true);
     setError(null);
     setSuccess(null);
@@ -46,15 +51,9 @@ export default function Upload() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'text/xml': ['.xml'],
-      'application/xml': ['.xml'],
-      'application/json': ['.json'],
-      'text/csv': ['.csv'],
-      'text/plain': ['.txt', '.gnmap'],
-      'application/octet-stream': ['.gnmap'],
-      '*/*': ['.gnmap']
-    },
+    onDragEnter: () => console.log('Drag enter'),
+    onDragOver: () => console.log('Drag over'), 
+    onDragLeave: () => console.log('Drag leave'),
     maxFiles: 1,
     disabled: uploading,
   });

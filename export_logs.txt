@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
   Solution for the remote host:
 
   1. Rebuild the backend container to ensure latest code:
@@ -18,3 +19,88 @@
   docker-compose --env-file .env.network build --no-cache backend
   docker-compose --env-file .env.network up -d
   docker-compose logs backend | grep "CORS origins"
+=======
+fetch('http://10.32.56.174:8000/api/v1/dashboard/stats', {
+  method: 'GET',
+  headers: { 'Content-Type': 'application/json' }
+})
+.then(r => console.log('CORS OK:', r.status))…
+Promise { <state>: "pending" }
+
+XHROPTIONS
+http://10.32.56.174:8000/api/v1/dashboard/stats
+CORS Missing Allow Origin
+
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://10.32.56.174:8000/api/v1/dashboard/stats. (Reason: CORS header ‘Access-Control-Allow-Origin’ missing). Status code: 400.
+
+Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at http://10.32.56.174:8000/api/v1/dashboard/stats. (Reason: CORS request did not succeed). Status code: (null).
+
+CORS Error: TypeError: NetworkError when attempting to fetch resource.
+
+└─$ docker exec networkmapper2-backend-1 bash -c 'echo $CORS_ORIGINS'     
+http://localhost:3000,http://10.32.56.174:3000
+
+└─$ docker ps                                                        
+CONTAINER ID   IMAGE                     COMMAND                  CREATED         STATUS         PORTS                                       NAMES
+52df1298c4b7   networkmapper2-frontend   "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   0.0.0.0:3000->3000/tcp, :::3000->3000/tcp   networkmapper2-frontend-1
+b4519c020784   networkmapper2-backend    "uvicorn app.main:ap…"   4 minutes ago   Up 4 minutes   0.0.0.0:8000->8000/tcp, :::8000->8000/tcp   networkmapper2-backend-1
+64e598901028   postgres:15               "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   5432/tcp                                    networkmapper2-db-1
+
+🔍 Backend container is running. Checking logs for CORS origins...
+⚠️  No CORS origins found in backend logs
+
+🔍 Detecting current host IP addresses...
+Method 1 - Default route:
+10.32.56.174
+Method 2 - Hostname -I:
+  10.32.56.174
+Method 3 - All network interfaces:
+  10.32.56.174
+  172.17.0.1
+  192.168.96.1
+
+🔍 Testing API connectivity...
+✅ Backend API is reachable at http://10.32.56.174:8000
+🔍 Testing CORS preflight for file upload...
+❌ CORS preflight failed for http://10.32.56.174:3000 (HTTP 400)
+  This means the origin http://10.32.56.174:3000 is not in the backend's CORS_ORIGINS list
+
+🔍 Suggested fixes:
+🔍 Manual CORS testing:
+1. Open browser developer tools (F12)
+2. Go to Console tab
+3. Run this JavaScript test:
+
+fetch('http://10.32.56.174:8000/api/v1/dashboard/stats', {
+  method: 'GET',
+  headers: { 'Content-Type': 'application/json' }
+})
+.then(r => console.log('CORS OK:', r.status))
+.catch(e => console.log('CORS Error:', e))
+
+🔍 Debug complete!
+
+
+react-dom.development.js:29895 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+deprecations.ts:9 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+warnOnce @ deprecations.ts:9
+deprecations.ts:9 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+warnOnce @ deprecations.ts:9
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/port-stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+Dashboard.tsx:71 Error fetching dashboard data: AxiosError
+fetchData @ Dashboard.tsx:71
+:8000/api/v1/dashboard/port-stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/os-stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/v1/dashboard/os-stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/os-stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+Dashboard.tsx:71 Error fetching dashboard data: AxiosError
+fetchData @ Dashboard.tsx:71
+:8000/api/v1/dashboard/os-stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/port-stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/v1/dashboard/port-stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/v1/dashboard/stats:1  Failed to load resource: net::ERR_FAILED
+dashboard:1 Access to XMLHttpRequest at 'http://10.32.56.174:8000/api/v1/dashboard/stats' from origin 'http://10.32.56.174:3000' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+:8000/api/v1/dashboard/stats:1  Failed to load resource: net::ERR_FAILED
+favicon.ico:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+>>>>>>> Stashed changes

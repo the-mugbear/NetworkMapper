@@ -2,10 +2,19 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Read version from package.json
+let packageVersion = '1.0.0';
+try {
+  const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+  packageVersion = packageJson.version;
+} catch (error) {
+  console.warn('Could not read package.json version:', error.message);
+}
+
 // Generate build information
 const buildInfo = {
   BUILD_TIME: new Date().toISOString(),
-  VERSION: '1.0.0',
+  VERSION: packageVersion,
   GIT_COMMIT: 'unknown'
 };
 

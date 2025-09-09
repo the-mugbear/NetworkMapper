@@ -27,5 +27,15 @@ RUN node generate-build-info.js
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Clear any cached builds and node modules
+RUN rm -rf node_modules/.cache || true
+RUN rm -rf build || true
+
+# Build the application for production
+RUN npm run build
+
+# Install serve to serve the production build
+RUN npm install -g serve
+
+# Start the application in production mode
+CMD ["serve", "-s", "build", "-l", "3000"]

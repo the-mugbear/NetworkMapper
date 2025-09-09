@@ -1,6 +1,6 @@
 {
   "name": "networkMapper-frontend",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "dependencies": {
     "@mui/material": "^5.14.20",

@@ -52,6 +52,8 @@ export default function Upload() {
       'application/json': ['.json'],
       'text/csv': ['.csv'],
       'text/plain': ['.txt', '.gnmap'],
+      'application/octet-stream': ['.gnmap'],
+      '*/*': ['.gnmap']
     },
     maxFiles: 1,
     disabled: uploading,

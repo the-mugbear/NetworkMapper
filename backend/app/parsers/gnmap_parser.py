@@ -71,6 +71,7 @@ class GnmapParser:
         # Bulk process hosts
         start_time = time.time()
         hosts_db_data, ports_db_data = self._prepare_bulk_data(hosts_data, scan.id)
+        hosts_processed = len(hosts_db_data)
         
         # Bulk insert hosts
         if hosts_db_data:
@@ -95,7 +96,7 @@ class GnmapParser:
                 self.db.bulk_insert_mappings(models.Port, ports_db_data)
         
         # Commit all parsed data at once
-        logger.info(f"Committing all parsed data to database ({len(hosts_db_data)} hosts processed)")
+        logger.info(f"Committing all parsed data to database ({hosts_processed} hosts processed)")
         self.db.commit()
         
         # Correlate hosts to subnets
@@ -109,7 +110,7 @@ class GnmapParser:
             logger.warning(f"Failed to correlate hosts to subnets for scan {scan.id}: {str(e)}")
             
         total_time = time.time() - start_time
-        logger.info(f"Completed parsing {filename}: {hosts_parsed}/{total_hosts} hosts in {total_time:.2f} seconds")
+        logger.info(f"Completed parsing {filename}: {hosts_processed}/{total_hosts} hosts in {total_time:.2f} seconds")
         return scan
 
     def _extract_scan_info(self, lines: List[str]) -> Dict[str, Any]:

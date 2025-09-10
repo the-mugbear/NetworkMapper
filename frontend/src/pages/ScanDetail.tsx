@@ -17,12 +17,16 @@ import {
   Tab,
   Card,
   CardContent,
+  IconButton,
+  Link,
+  Tooltip,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
   Computer as HostIcon,
   Security as PortIcon,
   Terminal as TerminalIcon,
+  OpenInNew as OpenInNewIcon,
 } from '@mui/icons-material';
 import { getScan, getHostsByScan } from '../services/api';
 import type { Host } from '../services/api';
@@ -99,6 +103,20 @@ export default function ScanDetail() {
       case 'filtered': return 'warning';
       default: return 'default';
     }
+  };
+
+  const isWebPort = (portNumber: number): boolean => {
+    return portNumber === 80 || portNumber === 443;
+  };
+
+  const getWebUrl = (ipAddress: string, portNumber: number): string => {
+    const protocol = portNumber === 443 ? 'https' : 'http';
+    const port = (portNumber === 80 || portNumber === 443) ? '' : `:${portNumber}`;
+    return `${protocol}://${ipAddress}${port}`;
+  };
+
+  const handleWebLinkClick = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   if (loading) {
@@ -230,7 +248,20 @@ export default function ScanDetail() {
                     </TableCell>
                     <TableCell>{host.os_name || 'Unknown'}</TableCell>
                     <TableCell>
-                      {host.ports.filter(port => port.state === 'open').length}
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <span>{host.ports.filter(port => port.state === 'open').length}</span>
+                        {host.ports.filter(port => port.state === 'open' && isWebPort(port.port_number)).map(port => (
+                          <Tooltip key={port.id} title={`Open ${getWebUrl(host.ip_address, port.port_number)}`}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleWebLinkClick(getWebUrl(host.ip_address, port.port_number))}
+                              sx={{ color: 'primary.main' }}
+                            >
+                              <OpenInNewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ))}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -257,7 +288,22 @@ export default function ScanDetail() {
                   host.ports.map(port => (
                     <TableRow key={`${host.id}-${port.id}`} hover>
                       <TableCell>{host.ip_address}</TableCell>
-                      <TableCell>{port.port_number}</TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <span>{port.port_number}</span>
+                          {port.state === 'open' && isWebPort(port.port_number) && (
+                            <Tooltip title={`Open ${getWebUrl(host.ip_address, port.port_number)}`}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleWebLinkClick(getWebUrl(host.ip_address, port.port_number))}
+                                sx={{ color: 'primary.main' }}
+                              >
+                                <OpenInNewIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
+                      </TableCell>
                       <TableCell>{port.protocol}</TableCell>
                       <TableCell>
                         <Chip

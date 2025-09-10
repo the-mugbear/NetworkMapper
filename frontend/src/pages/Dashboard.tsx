@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -13,6 +14,7 @@ import {
   TableHead,
   TableRow,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import {
   Chart as ChartJS,
@@ -51,6 +53,7 @@ interface OsStat {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [portStats, setPortStats] = useState<PortStat[]>([]);
   const [osStats, setOsStats] = useState<OsStat[]>([]);
@@ -77,6 +80,11 @@ export default function Dashboard() {
 
     fetchData();
   }, []);
+
+  const handleSubnetClick = (subnet: SubnetStats) => {
+    // Navigate to hosts page with subnet filter
+    navigate(`/hosts?subnets=${encodeURIComponent(subnet.cidr)}`);
+  };
 
   const portChartData = {
     labels: portStats.map(stat => `${stat.port}/${stat.service}`),
@@ -272,7 +280,17 @@ export default function Dashboard() {
                     </TableHead>
                     <TableBody>
                       {stats.subnet_stats.map((subnet: SubnetStats) => (
-                        <TableRow key={subnet.id}>
+                        <Tooltip title="Click to view hosts in this subnet" key={subnet.id}>
+                          <TableRow 
+                            hover
+                            sx={{ 
+                              cursor: 'pointer',
+                              '&:hover': {
+                                backgroundColor: 'action.hover',
+                              }
+                            }}
+                            onClick={() => handleSubnetClick(subnet)}
+                          >
                           <TableCell>
                             <Typography variant="body2" fontFamily="monospace">
                               {subnet.cidr}
@@ -334,7 +352,8 @@ export default function Dashboard() {
                               {subnet.is_private ? 'Private' : 'Public'}
                             </Typography>
                           </TableCell>
-                        </TableRow>
+                          </TableRow>
+                        </Tooltip>
                       ))}
                     </TableBody>
                   </Table>

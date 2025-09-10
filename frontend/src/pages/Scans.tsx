@@ -189,7 +189,7 @@ export default function Scans() {
           Supported formats: Nmap XML, Eyewitness JSON/CSV, Masscan XML/JSON/List
         </Typography>
         
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+        <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1, border: 1, borderColor: 'divider' }}>
           <Tooltip
             title={
               <Box>
@@ -260,10 +260,10 @@ export default function Scans() {
                     control={<Radio size="small" />}
                     label={
                       <Box>
-                        <Typography variant="body2">
+                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                           Use system default DNS servers
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.primary" sx={{ opacity: 0.7 }}>
                           Uses the host system's configured DNS servers (typically 8.8.8.8, 1.1.1.1, or local DNS)
                         </Typography>
                       </Box>
@@ -275,10 +275,10 @@ export default function Scans() {
                     control={<Radio size="small" />}
                     label={
                       <Box>
-                        <Typography variant="body2">
+                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                           Use custom DNS server
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.primary" sx={{ opacity: 0.7 }}>
                           Specify a custom DNS server for lookups (e.g., internal DNS server)
                         </Typography>
                       </Box>

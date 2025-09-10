@@ -12,7 +12,7 @@ router = APIRouter()
 def get_dashboard_stats(db: Session = Depends(get_db)):
     # Get total counts
     total_scans = db.query(func.count(models.Scan.id)).scalar() or 0
-    total_hosts = db.query(func.count(models.Host.id)).scalar() or 0
+    total_hosts = db.query(func.count(func.distinct(models.Host.ip_address))).scalar() or 0
     total_ports = db.query(func.count(models.Port.id)).scalar() or 0
     total_subnets = db.query(func.count(models.Subnet.id)).scalar() or 0
     

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -26,6 +26,7 @@ import ReportsDialog from '../components/ReportsDialog';
 
 export default function Hosts() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [hosts, setHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export default function Hosts() {
       if (filters.portStates?.length) params.port_states = filters.portStates.join(',');
       if (filters.hasOpenPorts !== undefined) params.has_open_ports = filters.hasOpenPorts;
       if (filters.osFilter) params.os_filter = filters.osFilter;
+      if (filters.subnets?.length) params.subnets = filters.subnets.join(',');
       
       const data = await getHosts(params);
       setHosts(data);
@@ -71,6 +73,22 @@ export default function Hosts() {
   useEffect(() => {
     fetchFilterData();
   }, []);
+
+  useEffect(() => {
+    // Parse URL parameters on component mount
+    const urlParams = new URLSearchParams(location.search);
+    const initialFilters: HostFilterOptions = {};
+    
+    // Handle subnet filter from URL
+    const subnetsParam = urlParams.get('subnets');
+    if (subnetsParam) {
+      initialFilters.subnets = [decodeURIComponent(subnetsParam)];
+    }
+    
+    if (Object.keys(initialFilters).length > 0) {
+      setFilters(initialFilters);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     fetchHosts();

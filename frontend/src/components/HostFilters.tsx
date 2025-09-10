@@ -49,6 +49,7 @@ export interface HostFilterOptions {
   portStates?: string[];
   hasOpenPorts?: boolean;
   osFilter?: string;
+  subnets?: string[];
 }
 
 export interface HostFiltersProps {
@@ -58,6 +59,7 @@ export interface HostFiltersProps {
     common_ports: Array<{ port: number; service: string; state: string; count: number }>;
     services: Array<{ name: string; count: number }>;
     operating_systems: Array<{ name: string; count: number }>;
+    subnets: Array<{ cidr: string; scope_name: string; host_count: number }>;
   };
 }
 
@@ -219,6 +221,15 @@ const HostFilters: React.FC<HostFiltersProps> = ({
       label: `${os.name} (${os.count} hosts)`,
       value: os.name,
       count: os.count
+    })) || [];
+  };
+
+  const getSubnetOptions = () => {
+    return availableData?.subnets?.map(subnet => ({
+      label: `${subnet.cidr} - ${subnet.scope_name} (${subnet.host_count} hosts)`,
+      value: subnet.cidr,
+      scope_name: subnet.scope_name,
+      count: subnet.host_count
     })) || [];
   };
 
@@ -468,6 +479,49 @@ const HostFilters: React.FC<HostFiltersProps> = ({
                   }
                   renderInput={(params) => (
                     <TextField {...params} label="Port States" placeholder="Select port states..." />
+                  )}
+                />
+              </Grid>
+
+              {/* Subnets Filter */}
+              <Grid item xs={12} md={6}>
+                <Autocomplete
+                  multiple
+                  size="small"
+                  options={getSubnetOptions()}
+                  value={filters.subnets?.map(s => getSubnetOptions().find(o => o.value === s)).filter(Boolean) || []}
+                  onChange={(_, values) => handleFilterChange('subnets', values.map(v => v?.value))}
+                  getOptionLabel={(option) => option?.label || ''}
+                  renderTags={(tagValue, getTagProps) =>
+                    tagValue.filter(Boolean).map((option, index) => (
+                      <Chip
+                        {...getTagProps({ index })}
+                        key={option?.value}
+                        label={`${option?.value} (${option?.scope_name})`}
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                      />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField {...params} label="Subnets" placeholder="Select subnets..." />
+                  )}
+                  renderOption={(props, option) => (
+                    <li {...props}>
+                      <Box display="flex" alignItems="center" width="100%">
+                        <NetworkCheckIcon sx={{ mr: 1 }} />
+                        <Box>
+                          <Typography>{option?.value}</Typography>
+                          <Typography variant="body2" color="primary">
+                            {option?.scope_name}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {option?.count} hosts
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </li>
                   )}
                 />
               </Grid>

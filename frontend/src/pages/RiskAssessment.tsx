@@ -263,6 +263,98 @@ export default function RiskAssessment() {
           </Paper>
         </Grid>
 
+        {/* Common Ports and Services */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              Common Ports and Services
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell><strong>Port</strong></TableCell>
+                    <TableCell><strong>Service</strong></TableCell>
+                    <TableCell><strong>Description</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>21</TableCell>
+                    <TableCell>FTP</TableCell>
+                    <TableCell>File Transfer Protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>22</TableCell>
+                    <TableCell>SSH</TableCell>
+                    <TableCell>Secure Shell</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>23</TableCell>
+                    <TableCell>Telnet</TableCell>
+                    <TableCell>Remote terminal protocol (insecure)</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>25</TableCell>
+                    <TableCell>SMTP</TableCell>
+                    <TableCell>Simple Mail Transfer Protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>53</TableCell>
+                    <TableCell>DNS</TableCell>
+                    <TableCell>Domain Name System</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>80</TableCell>
+                    <TableCell>HTTP</TableCell>
+                    <TableCell>Hypertext Transfer Protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>110</TableCell>
+                    <TableCell>POP3</TableCell>
+                    <TableCell>Post Office Protocol version 3</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>143</TableCell>
+                    <TableCell>IMAP</TableCell>
+                    <TableCell>Internet Message Access Protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>443</TableCell>
+                    <TableCell>HTTPS</TableCell>
+                    <TableCell>HTTP Secure</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>445</TableCell>
+                    <TableCell>SMB</TableCell>
+                    <TableCell>Server Message Block</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>3306</TableCell>
+                    <TableCell>MySQL</TableCell>
+                    <TableCell>MySQL database</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>3389</TableCell>
+                    <TableCell>RDP</TableCell>
+                    <TableCell>Remote Desktop Protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>5432</TableCell>
+                    <TableCell>PostgreSQL</TableCell>
+                    <TableCell>PostgreSQL database</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>8080</TableCell>
+                    <TableCell>HTTP-alt</TableCell>
+                    <TableCell>Alternate HTTP port</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Grid>
+
         {/* Detailed Risk Examples */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>

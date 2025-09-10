@@ -227,8 +227,11 @@ def get_host(host_id: int, db: Session = Depends(get_db)):
 def get_hosts_by_scan(
     scan_id: int,
     state: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db)
 ):
+    """Get hosts for a specific scan with pagination for performance"""
     query = db.query(models.Host).options(
         selectinload(models.Host.ports).selectinload(models.Port.scripts),
         selectinload(models.Host.host_scripts)
@@ -237,7 +240,10 @@ def get_hosts_by_scan(
     if state:
         query = query.filter(models.Host.state == state)
     
-    hosts = query.all()
+    # Order by IP address for consistent pagination
+    query = query.order_by(models.Host.ip_address)
+    
+    hosts = query.offset(skip).limit(limit).all()
     return hosts
 
 @router.get("/filters/ports")

@@ -22,6 +22,7 @@ router = APIRouter()
 async def upload_scan_file(
     file: UploadFile = File(...),
     enrich_dns: bool = False,
+    dns_server: str = None,
     db: Session = Depends(get_db)
 ):
     # Extended allowed extensions for multiple tools
@@ -156,8 +157,11 @@ async def upload_scan_file(
         
         # Enrich with DNS data if requested
         if enrich_dns and scan:
-            dns_service = DNSService(db)
+            dns_service = DNSService(db, custom_dns_server=dns_server if dns_server else None)
             enriched_count = 0
+            
+            logger.info(f"Starting DNS enrichment for scan {scan.id} with {len(scan.hosts)} hosts"
+                       f" using {'custom DNS server: ' + dns_server if dns_server else 'system default DNS'}")
             
             for host in scan.hosts:
                 try:
@@ -166,10 +170,10 @@ async def upload_scan_file(
                         enriched_count += 1
                 except Exception as e:
                     # Log but don't fail the entire upload
-                    print(f"DNS enrichment failed for host {host.ip_address}: {str(e)}")
+                    logger.warning(f"DNS enrichment failed for host {host.ip_address}: {str(e)}")
             
             if enriched_count > 0:
-                message += f" (DNS enriched {enriched_count} hosts)"
+                message += f" (DNS enriched {enriched_count} hosts using {'custom server: ' + dns_server if dns_server else 'system DNS'})"
         
         return FileUploadResponse(
             message=message,

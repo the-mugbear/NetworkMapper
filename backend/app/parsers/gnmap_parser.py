@@ -68,31 +68,41 @@ class GnmapParser:
         total_hosts = len(hosts_data)
         logger.info(f"Found {total_hosts} hosts to parse")
         
-        # Process hosts with progress logging
-        hosts_parsed = 0
+        # Bulk process hosts
         start_time = time.time()
+        hosts_db_data, ports_db_data = self._prepare_bulk_data(hosts_data, scan.id)
         
-        for i, host_data in enumerate(hosts_data, 1):
-            if i % 100 == 0 or i == 1:
-                elapsed = time.time() - start_time
-                rate = i / elapsed if elapsed > 0 else 0
-                logger.info(f"Processing host {i}/{total_hosts} ({i/total_hosts*100:.1f}%) - Rate: {rate:.1f} hosts/sec")
+        # Bulk insert hosts
+        if hosts_db_data:
+            logger.info(f"Bulk inserting {len(hosts_db_data)} hosts...")
+            self.db.bulk_insert_mappings(models.Host, hosts_db_data)
+            self.db.flush()
             
-            try:
-                self._create_host_record(host_data, scan.id)
-                hosts_parsed += 1
-            except Exception as e:
-                logger.warning(f"Failed to parse host {i}: {str(e)}")
+            # Get host ID mappings
+            host_id_map = {}
+            hosts = self.db.query(models.Host).filter(models.Host.scan_id == scan.id).all()
+            for host in hosts:
+                host_id_map[host.ip_address] = host.id
+            
+            # Update ports data with host IDs
+            for port_data in ports_db_data:
+                port_data['host_id'] = host_id_map[port_data['ip_address']]
+                del port_data['ip_address']
+            
+            # Bulk insert ports
+            if ports_db_data:
+                logger.info(f"Bulk inserting {len(ports_db_data)} ports...")
+                self.db.bulk_insert_mappings(models.Port, ports_db_data)
         
         # Commit all parsed data at once
-        logger.info(f"Committing all parsed data to database ({hosts_parsed} hosts processed)")
+        logger.info(f"Committing all parsed data to database ({len(hosts_db_data)} hosts processed)")
         self.db.commit()
         
         # Correlate hosts to subnets
         logger.info(f"Starting subnet correlation for scan {scan.id}")
         try:
             correlation_start = time.time()
-            mappings_created = self.correlation_service.correlate_scan_hosts_to_subnets(scan.id)
+            mappings_created = self.correlation_service.batch_correlate_scan_hosts_to_subnets(scan.id)
             correlation_time = time.time() - correlation_start
             logger.info(f"Created {mappings_created} host-subnet mappings for scan {scan.id} in {correlation_time:.2f} seconds")
         except Exception as e:
@@ -305,3 +315,33 @@ class GnmapParser:
                 service_version=port_data.get('service_version')
             )
             self.db.add(port)
+
+    def _prepare_bulk_data(self, hosts_data: List[Dict[str, Any]], scan_id: int) -> tuple:
+        """Prepare data for bulk database insertions"""
+        hosts_db_data = []
+        ports_db_data = []
+        
+        for host_data in hosts_data:
+            # Prepare host data
+            host_db_data = {
+                'scan_id': scan_id,
+                'ip_address': host_data['ip_address'],
+                'hostname': host_data.get('hostname'),
+                'state': host_data['state'],
+                'state_reason': host_data.get('state_reason', '')
+            }
+            hosts_db_data.append(host_db_data)
+            
+            # Prepare port data
+            for port_data in host_data.get('ports', []):
+                port_db_data = {
+                    'ip_address': host_data['ip_address'],  # Temporary for ID mapping
+                    'port_number': port_data['port_number'],
+                    'protocol': port_data['protocol'],
+                    'state': port_data['state'],
+                    'service_name': port_data.get('service_name'),
+                    'service_version': port_data.get('service_version')
+                }
+                ports_db_data.append(port_db_data)
+        
+        return hosts_db_data, ports_db_data

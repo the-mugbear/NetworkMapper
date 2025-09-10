@@ -26,6 +26,8 @@ services:
       - db
     volumes:
       - ./uploads:/app/uploads
+      - ./backend/tests:/app/tests
+      - ./backend/pytest.ini:/app/pytest.ini
     networks:
       - app-network
 

@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, case
@@ -82,28 +82,40 @@ def delete_scan(scan_id: int, db: Session = Depends(get_db)):
     return {"message": "Scan deleted successfully"}
 
 @router.get("/{scan_id}/eyewitness", response_model=List[EyewitnessResult])
-def get_scan_eyewitness_results(scan_id: int, db: Session = Depends(get_db)):
-    """Get Eyewitness results for a specific scan"""
+def get_scan_eyewitness_results(
+    scan_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """Get Eyewitness results for a specific scan with pagination"""
     scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     
     results = db.query(models.EyewitnessResult).filter(
         models.EyewitnessResult.scan_id == scan_id
-    ).all()
+    ).order_by(models.EyewitnessResult.ip_address, models.EyewitnessResult.port)\
+     .offset(skip).limit(limit).all()
     
     return results
 
 @router.get("/{scan_id}/out-of-scope", response_model=List[OutOfScopeHost])
-def get_scan_out_of_scope_hosts(scan_id: int, db: Session = Depends(get_db)):
-    """Get out-of-scope hosts for a specific scan"""
+def get_scan_out_of_scope_hosts(
+    scan_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """Get out-of-scope hosts for a specific scan with pagination"""
     scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     
     hosts = db.query(models.OutOfScopeHost).filter(
         models.OutOfScopeHost.scan_id == scan_id
-    ).all()
+    ).order_by(models.OutOfScopeHost.ip_address)\
+     .offset(skip).limit(limit).all()
     
     return hosts
 
@@ -160,3 +172,41 @@ def get_scan_command_explanation(scan_id: int, db: Session = Depends(get_db)):
             for arg in analysis.arguments
         ]
     }
+
+@router.get("/{scan_id}/hosts/count")
+def get_scan_hosts_count(scan_id: int, state: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get total count of hosts for a scan (for pagination)"""
+    scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    query = db.query(models.Host).filter(models.Host.scan_id == scan_id)
+    if state:
+        query = query.filter(models.Host.state == state)
+    
+    count = query.count()
+    return {"total": count}
+
+@router.get("/{scan_id}/eyewitness/count")
+def get_scan_eyewitness_count(scan_id: int, db: Session = Depends(get_db)):
+    """Get total count of Eyewitness results for a scan (for pagination)"""
+    scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    count = db.query(models.EyewitnessResult).filter(
+        models.EyewitnessResult.scan_id == scan_id
+    ).count()
+    return {"total": count}
+
+@router.get("/{scan_id}/out-of-scope/count")
+def get_scan_out_of_scope_count(scan_id: int, db: Session = Depends(get_db)):
+    """Get total count of out-of-scope hosts for a scan (for pagination)"""
+    scan = db.query(models.Scan).filter(models.Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    count = db.query(models.OutOfScopeHost).filter(
+        models.OutOfScopeHost.scan_id == scan_id
+    ).count()
+    return {"total": count}

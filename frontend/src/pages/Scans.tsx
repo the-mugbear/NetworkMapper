@@ -21,6 +21,13 @@ import {
   FormControlLabel,
   Checkbox,
   Divider,
+  Tooltip,
+  TextField,
+  RadioGroup,
+  Radio,
+  FormControl,
+  FormLabel,
+  Collapse,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -42,6 +49,8 @@ export default function Scans() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [enrichDns, setEnrichDns] = useState(false);
+  const [dnsServerType, setDnsServerType] = useState<'default' | 'custom'>('default');
+  const [customDnsServer, setCustomDnsServer] = useState('');
 
   const fetchScans = async () => {
     try {
@@ -63,12 +72,23 @@ export default function Scans() {
     const file = acceptedFiles[0];
     if (!file) return;
 
+    // Validate DNS configuration
+    if (enrichDns && dnsServerType === 'custom' && customDnsServer.trim() === '') {
+      setUploadError('Please enter a custom DNS server or select "Use system default DNS servers"');
+      return;
+    }
+
     setUploading(true);
     setUploadError(null);
     setUploadSuccess(null);
 
     try {
-      const result = await uploadFile(file, enrichDns);
+      const dnsConfig = enrichDns ? {
+        enabled: true,
+        server: dnsServerType === 'custom' ? customDnsServer.trim() : undefined
+      } : { enabled: false };
+      
+      const result = await uploadFile(file, dnsConfig);
       setUploadSuccess(`File "${result.filename}" uploaded successfully!`);
       
       // Refresh the scans list to show the new upload
@@ -169,18 +189,123 @@ export default function Scans() {
           Supported formats: Nmap XML, Eyewitness JSON/CSV, Masscan XML/JSON/List
         </Typography>
         
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={enrichDns}
-              onChange={(e) => setEnrichDns(e.target.checked)}
+        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+          <Tooltip
+            title={
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  DNS Data Enrichment
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  When enabled, this feature automatically enriches your scan results with additional DNS information:
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
+                  • <strong>Reverse DNS lookups:</strong> Converts IP addresses to hostnames
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
+                  • <strong>Forward DNS resolution:</strong> Validates and expands hostname data
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
+                  • <strong>Zone transfer attempts:</strong> Discovers additional subdomains (when permitted)
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                  Note: DNS enrichment may increase processing time but provides more comprehensive host identification and network mapping.
+                </Typography>
+              </Box>
+            }
+            arrow
+            placement="top"
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={enrichDns}
+                  onChange={(e) => setEnrichDns(e.target.checked)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              }
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <span>Enrich with DNS data</span>
+                  <Typography 
+                    variant="caption" 
+                    color="text.secondary"
+                    sx={{ 
+                      fontStyle: 'italic',
+                      textDecoration: 'underline dotted',
+                      cursor: 'help'
+                    }}
+                  >
+                    (hover for details)
+                  </Typography>
+                </Box>
+              }
               onClick={(e) => e.stopPropagation()}
             />
-          }
-          label="Enrich with DNS data"
-          sx={{ mt: 1 }}
-          onClick={(e) => e.stopPropagation()}
-        />
+          </Tooltip>
+
+          <Collapse in={enrichDns}>
+            <Box sx={{ mt: 2, ml: 4 }}>
+              <FormControl component="fieldset">
+                <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem' }}>
+                  DNS Server Configuration
+                </FormLabel>
+                <RadioGroup
+                  value={dnsServerType}
+                  onChange={(e) => setDnsServerType(e.target.value as 'default' | 'custom')}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FormControlLabel
+                    value="default"
+                    control={<Radio size="small" />}
+                    label={
+                      <Box>
+                        <Typography variant="body2">
+                          Use system default DNS servers
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Uses the host system's configured DNS servers (typically 8.8.8.8, 1.1.1.1, or local DNS)
+                        </Typography>
+                      </Box>
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <FormControlLabel
+                    value="custom"
+                    control={<Radio size="small" />}
+                    label={
+                      <Box>
+                        <Typography variant="body2">
+                          Use custom DNS server
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Specify a custom DNS server for lookups (e.g., internal DNS server)
+                        </Typography>
+                      </Box>
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </RadioGroup>
+              </FormControl>
+
+              <Collapse in={dnsServerType === 'custom'}>
+                <Box sx={{ mt: 2 }}>
+                  <TextField
+                    label="Custom DNS Server"
+                    placeholder="e.g., 8.8.8.8, dns.company.com"
+                    value={customDnsServer}
+                    onChange={(e) => setCustomDnsServer(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    size="small"
+                    fullWidth
+                    helperText="Enter IP address or hostname of the DNS server to use for lookups"
+                    error={dnsServerType === 'custom' && customDnsServer.trim() === ''}
+                  />
+                </Box>
+              </Collapse>
+            </Box>
+          </Collapse>
+        </Box>
         
         {uploading && (
           <Box mt={2}>
@@ -218,70 +343,109 @@ export default function Scans() {
           </Typography>
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {scans.map((scan) => (
-            <Grid item xs={12} sm={6} md={4} key={scan.id}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                    <Typography variant="h6" component="div" noWrap>
-                      {scan.filename}
-                    </Typography>
-                    <Box>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewScan(scan.id)}
-                        color="primary"
-                      >
-                        <ViewIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteClick(scan)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+            <Grid item xs={12} key={scan.id}>
+              <Card 
+                sx={{ 
+                  '&:hover': { 
+                    boxShadow: 4, 
+                    cursor: 'pointer' 
+                  } 
+                }}
+                onClick={() => handleViewScan(scan.id)}
+              >
+                <CardContent sx={{ py: 2 }}>
+                  <Box>
+                    {/* Top section - Main scan info and actions */}
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                      <Box flex={1} mr={2}>
+                        <Box display="flex" alignItems="center" gap={2} mb={1} flexWrap="wrap">
+                          <Typography variant="h6" component="div" sx={{ wordBreak: 'break-all', minWidth: 0, flex: 1 }}>
+                            {scan.filename}
+                          </Typography>
+                          {scan.scan_type && (
+                            <Chip
+                              label={scan.scan_type}
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Uploaded: {new Date(scan.created_at).toLocaleString()}
+                        </Typography>
+                      </Box>
+
+                      {/* Actions - Always visible */}
+                      <Box display="flex" alignItems="center" gap={1} flexShrink={0}>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewScan(scan.id);
+                          }}
+                          startIcon={<ViewIcon />}
+                          size="small"
+                          sx={{ minWidth: 'auto', px: 2 }}
+                        >
+                          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                            View Details
+                          </Box>
+                          <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                            View
+                          </Box>
+                        </Button>
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(scan);
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
                     </Box>
-                  </Box>
 
-                  <Typography color="text.secondary" gutterBottom>
-                    {new Date(scan.created_at).toLocaleString()}
-                  </Typography>
-
-                  {scan.scan_type && (
-                    <Chip
-                      label={scan.scan_type}
-                      size="small"
-                      sx={{ mb: 1 }}
-                    />
-                  )}
-
-                  <Box mt={2}>
-                    <Typography variant="body2" color="text.secondary">
-                      Hosts: <strong>{scan.up_hosts}/{scan.total_hosts}</strong>
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Open Ports: <strong>{scan.open_ports}</strong>
-                    </Typography>
-                  </Box>
-
-                  <Box mt={2}>
-                    <Chip
-                      label={`${scan.up_hosts}/${scan.total_hosts} hosts up`}
-                      color={getStatusColor(scan.up_hosts, scan.total_hosts)}
-                      size="small"
-                    />
-                  </Box>
-
-                  <Box mt={2}>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      onClick={() => handleViewScan(scan.id)}
-                    >
-                      View Details
-                    </Button>
+                    {/* Bottom section - Statistics */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                      <Box display="flex" alignItems="center" gap={3} flexWrap="wrap">
+                        <Box textAlign="center">
+                          <Typography variant="body2" color="text.secondary">
+                            Hosts
+                          </Typography>
+                          <Typography variant="h6">
+                            {scan.up_hosts}/{scan.total_hosts}
+                          </Typography>
+                        </Box>
+                        <Box textAlign="center">
+                          <Typography variant="body2" color="text.secondary">
+                            Open Ports
+                          </Typography>
+                          <Typography variant="h6" color="success.main">
+                            {scan.open_ports || 0}
+                          </Typography>
+                        </Box>
+                        <Box textAlign="center">
+                          <Typography variant="body2" color="text.secondary">
+                            Total Ports
+                          </Typography>
+                          <Typography variant="h6">
+                            {scan.total_ports || 0}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      {/* Status indicator */}
+                      <Chip
+                        label={scan.total_hosts > 0 ? `${((scan.up_hosts / scan.total_hosts) * 100).toFixed(0)}% hosts up` : 'No hosts'}
+                        color={getStatusColor(scan.up_hosts, scan.total_hosts)}
+                        size="small"
+                      />
+                    </Box>
                   </Box>
                 </CardContent>
               </Card>

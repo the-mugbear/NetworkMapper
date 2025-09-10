@@ -83,6 +83,8 @@ export interface DashboardStats {
   total_scans: number;
   total_hosts: number;
   total_ports: number;
+  up_hosts: number;
+  open_ports: number;
   total_subnets: number;
   recent_scans: Scan[];
   subnet_stats: SubnetStats[];
@@ -166,11 +168,19 @@ export interface OutOfScopeHost {
 }
 
 // Upload API
-export const uploadFile = async (file: File, enrichDns: boolean = false) => {
+interface DnsConfig {
+  enabled: boolean;
+  server?: string;
+}
+
+export const uploadFile = async (file: File, dnsConfig: DnsConfig = { enabled: false }) => {
   const formData = new FormData();
   formData.append('file', file);
-  if (enrichDns) {
+  if (dnsConfig.enabled) {
     formData.append('enrich_dns', 'true');
+    if (dnsConfig.server) {
+      formData.append('dns_server', dnsConfig.server);
+    }
   }
   
   const response = await api.post('/upload/', formData, {

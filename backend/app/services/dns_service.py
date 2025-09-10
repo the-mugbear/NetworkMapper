@@ -1,4 +1,5 @@
 import dns.resolver
+import dns.reversename
 import dns.zone
 import dns.query
 import socket
@@ -10,19 +11,41 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DNSService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, custom_dns_server: Optional[str] = None):
         self.db = db
         self.resolver = dns.resolver.Resolver()
+        self.custom_dns_server = custom_dns_server
+        
+        # Configure custom DNS server if provided
+        if custom_dns_server:
+            try:
+                # Validate and set custom DNS server
+                self.resolver.nameservers = [custom_dns_server]
+                logger.info(f"Using custom DNS server: {custom_dns_server}")
+            except Exception as e:
+                logger.warning(f"Failed to set custom DNS server {custom_dns_server}: {str(e)}, falling back to system DNS")
+                # Keep default resolver if custom server fails
         
     def lookup_hostname(self, ip_address: str) -> Optional[str]:
         """Perform reverse DNS lookup for an IP address"""
         try:
-            hostname = socket.gethostbyaddr(ip_address)[0]
-            
-            # Store DNS record
-            self._store_dns_record(hostname, 'PTR', ip_address)
-            
-            return hostname
+            if self.custom_dns_server:
+                # Use dns.resolver for custom DNS server
+                try:
+                    reversed_ip = dns.reversename.from_address(ip_address)
+                    answers = self.resolver.resolve(reversed_ip, 'PTR')
+                    if answers:
+                        hostname = str(answers[0]).rstrip('.')
+                        self._store_dns_record(hostname, 'PTR', ip_address)
+                        return hostname
+                except Exception as e:
+                    logger.debug(f"Custom DNS reverse lookup failed for {ip_address}: {str(e)}")
+                    return None
+            else:
+                # Use system DNS (socket.gethostbyaddr)
+                hostname = socket.gethostbyaddr(ip_address)[0]
+                self._store_dns_record(hostname, 'PTR', ip_address)
+                return hostname
         except (socket.herror, socket.gaierror) as e:
             logger.debug(f"Reverse DNS lookup failed for {ip_address}: {str(e)}")
             return None

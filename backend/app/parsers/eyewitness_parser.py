@@ -38,92 +38,114 @@ class EyewitnessParser:
             raise
 
     def _parse_json_file(self, file_path: str, filename: str) -> models.Scan:
-        """Parse Eyewitness JSON report"""
+        """Parse Eyewitness JSON report using single database transaction"""
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
-        # Create scan record
-        scan = models.Scan(
-            filename=filename,
-            scan_type='web_screenshot',
-            tool_name='eyewitness',
-            version=data.get('version'),
-            created_at=datetime.utcnow()
-        )
-        
-        self.db.add(scan)
-        self.db.commit()
-        self.db.refresh(scan)
-        
-        # Parse results
+        # Parse results first to validate data before creating database records
         results = data.get('results', [])
-        out_of_scope_count = 0
         logger.info(f"Processing {len(results)} Eyewitness results")
         
+        # Validate and process all results before database operations
+        processed_results = []
+        out_of_scope_entries = []
+        
         for i, result_data in enumerate(results, 1):
-            if i % 100 == 0 or i == 1:  # Log progress every 100 results
+            if i % 100 == 0 or i == 1:
                 logger.info(f"Processing Eyewitness result {i}/{len(results)} ({i/len(results)*100:.1f}%)")
+            
             try:
-                # Extract IP address from URL
-                ip_address = self._extract_ip_from_url(result_data.get('url', ''))
+                # Extract and validate required fields
+                url = result_data.get('url') or result_data.get('remote_system', '')
+                if not url:
+                    logger.warning(f"Skipping result {i}: missing required 'url' field")
+                    continue
                 
-                # Create Eyewitness result
-                result = models.EyewitnessResult(
-                    scan_id=scan.id,
-                    url=result_data.get('url'),
-                    protocol=result_data.get('protocol'),
-                    port=result_data.get('port'),
-                    ip_address=ip_address,
-                    title=result_data.get('title'),
-                    server_header=result_data.get('server'),
-                    content_length=result_data.get('content_length'),
-                    screenshot_path=result_data.get('screenshot_path'),
-                    response_code=result_data.get('response_code'),
-                    page_text=result_data.get('page_text')
-                )
+                ip_address = self._extract_ip_from_url(url)
+                if not ip_address:
+                    logger.warning(f"Skipping result {i}: could not extract IP from URL: {url}")
+                    continue
                 
-                self.db.add(result)
+                # Prepare result data
+                result_info = {
+                    'url': url,
+                    'protocol': result_data.get('protocol'),
+                    'port': result_data.get('port'),
+                    'ip_address': ip_address,
+                    'title': result_data.get('title') or result_data.get('page_title'),
+                    'server_header': result_data.get('server') or result_data.get('server_header'),
+                    'content_length': result_data.get('content_length'),
+                    'screenshot_path': result_data.get('screenshot_path'),
+                    'response_code': result_data.get('response_code'),
+                    'page_text': result_data.get('page_text')
+                }
+                processed_results.append(result_info)
                 
                 # Check if IP is in scope
-                if ip_address:
-                    matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)
-                    if not matching_subnets:
-                        # Create out-of-scope entry
-                        out_of_scope = models.OutOfScopeHost(
-                            scan_id=scan.id,
-                            ip_address=ip_address,
-                            hostname=self._extract_hostname_from_url(result_data.get('url', '')),
-                            ports={'web': result_data.get('port', 80)},
-                            tool_source='eyewitness',
-                            reason='IP address not found in any defined subnet scope'
-                        )
-                        self.db.add(out_of_scope)
-                        out_of_scope_count += 1
+                matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)
+                if not matching_subnets:
+                    out_of_scope_info = {
+                        'ip_address': ip_address,
+                        'hostname': self._extract_hostname_from_url(url),
+                        'ports': {'web': result_data.get('port', 80)},
+                        'tool_source': 'eyewitness',
+                        'reason': 'IP address not found in any defined subnet scope'
+                    }
+                    out_of_scope_entries.append(out_of_scope_info)
                 
             except Exception as e:
-                logger.warning(f"Error processing Eyewitness result {result_data}: {str(e)}")
+                logger.warning(f"Error processing Eyewitness result {i}: {str(e)}")
                 continue
         
-        self.db.commit()
-        
-        logger.info(f"Processed {len(results)} Eyewitness results, {out_of_scope_count} out of scope")
-        return scan
+        # Now create all database records in a single transaction
+        try:
+            # Create scan record
+            scan = models.Scan(
+                filename=filename,
+                scan_type='web_screenshot',
+                tool_name='eyewitness',
+                version=data.get('version'),
+                created_at=datetime.utcnow()
+            )
+            self.db.add(scan)
+            self.db.flush()  # Get scan ID without committing
+            
+            # Bulk create result records
+            if processed_results:
+                results_data = []
+                for result_info in processed_results:
+                    results_data.append({
+                        'scan_id': scan.id,
+                        **result_info
+                    })
+                self.db.bulk_insert_mappings(models.EyewitnessResult, results_data)
+            
+            # Bulk create out-of-scope records
+            if out_of_scope_entries:
+                oos_data = []
+                for oos_info in out_of_scope_entries:
+                    oos_data.append({
+                        'scan_id': scan.id,
+                        **oos_info
+                    })
+                self.db.bulk_insert_mappings(models.OutOfScopeHost, oos_data)
+            
+            # Commit all changes as single transaction
+            self.db.commit()
+            
+            logger.info(f"Successfully processed {len(processed_results)} Eyewitness results, "
+                       f"{len(out_of_scope_entries)} out of scope")
+            return scan
+            
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Database transaction failed, rolling back: {str(e)}")
+            raise
 
     def _parse_csv_file(self, file_path: str, filename: str) -> models.Scan:
-        """Parse Eyewitness CSV report"""
-        # Create scan record
-        scan = models.Scan(
-            filename=filename,
-            scan_type='web_screenshot',
-            tool_name='eyewitness',
-            created_at=datetime.utcnow()
-        )
-        
-        self.db.add(scan)
-        self.db.commit()
-        self.db.refresh(scan)
-        
-        out_of_scope_count = 0
+        """Parse Eyewitness CSV report using bulk operations"""
+        processed_results = []
+        out_of_scope_entries = []
         
         with open(file_path, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -138,47 +160,80 @@ class EyewitnessParser:
                     url = row.get('URL', row.get('url', ''))
                     ip_address = self._extract_ip_from_url(url)
                     
-                    # Create Eyewitness result
-                    result = models.EyewitnessResult(
-                        scan_id=scan.id,
-                        url=url,
-                        protocol=row.get('Protocol', row.get('protocol')),
-                        port=self._safe_int(row.get('Port', row.get('port'))),
-                        ip_address=ip_address,
-                        title=row.get('Title', row.get('title')),
-                        server_header=row.get('Server', row.get('server')),
-                        content_length=self._safe_int(row.get('Content Length', row.get('content_length'))),
-                        screenshot_path=row.get('Screenshot Path', row.get('screenshot_path')),
-                        response_code=self._safe_int(row.get('Response Code', row.get('response_code'))),
-                        page_text=row.get('Page Text', row.get('page_text'))
-                    )
-                    
-                    self.db.add(result)
+                    # Prepare result data
+                    result_info = {
+                        'url': url,
+                        'protocol': row.get('Protocol', row.get('protocol')),
+                        'port': self._safe_int(row.get('Port', row.get('port'))),
+                        'ip_address': ip_address,
+                        'title': row.get('Title', row.get('title')),
+                        'server_header': row.get('Server', row.get('server')),
+                        'content_length': self._safe_int(row.get('Content Length', row.get('content_length'))),
+                        'screenshot_path': row.get('Screenshot Path', row.get('screenshot_path')),
+                        'response_code': self._safe_int(row.get('Response Code', row.get('response_code'))),
+                        'page_text': row.get('Page Text', row.get('page_text'))
+                    }
+                    processed_results.append(result_info)
                     
                     # Check if IP is in scope
                     if ip_address:
                         matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)
                         if not matching_subnets:
-                            # Create out-of-scope entry
-                            out_of_scope = models.OutOfScopeHost(
-                                scan_id=scan.id,
-                                ip_address=ip_address,
-                                hostname=self._extract_hostname_from_url(url),
-                                ports={'web': self._safe_int(row.get('Port', row.get('port', 80)))},
-                                tool_source='eyewitness',
-                                reason='IP address not found in any defined subnet scope'
-                            )
-                            self.db.add(out_of_scope)
-                            out_of_scope_count += 1
+                            out_of_scope_info = {
+                                'ip_address': ip_address,
+                                'hostname': self._extract_hostname_from_url(url),
+                                'ports': {'web': self._safe_int(row.get('Port', row.get('port', 80)))},
+                                'tool_source': 'eyewitness',
+                                'reason': 'IP address not found in any defined subnet scope'
+                            }
+                            out_of_scope_entries.append(out_of_scope_info)
                 
                 except Exception as e:
                     logger.warning(f"Error processing Eyewitness CSV row {row}: {str(e)}")
                     continue
         
-        self.db.commit()
-        
-        logger.info(f"Processed {len(rows)} Eyewitness CSV results, {out_of_scope_count} out of scope")
-        return scan
+        # Now create all database records in a single transaction
+        try:
+            # Create scan record
+            scan = models.Scan(
+                filename=filename,
+                scan_type='web_screenshot',
+                tool_name='eyewitness',
+                created_at=datetime.utcnow()
+            )
+            self.db.add(scan)
+            self.db.flush()  # Get scan ID without committing
+            
+            # Bulk create result records
+            if processed_results:
+                results_data = []
+                for result_info in processed_results:
+                    results_data.append({
+                        'scan_id': scan.id,
+                        **result_info
+                    })
+                self.db.bulk_insert_mappings(models.EyewitnessResult, results_data)
+            
+            # Bulk create out-of-scope records
+            if out_of_scope_entries:
+                oos_data = []
+                for oos_info in out_of_scope_entries:
+                    oos_data.append({
+                        'scan_id': scan.id,
+                        **oos_info
+                    })
+                self.db.bulk_insert_mappings(models.OutOfScopeHost, oos_data)
+            
+            # Commit all changes as single transaction
+            self.db.commit()
+            
+            logger.info(f"Processed {len(processed_results)} Eyewitness CSV results, {len(out_of_scope_entries)} out of scope")
+            return scan
+            
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Database transaction failed, rolling back: {str(e)}")
+            raise
 
     def _extract_ip_from_url(self, url: str) -> Optional[str]:
         """Extract IP address from URL"""

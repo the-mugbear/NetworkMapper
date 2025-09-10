@@ -77,6 +77,53 @@ class SubnetCorrelationService:
             total_mappings += len(mappings)
         
         return total_mappings
+
+    def batch_correlate_scan_hosts_to_subnets(self, scan_id: int) -> int:
+        """
+        Batch correlate all hosts from a specific scan to their respective subnets.
+        More efficient than individual correlation for large scans.
+        
+        Args:
+            scan_id: The scan ID to process
+            
+        Returns:
+            Number of mappings created
+        """
+        # Get all hosts from the scan
+        hosts = self.db.query(Host).filter(Host.scan_id == scan_id).all()
+        if not hosts:
+            return 0
+        
+        # Get all subnets once
+        subnets = self.parser.get_all_subnets()
+        if not subnets:
+            return 0
+        
+        # Clear existing mappings for all hosts in this scan
+        host_ids = [host.id for host in hosts]
+        self.db.query(HostSubnetMapping).filter(
+            HostSubnetMapping.host_id.in_(host_ids)
+        ).delete()
+        
+        # Batch process mappings
+        mapping_data = []
+        for host in hosts:
+            matching_subnets = self.parser.find_matching_subnets_from_list(
+                host.ip_address, subnets
+            )
+            
+            for subnet in matching_subnets:
+                mapping_data.append({
+                    'host_id': host.id,
+                    'subnet_id': subnet.id
+                })
+        
+        # Bulk insert all mappings
+        if mapping_data:
+            self.db.bulk_insert_mappings(HostSubnetMapping, mapping_data)
+            self.db.commit()
+        
+        return len(mapping_data)
     
     def get_host_subnets(self, host_id: int) -> List[Subnet]:
         """

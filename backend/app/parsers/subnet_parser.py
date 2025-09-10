@@ -85,3 +85,17 @@ class SubnetParser:
                 matching_subnets.append(subnet)
         
         return matching_subnets
+
+    def get_all_subnets(self) -> List[Subnet]:
+        """Get all subnets from the database."""
+        return self.db.query(Subnet).all()
+
+    def find_matching_subnets_from_list(self, ip_address: str, subnets: List[Subnet]) -> List[Subnet]:
+        """Find matching subnets from a pre-loaded list (more efficient for batch operations)."""
+        matching_subnets = []
+        
+        for subnet in subnets:
+            if self.ip_in_subnet(ip_address, subnet.cidr):
+                matching_subnets.append(subnet)
+        
+        return matching_subnets

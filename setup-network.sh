@@ -38,43 +38,75 @@ if [[ -z "$CONFIGURED_IP" ]]; then
     exit 1
 fi
 
-# Stop and remove all containers, networks, and volumes
-print_info "Stopping and removing all containers..."
+# Stop and remove all containers
+print_info "Stopping all containers..."
 docker-compose down --remove-orphans
 
-# Aggressive cache busting - remove ALL related images and caches
-print_info "Performing NUCLEAR cache cleanup to prevent stale code..."
+# Ask about database preservation before removing volumes
+print_info "Database preservation check..."
+echo "This script is about to remove Docker volumes (including the database)."
+echo "Do you want to preserve the existing database? (Y/n)"
+read -r PRESERVE_DB
 
-# Stop and remove everything related to the project
-docker-compose down --remove-orphans --volumes
+if [[ "$PRESERVE_DB" =~ ^[Nn]$ ]]; then
+    print_info "Removing Docker volumes INCLUDING database..."
+    docker-compose down --remove-orphans --volumes
+else
+    print_info "Preserving database - only removing containers and networks..."
+    print_success "Database will be preserved"
+fi
 
-# Remove all NetworkMapper images (including intermediate layers and base images)
-print_info "Removing ALL NetworkMapper-related images..."
-docker images | grep -E "(networkmapper|networkMapper)" | awk '{print $3}' | xargs -r docker rmi -f || true
+# Ask about cache busting functionality
+print_info "Cache busting check..."
+echo "Do you need to force fresh downloads of all container software?"
+echo "This will clear all Docker caches and take significantly longer."
+echo "Only needed if you suspect stale code or Docker cache issues."
+echo "Perform aggressive cache busting? (y/N)"
+read -r CACHE_BUST
 
-# Remove ALL dangling and unused images
-print_info "Removing ALL unused Docker resources..."
-docker system prune -a -f --volumes
+if [[ "$CACHE_BUST" =~ ^[Yy]$ ]]; then
+    # Aggressive cache busting - remove ALL related images and caches
+    print_info "Performing NUCLEAR cache cleanup to prevent stale code..."
 
-# Remove Docker build cache entirely (multiple attempts)
-print_info "Clearing ALL Docker build caches..."
-docker builder prune -a -f || true
+    # Remove all NetworkMapper images (including intermediate layers and base images)
+    print_info "Removing ALL NetworkMapper-related images..."
+    docker images | grep -E "(networkmapper|networkMapper)" | awk '{print $3}' | xargs -r docker rmi -f || true
 
-# Remove any remaining build cache with buildkit
-print_info "Clearing buildkit cache..."
-docker buildx prune -a -f || true
+    # Remove ALL dangling and unused images
+    print_info "Removing ALL unused Docker resources..."
+    docker system prune -a -f --volumes
 
-# Force removal of any cached layers by touching Dockerfiles
-print_info "Invalidating Dockerfile cache by updating timestamps..."
-touch frontend/Dockerfile backend/Dockerfile
+    # Remove Docker build cache entirely (multiple attempts)
+    print_info "Clearing ALL Docker build caches..."
+    docker builder prune -a -f || true
 
-# Load environment variables and build with no-cache flag and cache-busting
-print_info "Building containers with NO CACHE to ensure fresh code..."
-CACHE_BUST_VALUE=$(date +%s)
-print_info "Using cache-bust value: $CACHE_BUST_VALUE"
+    # Remove any remaining build cache with buildkit
+    print_info "Clearing buildkit cache..."
+    docker buildx prune -a -f || true
 
-docker-compose --env-file .env.network build --no-cache --pull \
-    --build-arg CACHE_BUST=$CACHE_BUST_VALUE
+    # Force removal of any cached layers by touching Dockerfiles
+    print_info "Invalidating Dockerfile cache by updating timestamps..."
+    touch frontend/Dockerfile backend/Dockerfile
+
+    # Load environment variables and build with no-cache flag and cache-busting
+    print_info "Building containers with NO CACHE to ensure fresh code..."
+    CACHE_BUST_VALUE=$(date +%s)
+    print_info "Using cache-bust value: $CACHE_BUST_VALUE"
+
+    docker-compose --env-file .env.network build --no-cache --pull \
+        --build-arg CACHE_BUST=$CACHE_BUST_VALUE
+else
+    print_info "Using existing Docker cache for faster deployment..."
+    print_info "Building containers with existing cache..."
+    
+    # Build without aggressive cache clearing but still ensure fresh application code
+    CACHE_BUST_VALUE=$(date +%s)
+    docker-compose --env-file .env.network build \
+        --build-arg CACHE_BUST=$CACHE_BUST_VALUE
+fi
+
+# Start the containers
+print_info "Starting containers..."
 docker-compose --env-file .env.network up --force-recreate -d
 
 # Wait a moment for containers to start

@@ -36,7 +36,8 @@ export default function Upload() {
     setSuccess(null);
 
     try {
-      const result = await uploadFile(file, enrichDns);
+      const dnsConfig = { enabled: enrichDns };
+      const result = await uploadFile(file, dnsConfig);
       setSuccess(`File "${result.filename}" uploaded successfully!`);
       
       setTimeout(() => {

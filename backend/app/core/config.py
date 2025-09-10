@@ -16,7 +16,7 @@ class Settings:
         ]
     
     # File upload settings
-    UPLOAD_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads"))
+    UPLOAD_DIR: str = os.path.join(os.getcwd(), "uploads")
     MAX_FILE_SIZE: int = 50 * 1024 * 1024  # 50MB
     
     # Supported file extensions

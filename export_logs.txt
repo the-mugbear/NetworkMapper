@@ -1,44 +1,4 @@
- => [frontend builder 7/9] RUN echo "Cache bust: 1757528996" > /tmp/cache_bust.txt                                                         0.2s
- => [frontend builder 8/9] COPY . .                                                                                                        0.1s
- => ERROR [frontend builder 9/9] RUN node generate-build-info.js     && npm run build     && npm prune --production                       77.1s
-------
- > [frontend builder 9/9] RUN node generate-build-info.js     && npm run build     && npm prune --production:
-0.407 fatal: not a git repository (or any of the parent directories): .git
-0.409 Could not get git commit hash: Command failed: git rev-parse HEAD
-0.409 fatal: not a git repository (or any of the parent directories): .git
-0.409 
-0.410 Build info generated:
-0.410 REACT_APP_BUILD_TIME=2025-09-10T18:33:07.688Z
-0.410 REACT_APP_VERSION=1.5.0
-0.410 REACT_APP_GIT_COMMIT=unknown
-0.650 
-0.650 > networkMapper-frontend@1.5.0 prebuild
-0.650 > node generate-build-info.js
-0.650 
-0.709 fatal: not a git repository (or any of the parent directories): .git
-0.712 Build info generated:
-0.712 REACT_APP_BUILD_TIME=2025-09-10T18:33:07.988Z
-0.712 REACT_APP_VERSION=1.5.0
-0.712 REACT_APP_GIT_COMMIT=unknown
-0.712 Could not get git commit hash: Command failed: git rev-parse HEAD
-0.712 fatal: not a git repository (or any of the parent directories): .git
-0.712 
-0.722 
-0.722 > networkMapper-frontend@1.5.0 build
-0.722 > react-scripts build
-0.722 
-2.520 Creating an optimized production build...
-76.65 Failed to compile.
-76.65 
-76.66 TS2345: Argument of type 'boolean' is not assignable to parameter of type 'DnsConfig'.
-76.66     37 |
-76.66     38 |     try {
-76.66   > 39 |       const result = await uploadFile(file, enrichDns);
-76.66        |                                             ^^^^^^^^^
-76.66     40 |       setSuccess(`File "${result.filename}" uploaded successfully!`);
-76.66     41 |       
-76.66     42 |       setTimeout(() => {
-76.66 
-76.66 
-------
-failed to solve: process "/bin/sh -c node generate-build-info.js     && npm run build     && npm prune --production" did not complete successfully: exit code: 1
+Error processing file: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "uq_host_scan" DETAIL: Key (host_id, scan_id)=(37, 1) already exists. [SQL: INSERT INTO host_scan_history (host_id, scan_id, state_at_scan, hostname_at_scan, os_info_updated) VALUES (%(host_id)s, %(scan_id)s, %(state_at_scan)s, %(hostname_at_scan)s, %(os_info_updated)s) RETURNING host_scan_history.id, host_scan_history.discovered_at] [parameters: {'host_id': 37, 'scan_id': 1, 'state_at_scan': None, 'hostname_at_scan': None, 'os_info_updated': False}] (Background on this error at: https://sqlalche.me/e/20/gkpj) (Background on this error at: https://sqlalche.me/e/20/7s2a)
+
+Error processing file: This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "uq_host_scan" DETAIL: Key (host_id, scan_id)=(147, 2) already exists. [SQL: INSERT INTO host_scan_history (host_id, scan_id, state_at_scan, hostname_at_scan, os_info_updated) SELECT p0::INTEGER, p1::INTEGER, p2::VARCHAR, p3::VARCHAR, p4::BOOLEAN FROM (VALUES (%(host_id__0)s, %(scan_id__0)s, %(state_at_scan__0)s, %(hostname_a ... 38092 characters truncated ... unter RETURNING host_scan_history.id, host_scan_history.discovered_at, host_scan_history.id AS id__1] [parameters: {'scan_id__0': 2, 'os_info_updated__0': True, 'hostname_at_scan__0': None, 'host_id__0': 147, 'state_at_scan__0': 'up', 'scan_id__1': 2, 'os_info_updated__1': True, 'hostname_at_scan__1': None, 'host_id__1': 148, 'state_at_scan__1': 'up', 'scan_id__2': 2, 'os_info_updated__2': True, 'hostname_at_scan__2': None, 'host_id__2': 149, 'state_at_scan__2': 'up', 'scan_id__3': 2, 'os_info_updated__3': True, 'hostname_at_scan__3': None, 'host_id__3': 150, 'state_at_scan__3': 'up', 'scan_id__4': 2, 'os_info_updated__4': True, 'hostname_at_scan__4': None, 'host_id__4': 151, 'state_at_scan__4': 'up', 'scan_id__5': 2, 'os_info_updated__5': True, 'hostname_at_scan__5': None, 'host_id__5': 152, 'state_at_scan__5': 'up', 'scan_id__6': 2, 'os_info_updated__6': True, 'hostname_at_scan__6': None, 'host_id__6': 153, 'state_at_scan__6': 'up', 'scan_id__7': 2, 'os_info_updated__7': False, 'hostname_at_scan__7': None, 'host_id__7': 154, 'state_at_scan__7': 'up', 'scan_id__8': 2, 'os_info_updated__8': True, 'hostname_at_scan__8': None, 'host_id__8': 155, 'state_at_scan__8': 'up', 'scan_id__9': 2, 'os_info_updated__9': True, 'hostname_at_scan__9': None, 'host_id__9': 156, 'state_at_scan__9': 'up' ... 1515 parameters truncated ... 'scan_id__313': 2, 'os_info_updated__313': True, 'hostname_at_scan__313': None, 'host_id__313': 466, 'state_at_scan__313': 'up', 'scan_id__314': 2, 'os_info_updated__314': True, 'hostname_at_scan__314': None, 'host_id__314': 467, 'state_at_scan__314': 'up', 'scan_id__315': 2, 'os_info_updated__315': True, 'hostname_at_scan__315': None, 'host_id__315': 468, 'state_at_scan__315': 'up', 'scan_id__316': 2, 'os_info_updated__316': True, 'hostname_at_scan__316': None, 'host_id__316': 469, 'state_at_scan__316': 'up', 'scan_id__317': 2, 'os_info_updated__317': True, 'hostname_at_scan__317': None, 'host_id__317': 470, 'state_at_scan__317': 'up', 'scan_id__318': 2, 'os_info_updated__318': True, 'hostname_at_scan__318': None, 'host_id__318': 471, 'state_at_scan__318': 'up', 'scan_id__319': 2, 'os_info_updated__319': True, 'hostname_at_scan__319': None, 'host_id__319': 472, 'state_at_scan__319': 'up', 'scan_id__320': 2, 'os_info_updated__320': True, 'hostname_at_scan__320': None, 'host_id__320': 473, 'state_at_scan__320': 'up', 'scan_id__321': 2, 'os_info_updated__321': True, 'hostname_at_scan__321': None, 'host_id__321': 474, 'state_at_scan__321': 'up', 'scan_id__322': 2, 'os_info_updated__322': True, 'hostname_at_scan__322': None, 'host_id__322': 475, 'state_at_scan__322': 'up'}] (Background on this error at: https://sqlalche.me/e/20/gkpj) (Background on this error at: https://sqlalche.me/e/20/7s2a)
+

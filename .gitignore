@@ -200,3 +200,7 @@ test_data/*.csv
 .AppleDouble
 .LSOverride
 Icon
+
+# Other
+artifacts/
+CLAUDE.md

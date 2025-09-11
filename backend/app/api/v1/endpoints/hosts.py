@@ -7,7 +7,8 @@ at the database level, making the API much simpler and more efficient.
 
 from typing import List, Optional
 import ipaddress
-from fastapi import APIRouter, Depends, HTTPException, Query
+import json
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, and_, distinct, func
 from app.db.session import get_db
@@ -381,3 +382,243 @@ def _parse_subnets(subnet_str: str):
             subnet_conditions.append(models.Host.ip_address.like(f'{subnet_cidr}%'))
     
     return subnet_conditions if subnet_conditions else None
+
+
+@router.get("/tool-ready/{format}")
+def get_tool_ready_hosts(
+    format: str,
+    state: Optional[str] = None,
+    search: Optional[str] = None,
+    ports: Optional[str] = Query(None, description="Comma-separated list of ports (e.g., '22,80,443')"),
+    services: Optional[str] = Query(None, description="Comma-separated list of service names (e.g., 'ssh,http,https')"),
+    port_states: Optional[str] = Query(None, description="Comma-separated list of port states (e.g., 'open,closed')"),
+    has_open_ports: Optional[bool] = Query(None, description="Filter hosts that have any open ports"),
+    os_filter: Optional[str] = Query(None, description="Filter by operating system"),
+    subnets: Optional[str] = Query(None, description="Comma-separated list of subnet CIDRs (e.g., '192.168.1.0/24,10.0.0.0/8')"),
+    scan_id: Optional[int] = Query(None, description="Filter by specific scan ID"),
+    include_ports: Optional[bool] = Query(False, description="Include port information in output"),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate tool-ready output for filtered hosts.
+    
+    Supported formats:
+    - ip-list: Simple list of IP addresses (one per line)
+    - nmap: Nmap-compatible target list
+    - metasploit: Metasploit RHOSTS format
+    - masscan: Masscan target format
+    - nuclei: Nuclei target format
+    - host-port: IP:PORT format for each open port
+    - json: JSON format with host details
+    """
+    
+    # Validate format
+    supported_formats = ['ip-list', 'nmap', 'metasploit', 'masscan', 'nuclei', 'host-port', 'json']
+    if format not in supported_formats:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Unsupported format '{format}'. Supported formats: {', '.join(supported_formats)}"
+        )
+    
+    # Base query (reuse the filtering logic from get_hosts_v2)
+    query = db.query(models.Host).options(
+        selectinload(models.Host.ports).selectinload(models.Port.scripts),
+        selectinload(models.Host.host_scripts)
+    )
+    
+    # Apply filters (same as get_hosts_v2)
+    if state:
+        query = query.filter(models.Host.state == state)
+    
+    if os_filter:
+        query = query.filter(
+            or_(
+                models.Host.os_name.ilike(f'%{os_filter}%'),
+                models.Host.os_family.ilike(f'%{os_filter}%')
+            )
+        )
+    
+    # Subnet filtering
+    if subnets:
+        subnet_conditions = _parse_subnets(subnets)
+        if subnet_conditions:
+            query = query.filter(or_(*subnet_conditions))
+    
+    # Scan ID filtering
+    if scan_id:
+        # Filter hosts that were discovered in this specific scan
+        host_ids_in_scan = db.query(models.HostScanHistory.host_id).filter(
+            models.HostScanHistory.scan_id == scan_id
+        ).subquery()
+        query = query.filter(models.Host.id.in_(host_ids_in_scan))
+    
+    # Port-based filters
+    if ports or services or port_states or has_open_ports:
+        # Use subquery to filter by port criteria
+        port_subquery = db.query(models.Host.id).join(models.Port)
+        
+        if ports:
+            port_list = [int(p.strip()) for p in ports.split(',') if p.strip().isdigit()]
+            if port_list:
+                port_subquery = port_subquery.filter(models.Port.port_number.in_(port_list))
+        
+        if services:
+            service_names = [s.strip().lower() for s in services.split(',') if s.strip()]
+            service_conditions = []
+            
+            for service in service_names:
+                # Direct service name match
+                service_conditions.append(models.Port.service_name.ilike(f'%{service}%'))
+                
+                # Port number mapping
+                if service in SERVICE_PORT_MAPPINGS:
+                    mapped_ports = SERVICE_PORT_MAPPINGS[service]
+                    service_conditions.append(models.Port.port_number.in_(mapped_ports))
+            
+            if service_conditions:
+                port_subquery = port_subquery.filter(or_(*service_conditions))
+        
+        if port_states:
+            states = [s.strip() for s in port_states.split(',') if s.strip()]
+            port_subquery = port_subquery.filter(models.Port.state.in_(states))
+        
+        if has_open_ports:
+            port_subquery = port_subquery.filter(models.Port.state == 'open')
+        
+        # Apply the port filter to main query
+        host_ids_with_ports = port_subquery.distinct().subquery()
+        query = query.filter(models.Host.id.in_(host_ids_with_ports))
+    
+    # Search filter
+    if search:
+        query = query.filter(
+            or_(
+                models.Host.ip_address.ilike(f'%{search}%'),
+                models.Host.hostname.ilike(f'%{search}%'),
+                models.Host.os_name.ilike(f'%{search}%')
+            )
+        )
+    
+    # Execute query
+    hosts = query.all()
+    
+    # Generate output based on format
+    output = _generate_tool_output(hosts, format, include_ports)
+    
+    # Set appropriate content type and filename
+    content_type, filename = _get_content_type_and_filename(format)
+    
+    return Response(
+        content=output,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+
+def _generate_tool_output(hosts: List[models.Host], format: str, include_ports: bool = False) -> str:
+    """Generate tool-specific output format"""
+    
+    if format == 'ip-list':
+        # Simple list of IP addresses
+        return '\n'.join([host.ip_address for host in hosts])
+    
+    elif format == 'nmap':
+        # Nmap-compatible target list (space-separated)
+        return ' '.join([host.ip_address for host in hosts])
+    
+    elif format == 'metasploit':
+        # Metasploit RHOSTS format (space-separated)
+        return ' '.join([host.ip_address for host in hosts])
+    
+    elif format == 'masscan':
+        # Masscan target format (comma-separated)
+        return ','.join([host.ip_address for host in hosts])
+    
+    elif format == 'nuclei':
+        # Nuclei target format - URLs for web services, IPs for others
+        targets = []
+        for host in hosts:
+            # Check if host has web ports
+            web_ports = []
+            if include_ports:
+                for port in host.ports:
+                    if port.state == 'open' and port.port_number in [80, 443, 8000, 8080, 8081, 8008, 8443, 8444, 8888]:
+                        web_ports.append(port.port_number)
+            
+            if web_ports:
+                # Generate URLs for web ports
+                for port_num in web_ports:
+                    protocol = 'https' if port_num in [443, 8443, 8444] else 'http'
+                    if port_num in [80, 443]:
+                        targets.append(f"{protocol}://{host.ip_address}")
+                    else:
+                        targets.append(f"{protocol}://{host.ip_address}:{port_num}")
+            else:
+                # Just add IP for non-web hosts
+                targets.append(host.ip_address)
+        
+        return '\n'.join(targets)
+    
+    elif format == 'host-port':
+        # IP:PORT format for each open port
+        results = []
+        for host in hosts:
+            open_ports = [port for port in host.ports if port.state == 'open']
+            if open_ports:
+                for port in open_ports:
+                    results.append(f"{host.ip_address}:{port.port_number}")
+            else:
+                # Include hosts without open ports as just IP
+                results.append(host.ip_address)
+        
+        return '\n'.join(results)
+    
+    elif format == 'json':
+        # JSON format with host details
+        host_data = []
+        for host in hosts:
+            host_info = {
+                'ip_address': host.ip_address,
+                'hostname': host.hostname,
+                'state': host.state,
+                'os_name': host.os_name,
+                'os_family': host.os_family
+            }
+            
+            if include_ports:
+                host_info['ports'] = [
+                    {
+                        'port': port.port_number,
+                        'protocol': port.protocol,
+                        'state': port.state,
+                        'service': port.service_name,
+                        'product': port.service_product,
+                        'version': port.service_version
+                    }
+                    for port in host.ports
+                ]
+            
+            host_data.append(host_info)
+        
+        return json.dumps(host_data, indent=2)
+    
+    else:
+        return '\n'.join([host.ip_address for host in hosts])
+
+
+def _get_content_type_and_filename(format: str) -> tuple:
+    """Get content type and filename for different formats"""
+    
+    format_config = {
+        'ip-list': ('text/plain', 'hosts.txt'),
+        'nmap': ('text/plain', 'nmap-targets.txt'),
+        'metasploit': ('text/plain', 'msf-targets.txt'),
+        'masscan': ('text/plain', 'masscan-targets.txt'),
+        'nuclei': ('text/plain', 'nuclei-targets.txt'),
+        'host-port': ('text/plain', 'host-ports.txt'),
+        'json': ('application/json', 'hosts.json')
+    }
+    
+    return format_config.get(format, ('text/plain', 'hosts.txt'))

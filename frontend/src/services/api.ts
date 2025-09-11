@@ -498,4 +498,40 @@ export const generateHostsReport = async (
   return response.data;
 };
 
+// Tool Ready Output API
+export const getToolReadyOutput = async (
+  format: string,
+  filters: {
+    search?: string;
+    state?: string;
+    ports?: string[];
+    services?: string[];
+    portStates?: string[];
+    hasOpenPorts?: boolean;
+    osFilter?: string;
+    subnets?: string[];
+    scanId?: number;
+    includePorts?: boolean;
+  }
+): Promise<string> => {
+  const params = new URLSearchParams();
+  
+  if (filters.search) params.append('search', filters.search);
+  if (filters.state) params.append('state', filters.state);
+  if (filters.ports?.length) params.append('ports', filters.ports.join(','));
+  if (filters.services?.length) params.append('services', filters.services.join(','));
+  if (filters.portStates?.length) params.append('port_states', filters.portStates.join(','));
+  if (filters.hasOpenPorts !== undefined) params.append('has_open_ports', filters.hasOpenPorts.toString());
+  if (filters.osFilter) params.append('os_filter', filters.osFilter);
+  if (filters.subnets?.length) params.append('subnets', filters.subnets.join(','));
+  if (filters.scanId) params.append('scan_id', filters.scanId.toString());
+  if (filters.includePorts) params.append('include_ports', 'true');
+
+  const response = await api.get(`/hosts/tool-ready/${format}?${params}`, {
+    responseType: 'text'
+  });
+  
+  return response.data;
+};
+
 export default api;

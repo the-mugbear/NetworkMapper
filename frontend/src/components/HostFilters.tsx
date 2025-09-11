@@ -8,10 +8,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Button,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Typography,
   Grid,
   FormControlLabel,
@@ -22,22 +18,14 @@ import {
   Tooltip,
   IconButton,
   Paper,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  ListItemIcon,
 } from '@mui/material';
 import {
-  ExpandMore as ExpandMoreIcon,
   Clear as ClearIcon,
   FilterList as FilterListIcon,
   Security as SecurityIcon,
   Computer as ComputerIcon,
   NetworkCheck as NetworkCheckIcon,
   Search as SearchIcon,
-  BookmarkBorder as BookmarkIcon,
-  Star as StarIcon,
   Storage as StorageIcon,
 } from '@mui/icons-material';
 
@@ -153,7 +141,6 @@ const HostFilters: React.FC<HostFiltersProps> = ({
   onFiltersChange, 
   availableData 
 }) => {
-  const [expanded, setExpanded] = useState(false);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
   // Update active filters count
@@ -250,13 +237,6 @@ const HostFilters: React.FC<HostFiltersProps> = ({
               </Tooltip>
             )}
           </Box>
-          <Button
-            variant="text"
-            onClick={() => setExpanded(!expanded)}
-            endIcon={<ExpandMoreIcon sx={{ transform: expanded ? 'rotate(180deg)' : 'none' }} />}
-          >
-            {expanded ? 'Show Less' : 'Show More'}
-          </Button>
         </Box>
 
         {/* Quick Search */}
@@ -313,11 +293,10 @@ const HostFilters: React.FC<HostFiltersProps> = ({
           </Box>
         </Box>
 
-        {expanded && (
-          <Box>
-            <Divider sx={{ my: 2 }} />
-            
-            <Grid container spacing={3}>
+        <Box>
+          <Divider sx={{ my: 2 }} />
+          
+          <Grid container spacing={3}>
               {/* Host State Filter */}
               <Grid item xs={12} sm={6} md={3}>
                 <FormControl fullWidth size="small">
@@ -543,8 +522,7 @@ const HostFilters: React.FC<HostFiltersProps> = ({
                 </Alert>
               </Box>
             )}
-          </Box>
-        )}
+        </Box>
       </Box>
     </Paper>
   );

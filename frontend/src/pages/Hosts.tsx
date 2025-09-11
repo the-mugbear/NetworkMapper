@@ -18,11 +18,13 @@ import {
   NetworkCheck as NetworkCheckIcon,
   Storage as StorageIcon,
   FileDownload as FileDownloadIcon,
+  Code as CodeIcon,
 } from '@mui/icons-material';
 import { getHosts, getHostFilterData } from '../services/api';
 import type { Host } from '../services/api';
 import HostFilters, { HostFilterOptions } from '../components/HostFilters';
 import ReportsDialog from '../components/ReportsDialog';
+import ToolReadyOutput from '../components/ToolReadyOutput';
 
 export default function Hosts() {
   const navigate = useNavigate();
@@ -33,6 +35,7 @@ export default function Hosts() {
   const [filters, setFilters] = useState<HostFilterOptions>({});
   const [filterData, setFilterData] = useState<any>(null);
   const [reportsDialogOpen, setReportsDialogOpen] = useState(false);
+  const [toolReadyDialogOpen, setToolReadyDialogOpen] = useState(false);
 
   const fetchHosts = async () => {
     try {
@@ -147,6 +150,14 @@ export default function Hosts() {
           Discovered Hosts
         </Typography>
         <Box display="flex" alignItems="center" gap={2}>
+          <Button
+            variant="contained"
+            startIcon={<CodeIcon />}
+            onClick={() => setToolReadyDialogOpen(true)}
+            disabled={loading || hosts.length === 0}
+          >
+            Tool Ready Output
+          </Button>
           <Button
             variant="outlined"
             startIcon={<FileDownloadIcon />}
@@ -295,6 +306,13 @@ export default function Hosts() {
         onClose={() => setReportsDialogOpen(false)}
         filters={filters}
         totalHosts={hosts.length}
+      />
+
+      {/* Tool Ready Output Dialog */}
+      <ToolReadyOutput
+        open={toolReadyDialogOpen}
+        onClose={() => setToolReadyDialogOpen(false)}
+        filters={filters}
       />
     </Box>
   );

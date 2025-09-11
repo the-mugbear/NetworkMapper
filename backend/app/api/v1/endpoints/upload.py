@@ -128,6 +128,15 @@ async def upload_scan_file(
                 parser = parser_class(db)
                 scan = parser.parse_file(temp_file_path, file.filename)
                 
+                # IMMEDIATE COMMIT - CRITICAL FIX FOR SCAN PERSISTENCE
+                db.commit()
+                logger.error(f"CRITICAL: Committed scan {scan.id} to database - this should appear in logs!")
+                
+                logger.info(f"About to commit scan {scan.id} to database")
+                # Commit immediately after parsing to ensure persistence
+                db.commit()
+                logger.info(f"Committed scan {scan.id} to database after parsing")
+                
                 parse_elapsed = time.time() - parse_start_time
                 logger.info(f"Successfully parsed {file.filename} with {parser_class.__name__} in {parse_elapsed:.2f} seconds")
                 
@@ -155,25 +164,44 @@ async def upload_scan_file(
                 detail=f"Failed to parse file. Error ID: {parse_error.id} - Check parse errors for detailed information and suggestions."
             )
         
-        # Enrich with DNS data if requested
-        if enrich_dns and scan:
-            dns_service = DNSService(db, custom_dns_server=dns_server if dns_server else None)
-            enriched_count = 0
-            
-            logger.info(f"Starting DNS enrichment for scan {scan.id} with {len(scan.hosts)} hosts"
-                       f" using {'custom DNS server: ' + dns_server if dns_server else 'system default DNS'}")
-            
-            for host in scan.hosts:
-                try:
-                    enrichment_data = dns_service.enrich_host_data(host)
-                    if enrichment_data['reverse_dns'] or enrichment_data['dns_records']:
-                        enriched_count += 1
-                except Exception as e:
-                    # Log but don't fail the entire upload
-                    logger.warning(f"DNS enrichment failed for host {host.ip_address}: {str(e)}")
-            
-            if enriched_count > 0:
-                message += f" (DNS enriched {enriched_count} hosts using {'custom server: ' + dns_server if dns_server else 'system DNS'})"
+        logger.info(f"Parsing completed successfully, scan ID: {scan.id}")
+        
+        # TODO: Re-enable DNS enrichment after fixing scan.hosts relationship
+        # # Enrich with DNS data if requested
+        # if enrich_dns and scan:
+        #     try:
+        #         dns_service = DNSService(db, custom_dns_server=dns_server if dns_server else None)
+        #         enriched_count = 0
+        #         
+        #         # Get hosts associated with this scan from the database
+        #         from app.db import models
+        #         from sqlalchemy.orm import Session
+        #         scan_hosts = db.query(models.Host).join(models.HostScanHistory).filter(
+        #             models.HostScanHistory.scan_id == scan.id
+        #         ).all()
+        #         
+        #         logger.info(f"Starting DNS enrichment for scan {scan.id} with {len(scan_hosts)} hosts"
+        #                    f" using {'custom DNS server: ' + dns_server if dns_server else 'system default DNS'}")
+        #         
+        #         for host in scan_hosts:
+        #             try:
+        #                 enrichment_data = dns_service.enrich_host_data(host)
+        #                 if enrichment_data['reverse_dns'] or enrichment_data['dns_records']:
+        #                     enriched_count += 1
+        #             except Exception as e:
+        #                 # Log but don't fail the entire upload
+        #                 logger.warning(f"DNS enrichment failed for host {host.ip_address}: {str(e)}")
+        #         
+        #         if enriched_count > 0:
+        #             message += f" (DNS enriched {enriched_count} hosts using {'custom server: ' + dns_server if dns_server else 'system DNS'})"
+        #     except Exception as e:
+        #         logger.error(f"DNS enrichment failed for scan {scan.id}: {str(e)}")
+        #         # Continue without DNS enrichment
+        
+        # Commit the transaction to persist all changes
+        logger.info(f"Committing scan {scan.id} to database")
+        db.commit()
+        logger.info(f"Successfully committed scan {scan.id}")
         
         return FileUploadResponse(
             message=message,

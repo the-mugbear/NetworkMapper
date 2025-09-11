@@ -15,18 +15,19 @@ def get_scans(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    # Get scans with summary statistics - simplified to avoid join ambiguity
+    # Get scans with summary statistics using v2 audit tables
     scans_query = (
         db.query(
             models.Scan.id,
             models.Scan.filename,
             models.Scan.scan_type,
             models.Scan.created_at,
-            func.count(models.Host.id).label('total_hosts'),
+            func.count(models.HostScanHistory.id).label('total_hosts'),
             func.sum(case((models.Host.state == 'up', 1), else_=0)).label('up_hosts')
         )
         .select_from(models.Scan)
-        .outerjoin(models.Host, models.Scan.id == models.Host.scan_id)
+        .outerjoin(models.HostScanHistory, models.Scan.id == models.HostScanHistory.scan_id)
+        .outerjoin(models.Host, models.HostScanHistory.host_id == models.Host.id)
         .group_by(models.Scan.id, models.Scan.filename, models.Scan.scan_type, models.Scan.created_at)
         .order_by(desc(models.Scan.created_at))
         .offset(skip)
@@ -46,7 +47,8 @@ def get_scans(
             )
             .select_from(models.Port)
             .join(models.Host, models.Port.host_id == models.Host.id)
-            .filter(models.Host.scan_id == result.id)
+            .join(models.HostScanHistory, models.Host.id == models.HostScanHistory.host_id)
+            .filter(models.HostScanHistory.scan_id == result.id)
             .first()
         )
         
@@ -76,10 +78,83 @@ def delete_scan(scan_id: int, db: Session = Depends(get_db)):
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     
-    db.delete(scan)
-    db.commit()
-    
-    return {"message": "Scan deleted successfully"}
+    try:
+        # Handle cascading deletions properly for v2 schema
+        # Use step-by-step deletion with intermediate commits to handle foreign key constraints
+        from sqlalchemy import text
+        
+        # Step 1: Delete scripts_v2 entries that reference ports from this scan
+        scripts_deleted = db.execute(text("""
+            DELETE FROM scripts_v2 
+            WHERE scan_id = :scan_id
+        """), {"scan_id": scan_id})
+        db.commit()
+        
+        # Step 2: Delete host_scripts_v2 entries from this scan
+        host_scripts_deleted = db.query(models.HostScript).filter(models.HostScript.scan_id == scan_id).delete()
+        db.commit()
+        
+        # Step 3: Delete eyewitness_results from this scan
+        eyewitness_deleted = db.query(models.EyewitnessResult).filter(models.EyewitnessResult.scan_id == scan_id).delete()
+        db.commit()
+        
+        # Step 4: Delete out_of_scope_hosts from this scan  
+        out_of_scope_deleted = db.query(models.OutOfScopeHost).filter(models.OutOfScopeHost.scan_id == scan_id).delete()
+        db.commit()
+        
+        # Step 5: Delete scan_info entries
+        scan_info_deleted = db.query(models.ScanInfo).filter(models.ScanInfo.scan_id == scan_id).delete()
+        db.commit()
+        
+        # Step 6: Update hosts that have this scan as their last_updated_scan_id
+        hosts_to_update = db.query(models.Host).filter(models.Host.last_updated_scan_id == scan_id).all()
+        for host in hosts_to_update:
+            # Find the most recent previous scan for this host
+            previous_scan_history = db.query(models.HostScanHistory).filter(
+                models.HostScanHistory.host_id == host.id,
+                models.HostScanHistory.scan_id != scan_id
+            ).order_by(models.HostScanHistory.discovered_at.desc()).first()
+            
+            if previous_scan_history:
+                host.last_updated_scan_id = previous_scan_history.scan_id
+            else:
+                host.last_updated_scan_id = None
+        db.commit()
+        
+        # Step 7: Update ports that have this scan as their last_updated_scan_id
+        ports_to_update = db.query(models.Port).filter(models.Port.last_updated_scan_id == scan_id).all()
+        for port in ports_to_update:
+            # For ports, find the most recent scan that saw this port (excluding current scan)
+            port_history = db.query(models.PortScanHistory).filter(
+                models.PortScanHistory.port_id == port.id,
+                models.PortScanHistory.scan_id != scan_id
+            ).order_by(models.PortScanHistory.discovered_at.desc()).first()
+            
+            if port_history:
+                port.last_updated_scan_id = port_history.scan_id
+            else:
+                port.last_updated_scan_id = None
+        db.commit()
+        
+        # Step 8: Delete port_scan_history entries (after updating port references)
+        port_scan_count = db.query(models.PortScanHistory).filter(models.PortScanHistory.scan_id == scan_id).count()
+        db.query(models.PortScanHistory).filter(models.PortScanHistory.scan_id == scan_id).delete()
+        db.commit()
+        print(f"Deleted {port_scan_count} port_scan_history records for scan {scan_id}")
+        
+        # Step 9: Delete host_scan_history entries (after updating all references)
+        host_scan_count = db.query(models.HostScanHistory).filter(models.HostScanHistory.scan_id == scan_id).delete()
+        db.commit()
+        
+        # Step 10: Finally delete the scan itself
+        db.delete(scan)
+        db.commit()
+        
+        return {"message": "Scan deleted successfully"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting scan: {str(e)}")
 
 @router.get("/{scan_id}/eyewitness", response_model=List[EyewitnessResult])
 def get_scan_eyewitness_results(
@@ -180,7 +255,7 @@ def get_scan_hosts_count(scan_id: int, state: Optional[str] = None, db: Session 
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     
-    query = db.query(models.Host).filter(models.Host.scan_id == scan_id)
+    query = db.query(models.Host).join(models.HostScanHistory, models.Host.id == models.HostScanHistory.host_id).filter(models.HostScanHistory.scan_id == scan_id)
     if state:
         query = query.filter(models.Host.state == state)
     

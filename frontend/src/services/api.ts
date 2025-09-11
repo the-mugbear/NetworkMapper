@@ -22,7 +22,6 @@ export interface Scan {
 
 export interface Host {
   id: number;
-  scan_id: number;
   ip_address: string;
   hostname: string | null;
   state: string | null;
@@ -245,7 +244,7 @@ export const getHostsByScan = async (scanId: number, state?: string): Promise<Ho
 };
 
 export const getHostFilterData = async () => {
-  const response = await api.get('/hosts/filters/ports');
+  const response = await api.get('/hosts/filters/data');
   return response.data;
 };
 
@@ -271,8 +270,8 @@ export const getScopes = async (): Promise<ScopeSummary[]> => {
   return response.data;
 };
 
-export const getScope = async (scopeId: number): Promise<Scope> => {
-  const response = await api.get(`/scopes/${scopeId}`);
+export const getScope = async (scopeId: number, withFindingsOnly: boolean = false): Promise<Scope> => {
+  const response = await api.get(`/scopes/${scopeId}?with_findings_only=${withFindingsOnly}`);
   return response.data;
 };
 

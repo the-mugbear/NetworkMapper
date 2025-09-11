@@ -349,6 +349,61 @@ export default function RiskAssessment() {
                     <TableCell>HTTP-alt</TableCell>
                     <TableCell>Alternate HTTP port</TableCell>
                   </TableRow>
+                  <TableRow>
+                    <TableCell>688</TableCell>
+                    <TableCell>Kerberos</TableCell>
+                    <TableCell>Network authentication protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>389</TableCell>
+                    <TableCell>LDAP</TableCell>
+                    <TableCell>Lightweight Directory Access Protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>636</TableCell>
+                    <TableCell>LDAPS</TableCell>
+                    <TableCell>LDAP over SSL</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>135</TableCell>
+                    <TableCell>MS-RPC</TableCell>
+                    <TableCell>Microsoft Remote Procedure Call</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>139</TableCell>
+                    <TableCell>NetBIOS</TableCell>
+                    <TableCell>NetBIOS Session Service</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>161</TableCell>
+                    <TableCell>SNMP</TableCell>
+                    <TableCell>Simple Network Management Protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>623</TableCell>
+                    <TableCell>IPMI</TableCell>
+                    <TableCell>Intelligent Platform Management Interface</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>1723</TableCell>
+                    <TableCell>PPTP</TableCell>
+                    <TableCell>Point-to-Point Tunneling Protocol</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>1812</TableCell>
+                    <TableCell>RADIUS</TableCell>
+                    <TableCell>Remote Authentication Dial-In User Service</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>5900</TableCell>
+                    <TableCell>VNC</TableCell>
+                    <TableCell>Virtual Network Computing</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>8443</TableCell>
+                    <TableCell>HTTPS-alt</TableCell>
+                    <TableCell>Alternate HTTPS port</TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>

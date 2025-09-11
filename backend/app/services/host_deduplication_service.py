@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.db import models
-from app.db.models_v2 import Host, PortV2, ScriptV2, HostScriptV2, HostScanHistory, PortScanHistory
+from app.db.models import Host, Port, Script, HostScript, HostScanHistory, PortScanHistory
 
 
 class HostDeduplicationService:
@@ -45,7 +45,7 @@ class HostDeduplicationService:
             self._record_host_scan_history(new_host.id, scan_id, host_data, is_new=True)
             return new_host
     
-    def find_or_create_port(self, host_id: int, scan_id: int, port_data: Dict[str, Any]) -> PortV2:
+    def find_or_create_port(self, host_id: int, scan_id: int, port_data: Dict[str, Any]) -> Port:
         """
         Find existing port by host_id + port_number + protocol or create new one.
         Updates existing port with new information.
@@ -54,10 +54,10 @@ class HostDeduplicationService:
         protocol = port_data.get('protocol', 'tcp')
         
         # Try to find existing port
-        existing_port = self.db.query(PortV2).filter(
-            PortV2.host_id == host_id,
-            PortV2.port_number == port_number,
-            PortV2.protocol == protocol
+        existing_port = self.db.query(Port).filter(
+            Port.host_id == host_id,
+            Port.port_number == port_number,
+            Port.protocol == protocol
         ).first()
         
         if existing_port:
@@ -76,15 +76,15 @@ class HostDeduplicationService:
             self._record_port_scan_history(new_port.id, scan_id, port_data, is_new=True)
             return new_port
     
-    def add_or_update_script(self, port_id: int, scan_id: int, script_data: Dict[str, Any]) -> ScriptV2:
+    def add_or_update_script(self, port_id: int, scan_id: int, script_data: Dict[str, Any]) -> Script:
         """Add or update a script for a port"""
         script_id = script_data.get('script_id')
         output = script_data.get('output', '')
         
         # Try to find existing script
-        existing_script = self.db.query(ScriptV2).filter(
-            ScriptV2.port_id == port_id,
-            ScriptV2.script_id == script_id
+        existing_script = self.db.query(Script).filter(
+            Script.port_id == port_id,
+            Script.script_id == script_id
         ).first()
         
         if existing_script:
@@ -95,7 +95,7 @@ class HostDeduplicationService:
             return existing_script
         else:
             # Create new script
-            new_script = ScriptV2(
+            new_script = Script(
                 port_id=port_id,
                 script_id=script_id,
                 output=output,
@@ -104,15 +104,15 @@ class HostDeduplicationService:
             self.db.add(new_script)
             return new_script
     
-    def add_or_update_host_script(self, host_id: int, scan_id: int, script_data: Dict[str, Any]) -> HostScriptV2:
+    def add_or_update_host_script(self, host_id: int, scan_id: int, script_data: Dict[str, Any]) -> HostScript:
         """Add or update a host script"""
         script_id = script_data.get('script_id')
         output = script_data.get('output', '')
         
         # Try to find existing host script
-        existing_script = self.db.query(HostScriptV2).filter(
-            HostScriptV2.host_id == host_id,
-            HostScriptV2.script_id == script_id
+        existing_script = self.db.query(HostScript).filter(
+            HostScript.host_id == host_id,
+            HostScript.script_id == script_id
         ).first()
         
         if existing_script:
@@ -123,7 +123,7 @@ class HostDeduplicationService:
             return existing_script
         else:
             # Create new host script
-            new_script = HostScriptV2(
+            new_script = HostScript(
                 host_id=host_id,
                 script_id=script_id,
                 output=output,
@@ -187,9 +187,9 @@ class HostDeduplicationService:
         
         return host
     
-    def _create_new_port(self, host_id: int, scan_id: int, port_data: Dict[str, Any]) -> PortV2:
+    def _create_new_port(self, host_id: int, scan_id: int, port_data: Dict[str, Any]) -> Port:
         """Create a new port record"""
-        port = PortV2(
+        port = Port(
             host_id=host_id,
             port_number=port_data.get('port_number'),
             protocol=port_data.get('protocol', 'tcp'),
@@ -206,7 +206,7 @@ class HostDeduplicationService:
         )
         return port
     
-    def _update_existing_port(self, port: PortV2, scan_id: int, port_data: Dict[str, Any]) -> PortV2:
+    def _update_existing_port(self, port: Port, scan_id: int, port_data: Dict[str, Any]) -> Port:
         """
         Update existing port with new data using conflict resolution.
         Strategy: Keep most detailed/accurate service information.
@@ -300,8 +300,8 @@ class HostDeduplicationService:
         """Get overall host statistics"""
         total_hosts = self.db.query(Host).count()
         active_hosts = self.db.query(Host).filter(Host.state == 'up').count()
-        total_ports = self.db.query(PortV2).count()
-        open_ports = self.db.query(PortV2).filter(PortV2.state == 'open').count()
+        total_ports = self.db.query(Port).count()
+        open_ports = self.db.query(Port).filter(Port.state == 'open').count()
         
         return {
             'total_hosts': total_hosts,

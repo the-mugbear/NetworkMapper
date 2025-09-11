@@ -1,6 +1,6 @@
 from typing import List
 from sqlalchemy.orm import Session
-from app.db.models import Host, Subnet, HostSubnetMapping
+from app.db.models import Host, Subnet, HostSubnetMapping, HostScanHistory
 from app.parsers.subnet_parser import SubnetParser
 
 class SubnetCorrelationService:
@@ -69,7 +69,8 @@ class SubnetCorrelationService:
         Returns:
             Number of mappings created
         """
-        hosts = self.db.query(Host).filter(Host.scan_id == scan_id).all()
+        # Get hosts discovered by this scan using audit table
+        hosts = self.db.query(Host).join(HostScanHistory, Host.id == HostScanHistory.host_id).filter(HostScanHistory.scan_id == scan_id).all()
         
         total_mappings = 0
         for host in hosts:
@@ -81,7 +82,7 @@ class SubnetCorrelationService:
     def batch_correlate_scan_hosts_to_subnets(self, scan_id: int) -> int:
         """
         Batch correlate all hosts from a specific scan to their respective subnets.
-        More efficient than individual correlation for large scans.
+        Uses efficient IP trie for O(log n) lookup time per host.
         
         Args:
             scan_id: The scan ID to process
@@ -90,13 +91,13 @@ class SubnetCorrelationService:
             Number of mappings created
         """
         # Get all hosts from the scan
-        hosts = self.db.query(Host).filter(Host.scan_id == scan_id).all()
+        hosts = self.db.query(Host).join(HostScanHistory, Host.id == HostScanHistory.host_id).filter(HostScanHistory.scan_id == scan_id).all()
         if not hosts:
             return 0
         
-        # Get all subnets once
-        subnets = self.parser.get_all_subnets()
-        if not subnets:
+        # Check if we have any subnets to match against
+        subnet_count = self.db.query(Subnet).count()
+        if subnet_count == 0:
             return 0
         
         # Clear existing mappings for all hosts in this scan
@@ -105,12 +106,11 @@ class SubnetCorrelationService:
             HostSubnetMapping.host_id.in_(host_ids)
         ).delete()
         
-        # Batch process mappings
+        # Use trie-based lookup for efficient matching
+        # The parser's find_matching_subnets method now uses the cached trie
         mapping_data = []
         for host in hosts:
-            matching_subnets = self.parser.find_matching_subnets_from_list(
-                host.ip_address, subnets
-            )
+            matching_subnets = self.parser.find_matching_subnets(host.ip_address)
             
             for subnet in matching_subnets:
                 mapping_data.append({
@@ -156,3 +156,15 @@ class SubnetCorrelationService:
         ).all()
         
         return [mapping.host for mapping in mappings]
+    
+    def invalidate_subnet_cache(self):
+        """Invalidate the subnet trie cache. Call after subnet modifications."""
+        self.parser.invalidate_trie_cache()
+    
+    def get_performance_stats(self) -> dict:
+        """Get performance statistics about the subnet matching system."""
+        return {
+            'total_subnets': self.db.query(Subnet).count(),
+            'total_mappings': self.db.query(HostSubnetMapping).count(),
+            'trie_stats': self.parser.get_trie_stats()
+        }

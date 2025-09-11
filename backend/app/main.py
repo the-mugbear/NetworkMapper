@@ -6,7 +6,6 @@ from app.core.config import settings
 from app.api.v1.api import api_router
 from app.db.session import engine
 from app.db import models
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -19,21 +18,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Create database tables
-models.Base.metadata.create_all(bind=engine)
+models.Base.metadata.create_all(bind=engine, checkfirst=True)
 
 app = FastAPI(
     title="NetworkMapper API",
     description="API for parsing and managing network scan results with service name filtering and reports",
-    version="1.2.0",
+    version="2.2.0",
 )
 
-# Set up CORS
+# Set up CORS with more permissive configuration for debugging
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins for debugging
+    allow_credentials=False,  # Must be False when using wildcard origins
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include API router
@@ -46,7 +46,7 @@ async def startup_event():
     
 @app.get("/")
 async def root():
-    return {"message": "NetworkMapper API", "version": "1.2.0"}
+    return {"message": "NetworkMapper API", "version": "2.2.0", "cors_origins": settings.CORS_ORIGINS}
 
 @app.get("/health")
 async def health_check():

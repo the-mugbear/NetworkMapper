@@ -2,6 +2,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app.db import models
+from app.services.host_deduplication_service import HostDeduplicationService
 from app.services.subnet_correlation import SubnetCorrelationService
 import logging
 import time
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 class GnmapParser:
     def __init__(self, db: Session):
         self.db = db
+        self.dedup_service = HostDeduplicationService(db)
         self.correlation_service = SubnetCorrelationService(db)
 
     def parse_file(self, file_path: str, filename: str) -> models.Scan:
@@ -59,58 +61,38 @@ class GnmapParser:
         # Save scan to get ID
         logger.info(f"Saving initial scan record to database")
         self.db.add(scan)
-        self.db.commit()
-        self.db.refresh(scan)
-        logger.info(f"Scan record created with ID: {scan.id}")
+        self.db.flush()
+        scan_id = scan.id
         
         # Parse hosts
         hosts_data = self._parse_hosts(lines)
         total_hosts = len(hosts_data)
         logger.info(f"Found {total_hosts} hosts to parse")
         
-        # Bulk process hosts
-        start_time = time.time()
-        hosts_db_data, ports_db_data = self._prepare_bulk_data(hosts_data, scan.id)
-        hosts_processed = len(hosts_db_data)
-        
-        # Bulk insert hosts
-        if hosts_db_data:
-            logger.info(f"Bulk inserting {len(hosts_db_data)} hosts...")
-            self.db.bulk_insert_mappings(models.Host, hosts_db_data)
-            self.db.flush()
-            
-            # Get host ID mappings
-            host_id_map = {}
-            hosts = self.db.query(models.Host).filter(models.Host.scan_id == scan.id).all()
-            for host in hosts:
-                host_id_map[host.ip_address] = host.id
-            
-            # Update ports data with host IDs
-            for port_data in ports_db_data:
-                port_data['host_id'] = host_id_map[port_data['ip_address']]
-                del port_data['ip_address']
-            
-            # Bulk insert ports
-            if ports_db_data:
-                logger.info(f"Bulk inserting {len(ports_db_data)} ports...")
-                self.db.bulk_insert_mappings(models.Port, ports_db_data)
-        
-        # Commit all parsed data at once
-        logger.info(f"Committing all parsed data to database ({hosts_processed} hosts processed)")
-        self.db.commit()
+        # Process hosts with deduplication
+        hosts_processed = 0
+        for host_data in hosts_data:
+            try:
+                self._process_host_with_deduplication(host_data, scan_id)
+                hosts_processed += 1
+                
+                if hosts_processed % 100 == 0:
+                    logger.info(f"Processed {hosts_processed} hosts")
+                    
+            except Exception as e:
+                logger.error(f"Error processing host {host_data.get('ip_address', 'unknown')}: {e}")
+                continue
         
         # Correlate hosts to subnets
-        logger.info(f"Starting subnet correlation for scan {scan.id}")
         try:
-            correlation_start = time.time()
-            mappings_created = self.correlation_service.batch_correlate_scan_hosts_to_subnets(scan.id)
-            correlation_time = time.time() - correlation_start
-            logger.info(f"Created {mappings_created} host-subnet mappings for scan {scan.id} in {correlation_time:.2f} seconds")
+            logger.info(f"Starting subnet correlation for scan {scan_id}")
+            hosts_correlated = self.correlation_service.batch_correlate_scan_hosts_to_subnets(scan_id)
+            logger.info(f"Correlated {hosts_correlated} hosts to subnets")
         except Exception as e:
-            logger.warning(f"Failed to correlate hosts to subnets for scan {scan.id}: {str(e)}")
-            
-        total_time = time.time() - start_time
-        logger.info(f"Completed parsing {filename}: {hosts_processed}/{total_hosts} hosts in {total_time:.2f} seconds")
+            logger.error(f"Error in subnet correlation: {e}")
+            # Continue parsing even if correlation fails
+        
+        logger.info(f"Completed parsing {filename}: {hosts_processed}/{total_hosts} hosts processed")
         return scan
 
     def _extract_scan_info(self, lines: List[str]) -> Dict[str, Any]:
@@ -290,59 +272,33 @@ class GnmapParser:
         
         return ports_data
 
-    def _create_host_record(self, host_data: Dict[str, Any], scan_id: int):
-        """Create host and port records in the database"""
-        # Create host record
-        host = models.Host(
-            scan_id=scan_id,
-            ip_address=host_data['ip_address'],
-            hostname=host_data.get('hostname'),
-            state=host_data['state'],
-            state_reason=host_data.get('state_reason', '')
-        )
-        
-        self.db.add(host)
-        self.db.flush()  # Get host ID without committing
-        self.db.refresh(host)
-        
-        # Create port records
-        for port_data in host_data.get('ports', []):
-            port = models.Port(
-                host_id=host.id,
-                port_number=port_data['port_number'],
-                protocol=port_data['protocol'],
-                state=port_data['state'],
-                service_name=port_data.get('service_name'),
-                service_version=port_data.get('service_version')
-            )
-            self.db.add(port)
+    def _process_host_with_deduplication(self, host_data: Dict[str, Any], scan_id: int):
+        """Process a single host using deduplication service"""
+        ip_address = host_data.get('ip_address')
+        if not ip_address:
+            logger.warning("Host without IP address, skipping")
+            return
 
-    def _prepare_bulk_data(self, hosts_data: List[Dict[str, Any]], scan_id: int) -> tuple:
-        """Prepare data for bulk database insertions"""
-        hosts_db_data = []
-        ports_db_data = []
-        
-        for host_data in hosts_data:
-            # Prepare host data
-            host_db_data = {
-                'scan_id': scan_id,
-                'ip_address': host_data['ip_address'],
-                'hostname': host_data.get('hostname'),
-                'state': host_data['state'],
-                'state_reason': host_data.get('state_reason', '')
+        # Extract host metadata for deduplication service
+        host_metadata = {
+            'hostname': host_data.get('hostname'),
+            'state': host_data.get('state'),
+            'state_reason': host_data.get('state_reason')
+        }
+
+        # Find or create deduplicated host
+        host = self.dedup_service.find_or_create_host(ip_address, scan_id, host_metadata)
+
+        # Process ports
+        for port_data in host_data.get('ports', []):
+            # Extract port information
+            port_info = {
+                'port_number': port_data.get('port_number'),
+                'protocol': port_data.get('protocol', 'tcp'),
+                'state': port_data.get('state'),
+                'service_name': port_data.get('service_name'),
+                'service_version': port_data.get('service_version')
             }
-            hosts_db_data.append(host_db_data)
             
-            # Prepare port data
-            for port_data in host_data.get('ports', []):
-                port_db_data = {
-                    'ip_address': host_data['ip_address'],  # Temporary for ID mapping
-                    'port_number': port_data['port_number'],
-                    'protocol': port_data['protocol'],
-                    'state': port_data['state'],
-                    'service_name': port_data.get('service_name'),
-                    'service_version': port_data.get('service_version')
-                }
-                ports_db_data.append(port_db_data)
-        
-        return hosts_db_data, ports_db_data
+            # Find or create deduplicated port
+            self.dedup_service.find_or_create_port(host.id, scan_id, port_info)

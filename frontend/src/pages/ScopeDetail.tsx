@@ -45,7 +45,7 @@ const ScopeDetail: React.FC = () => {
   const loadScopeDetails = async () => {
     try {
       setLoading(true);
-      const scopeData = await getScope(Number(scopeId));
+      const scopeData = await getScope(Number(scopeId), false); // Show all subnets by default
       const mappingsData = await getScopeHostMappings(Number(scopeId));
       
       setScope(scopeData);

@@ -17,7 +17,7 @@ class Settings:
     
     # File upload settings
     UPLOAD_DIR: str = os.path.join(os.getcwd(), "uploads")
-    MAX_FILE_SIZE: int = 50 * 1024 * 1024  # 50MB
+    MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
     
     # Supported file extensions
     ALLOWED_EXTENSIONS: List[str] = [".xml"]

@@ -9,6 +9,7 @@ class ScriptBase(BaseModel):
 class Script(ScriptBase):
     id: int
     port_id: int
+    scan_id: int
     
     class Config:
         from_attributes = True
@@ -20,6 +21,7 @@ class HostScriptBase(BaseModel):
 class HostScript(HostScriptBase):
     id: int
     host_id: int
+    scan_id: int
     
     class Config:
         from_attributes = True
@@ -39,6 +41,7 @@ class PortBase(BaseModel):
 class Port(PortBase):
     id: int
     host_id: int
+    last_updated_scan_id: Optional[int] = None
     scripts: List[Script] = []
     
     class Config:
@@ -58,7 +61,7 @@ class HostBase(BaseModel):
 
 class Host(HostBase):
     id: int
-    scan_id: int
+    last_updated_scan_id: Optional[int] = None
     ports: List[Port] = []
     host_scripts: List[HostScript] = []
     

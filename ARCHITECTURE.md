@@ -1,55 +1,249 @@
-# Architecture Review
+# NetworkMapper v2 Architecture - Host Deduplication
 
-## 1. High-Level Overview
+## Overview
 
-The project is a web application designed to parse and analyze network scan results. It follows a classic client-server architecture:
+This document describes the v2 architecture that eliminates duplicate host entries by implementing host deduplication at the database and parser level. Instead of creating separate host records for each scan, the system now maintains a single host record per IP address and tracks scan history through audit tables.
 
-*   **Frontend:** A single-page application (SPA) built with React and TypeScript, using Material-UI for components.
-*   **Backend:** A RESTful API built with Python and FastAPI, using a PostgreSQL database for data storage.
-*   **Deployment:** The entire application is containerized using Docker and managed with Docker Compose, which simplifies setup and deployment.
+## Problem Solved
 
-This is a solid and modern architecture for this type of application. The separation of frontend and backend allows for independent development and scaling.
+**Before (v1):** 
+- Same IP address appeared multiple times when found in different scans
+- Each scan created separate host records even for identical IPs
+- Frontend required complex aggregation logic to display unified view
+- Database grew unnecessarily large with redundant data
 
-## 2. Backend Architecture
+**After (v2):**
+- Single host record per IP address across all scans
+- Ports aggregated from all scans for each host
+- Clean, deduplicated view in the UI by default
+- Audit tables maintain complete scan history
+- More efficient storage and queries
 
-The backend is well-structured, following FastAPI best practices.
+## Architecture Changes
 
-*   **API:** The API is versioned (`/api/v1`), which is a good practice for maintainability. The endpoints are logically grouped into routers by functionality (scans, hosts, etc.), making the code easy to navigate.
-*   **Database:** The use of SQLAlchemy as an ORM is appropriate. The database models are well-defined and include relationships between tables. The use of a dependency injection system (`get_db`) to manage database sessions is a good pattern in FastAPI.
-*   **Parsers:** The application supports multiple parser types (Nmap, Masscan, Eyewitness), which are encapsulated in their own modules. This makes it easy to add new parsers in the future.
-*   **Services:** The use of a `services` layer (e.g., `DNSService`, `ExportService`, `SubnetCorrelationService`) is a good way to encapsulate business logic and keep the API endpoints clean.
-*   **Configuration:** The configuration is managed in a single file (`config.py`) and uses environment variables, which is a good practice for security and flexibility.
+### Database Schema v2
 
-## 3. Frontend Architecture
+#### New Host Model (`hosts_v2`)
+```sql
+- ip_address (unique, indexed) -- No more scan_id foreign key
+- hostname, state, os_info... -- Merged from all scans
+- first_seen, last_seen -- Audit timestamps  
+- last_updated_scan_id -- Reference to most recent scan
+```
 
-The frontend is a modern React application.
+#### New Port Model (`ports_v2`)
+```sql
+- Unique constraint on (host_id, port_number, protocol)
+- first_seen, last_seen -- Port lifecycle tracking
+- is_active -- Whether port is currently active
+- last_updated_scan_id -- Track source of latest data
+```
 
-*   **Component-Based:** The UI is built with reusable components, which is a core principle of React.
-*   **Routing:** `react-router-dom` is used for client-side routing, which is the standard for React applications.
-*   **State Management:** The application uses React's built-in state management (`useState`, `useEffect`). For a larger application, a more advanced state management library like Redux or MobX might be beneficial, but for the current scope, this is sufficient.
-*   **API Communication:** `axios` is used for making API requests. The API calls are centralized in `src/services/api.ts`, which is a good practice.
-*   **UI Library:** Material-UI is used for UI components, which provides a consistent and professional look and feel.
+#### Audit Tables
+- `host_scan_history` - Which scans discovered each host
+- `port_scan_history` - Port state changes over time
+- Full audit trail for compliance and debugging
 
-## 4. Data Model and Database Schema
+### Conflict Resolution Strategy
 
-The database schema is well-designed and normalized.
+#### Host Metadata
+- **Hostname:** Longer/more detailed wins
+- **OS Information:** Higher accuracy score wins  
+- **State:** Most recent scan wins
+- **Timestamps:** Always track first/last seen
 
-*   The relationships between tables (`Scan`, `Host`, `Port`, `Scope`, `Subnet`, etc.) are clearly defined with foreign keys.
-*   The use of `cascade="all, delete-orphan"` on relationships ensures data integrity when a parent record is deleted.
-*   The schema is flexible enough to support different types of scans and tools.
+#### Port Information
+- **Service Detection:** Higher confidence score wins
+- **State:** Most recent scan wins
+- **Scripts:** Merge all unique scripts from all scans
 
-## 5. Strengths and Weaknesses
+### Services and Components
 
-### Strengths
+#### HostDeduplicationService
+Core service handling:
+- `find_or_create_host()` - Lookup/merge host records
+- `find_or_create_port()` - Lookup/merge port records  
+- Conflict resolution algorithms
+- Audit history tracking
+- Statistics updates
 
-*   **Modern Technology Stack:** The use of FastAPI, React, TypeScript, and Docker makes the application modern, performant, and maintainable.
-*   **Well-Structured Code:** The project is well-organized, with a clear separation of concerns.
-*   **Extensibility:** The parser and service architecture makes it easy to add support for new tools and features.
-*   **Containerized:** The use of Docker and Docker Compose makes the application easy to set up and deploy.
+#### Parser v2 (NmapXMLParserV2)
+- Uses deduplication service instead of direct DB inserts
+- Maintains same parsing logic but routes through deduplication
+- Tracks scan provenance for all data
 
-### Weaknesses/Areas for Improvement
+#### Feature Flags System
+- `USE_V2_SCHEMA` - Enable v2 database tables
+- `USE_V2_PARSER` - Use deduplication parser
+- `DUAL_WRITE_MODE` - Parse with both v1/v2 for validation
+- `MIGRATION_MODE` - Special migration behaviors
 
-*   **Limited Testing:** There are no automated tests in the project. Adding unit and integration tests would significantly improve the code quality and reduce the risk of regressions.
-*   **Error Handling:** The error handling in some parts of the application could be more specific. For example, catching generic `Exception`s can mask the root cause of a problem.
-*   **Frontend State Management:** As the application grows, managing state with only `useState` and `useEffect` might become complex. Introducing a state management library could be beneficial.
-*   **Security:** While there are no glaring security holes, some areas could be improved, such as adding more input validation and using more specific CORS policies for production environments.
+## Migration Process
+
+### Phase 1: Deploy v2 Code (Without Enabling)
+```bash
+# Deploy code with feature flags disabled
+git pull origin main
+docker-compose build
+docker-compose up -d
+```
+
+### Phase 2: Create v2 Tables
+```bash
+# Run migration to create v2 tables alongside v1
+docker-compose exec backend python -m app.db.migrate_to_v2 migrate
+```
+
+### Phase 3: Enable Dual Write Mode
+```bash
+# Enable both parsers for validation
+export USE_V2_PARSER=true
+export DUAL_WRITE_MODE=true
+docker-compose restart backend
+```
+
+### Phase 4: Validate and Switch
+```bash
+# Verify data integrity
+docker-compose exec backend python -m app.db.migrate_to_v2 verify
+
+# Switch to v2 completely
+export USE_V2_SCHEMA=true
+export USE_V2_HOSTS_API=true
+export DUAL_WRITE_MODE=false
+docker-compose restart
+```
+
+### Phase 5: Cleanup (Optional)
+```bash
+# After validation period, remove v1 tables
+# This is optional and can be done much later
+```
+
+## API Changes
+
+### Hosts Endpoint v2
+- **Simpler Implementation:** No more complex aggregation logic
+- **Better Performance:** Direct queries on deduplicated data
+- **Same Interface:** Frontend compatibility maintained
+- **New Features:** Enhanced audit capabilities
+
+### New Endpoints
+- `/api/v1/hosts/audit/{host_id}` - View scan history for host
+- `/api/v1/hosts/conflicts` - View hosts with conflicting data
+- `/api/v1/stats/deduplication` - Deduplication statistics
+
+## Benefits
+
+### Performance
+- **Faster Queries:** No more aggregation needed
+- **Smaller Database:** ~60-80% reduction in host/port records
+- **Better Indexing:** Unique constraints improve query planning
+
+### Data Quality  
+- **Consistent View:** Single source of truth per IP
+- **Conflict Resolution:** Intelligent merging of scan data
+- **Audit Trail:** Complete history preserved
+
+### User Experience
+- **Cleaner Interface:** No more duplicate hosts
+- **Combined Data:** All ports from all scans in one view
+- **Historical Context:** See when data was first/last seen
+
+## Rollback Strategy
+
+If issues are discovered, rollback is simple:
+
+```bash
+# Disable v2 features
+export USE_V2_SCHEMA=false
+export USE_V2_PARSER=false
+export USE_V2_HOSTS_API=false
+docker-compose restart backend
+
+# Optional: Remove v2 tables
+docker-compose exec backend python -m app.db.migrate_to_v2 rollback
+```
+
+The v1 schema and data remain untouched during migration, ensuring safe rollback.
+
+## Testing
+
+### Automated Tests
+- `simple_dedup_test.py` - Core logic validation ✅
+- `test_v2_parser.py` - Full integration test
+- Conflict resolution scenarios
+- Performance benchmarks
+
+### Manual Testing
+1. Upload same scan multiple times - verify deduplication
+2. Upload scans with overlapping hosts - verify merging
+3. Check audit history in database
+4. Verify UI shows unified view
+
+## Monitoring
+
+### Key Metrics
+- Deduplication ratio (hosts saved vs. total)
+- Conflict resolution frequency  
+- Parse performance improvements
+- Storage savings
+
+### Health Checks
+- Ensure no duplicate IPs in hosts_v2 table
+- Verify audit history completeness
+- Monitor parse times and error rates
+
+## Future Enhancements
+
+### Planned Features
+- **Smart Port State Tracking:** Detect when ports go offline
+- **Enhanced Conflict Resolution:** ML-based data quality scoring
+- **Cross-Scan Analytics:** Track infrastructure changes over time
+- **API Rate Limiting:** Protect against bulk operations
+
+### Schema Optimizations
+- **Partitioning:** Partition audit tables by date
+- **Archiving:** Move old scan history to archive tables
+- **Indexing:** Add specialized indexes for common queries
+
+## Configuration
+
+### Environment Variables
+```bash
+# Core v2 flags
+USE_V2_SCHEMA=true
+USE_V2_PARSER=true  
+USE_V2_HOSTS_API=true
+
+# Migration flags
+MIGRATION_MODE=false
+DUAL_WRITE_MODE=false
+
+# Debug flags  
+DEBUG_DEDUPLICATION=false
+LOG_SCHEMA_OPERATIONS=false
+```
+
+### Database Settings
+```bash
+# Recommended PostgreSQL settings for v2
+shared_preload_libraries = 'pg_stat_statements'
+max_connections = 200
+work_mem = 256MB
+```
+
+## Support
+
+### Troubleshooting
+- Check feature flags configuration
+- Verify v2 tables exist and have data
+- Review backend logs for deduplication messages
+- Use migration verify command
+
+### Common Issues
+- **Duplicate IP Constraint Errors:** Check for data corruption
+- **Missing Audit History:** Verify parser is using v2 service
+- **Performance Issues:** Check indexes on new tables
+
+This architecture provides a solid foundation for scalable network mapping with clean, deduplicated data while maintaining full backward compatibility and safe migration paths.

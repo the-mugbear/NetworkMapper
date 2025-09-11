@@ -242,17 +242,36 @@ class HostDeduplicationService:
     
     def _record_host_scan_history(self, host_id: int, scan_id: int, host_data: Dict[str, Any], is_new: bool = False):
         """Record that this scan discovered/updated this host"""
-        history = HostScanHistory(
-            host_id=host_id,
-            scan_id=scan_id,
-            state_at_scan=host_data.get('state'),
-            hostname_at_scan=host_data.get('hostname'),
-            os_info_updated=bool(host_data.get('os_name'))  # True if this scan provided OS info
-        )
-        self.db.add(history)
+        # Check if history entry already exists for this host+scan combination
+        existing_history = self.db.query(HostScanHistory).filter(
+            HostScanHistory.host_id == host_id,
+            HostScanHistory.scan_id == scan_id
+        ).first()
+        
+        if existing_history:
+            # Update existing history entry
+            existing_history.state_at_scan = host_data.get('state')
+            existing_history.hostname_at_scan = host_data.get('hostname')
+            existing_history.os_info_updated = bool(host_data.get('os_name'))
+        else:
+            # Create new history entry
+            history = HostScanHistory(
+                host_id=host_id,
+                scan_id=scan_id,
+                state_at_scan=host_data.get('state'),
+                hostname_at_scan=host_data.get('hostname'),
+                os_info_updated=bool(host_data.get('os_name'))  # True if this scan provided OS info
+            )
+            self.db.add(history)
     
     def _record_port_scan_history(self, port_id: int, scan_id: int, port_data: Dict[str, Any], is_new: bool = False):
         """Record port state at time of this scan"""
+        # Check if history entry already exists for this port+scan combination
+        existing_history = self.db.query(PortScanHistory).filter(
+            PortScanHistory.port_id == port_id,
+            PortScanHistory.scan_id == scan_id
+        ).first()
+        
         service_info = {
             'service_name': port_data.get('service_name'),
             'service_product': port_data.get('service_product'),
@@ -262,13 +281,19 @@ class HostDeduplicationService:
             'service_conf': port_data.get('service_conf')
         }
         
-        history = PortScanHistory(
-            port_id=port_id,
-            scan_id=scan_id,
-            state_at_scan=port_data.get('state'),
-            service_info=json.dumps(service_info) if any(service_info.values()) else None
-        )
-        self.db.add(history)
+        if existing_history:
+            # Update existing history entry
+            existing_history.state_at_scan = port_data.get('state')
+            existing_history.service_info = json.dumps(service_info) if any(service_info.values()) else None
+        else:
+            # Create new history entry
+            history = PortScanHistory(
+                port_id=port_id,
+                scan_id=scan_id,
+                state_at_scan=port_data.get('state'),
+                service_info=json.dumps(service_info) if any(service_info.values()) else None
+            )
+            self.db.add(history)
     
     def update_scan_statistics(self, scan_id: int):
         """Update scan statistics after processing"""

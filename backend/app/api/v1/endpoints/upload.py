@@ -128,11 +128,6 @@ async def upload_scan_file(
                 parser = parser_class(db)
                 scan = parser.parse_file(temp_file_path, file.filename)
                 
-                # IMMEDIATE COMMIT - CRITICAL FIX FOR SCAN PERSISTENCE
-                db.commit()
-                logger.error(f"CRITICAL: Committed scan {scan.id} to database - this should appear in logs!")
-                
-                logger.info(f"About to commit scan {scan.id} to database")
                 # Commit immediately after parsing to ensure persistence
                 db.commit()
                 logger.info(f"Committed scan {scan.id} to database after parsing")
@@ -198,11 +193,6 @@ async def upload_scan_file(
         #         logger.error(f"DNS enrichment failed for scan {scan.id}: {str(e)}")
         #         # Continue without DNS enrichment
         
-        # Commit the transaction to persist all changes
-        logger.info(f"Committing scan {scan.id} to database")
-        db.commit()
-        logger.info(f"Successfully committed scan {scan.id}")
-        
         return FileUploadResponse(
             message=message,
             scan_id=scan.id,
@@ -212,6 +202,8 @@ async def upload_scan_file(
     except HTTPException:
         raise
     except Exception as e:
+        # Rollback the transaction on any error
+        db.rollback()
         raise HTTPException(
             status_code=400,
             detail=f"Error processing file: {str(e)}"

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getApiBaseUrl } from '../utils/apiUrl';
 import {
   Dialog,
   DialogTitle,
@@ -162,7 +163,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
 
       // Trigger download
       const link = document.createElement('a');
-      link.href = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${exportUrl}`;
+      link.href = `${getApiBaseUrl()}${exportUrl}`;
       link.download = `NetworkMapper_${exportType}_${itemName || 'report'}_${new Date().toISOString().split('T')[0]}.${selectedFormat}`;
       document.body.appendChild(link);
       link.click();

@@ -110,7 +110,7 @@ React application in `frontend/src/` with:
 
 ### Deployment Considerations
 - **Docker Caching**: Use enhanced setup scripts to prevent stale code deployment
-- **Version Verification**: Scripts automatically verify backend (1.2.0) and frontend (1.4.0) versions
+- **Version Verification**: Scripts automatically verify backend (1.2.1) and frontend (1.4.1) versions
 - **CORS Issues**: Network deployments require proper IP configuration in .env.network
 - **Build Info**: Frontend version footer requires generate-build-info.js to run during build
 

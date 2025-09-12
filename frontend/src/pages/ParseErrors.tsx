@@ -19,8 +19,6 @@ import {
   DialogActions,
   IconButton,
   Alert,
-  Tabs,
-  Tab,
   MenuItem,
   FormControl,
   Select,
@@ -40,7 +38,6 @@ import {
   Refresh as RefreshIcon,
   Close as CloseIcon,
   ExpandMore as ExpandMoreIcon,
-  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import {
   getParseErrors,

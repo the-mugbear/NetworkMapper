@@ -129,10 +129,10 @@ if curl -s "http://$CONFIGURED_IP:8000/health" > /dev/null; then
     
     # Verify backend version
     API_VERSION=$(curl -s "http://$CONFIGURED_IP:8000/" 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-    if [[ "$API_VERSION" == "1.2.0" ]]; then
+    if [[ "$API_VERSION" == "1.2.1" ]]; then
         print_success "Backend version verified: $API_VERSION"
     else
-        print_error "Backend version mismatch! Expected 1.2.0, got: $API_VERSION"
+        print_error "Backend version mismatch! Expected 1.2.1, got: $API_VERSION"
         print_error "This indicates Docker cache issues - code may not be updated"
         print_info "Try running: docker system prune -a -f && docker builder prune -a -f"
     fi
@@ -147,10 +147,10 @@ if curl -s "http://$CONFIGURED_IP:3000" > /dev/null; then
     
     # Check frontend version in footer
     FRONTEND_CONTENT=$(curl -s "http://$CONFIGURED_IP:3000" 2>/dev/null || echo "")
-    if echo "$FRONTEND_CONTENT" | grep -q "1\.4\.0"; then
-        print_success "Frontend version verified: 1.4.0"
+    if echo "$FRONTEND_CONTENT" | grep -q "1\.4\.1"; then
+        print_success "Frontend version verified: 1.4.1"
     else
-        print_error "Frontend version not found or incorrect - expected 1.4.0"
+        print_error "Frontend version not found or incorrect - expected 1.4.1"
         print_error "This indicates Docker cache issues - frontend code may not be updated"
     fi
     

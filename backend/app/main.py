@@ -23,7 +23,7 @@ models.Base.metadata.create_all(bind=engine, checkfirst=True)
 app = FastAPI(
     title="NetworkMapper API", 
     description="API for parsing and managing network scan results with service name filtering and reports",
-    version="1.2.0",
+    version="1.2.1",
 )
 
 # Set up CORS with more permissive configuration for debugging
@@ -46,7 +46,7 @@ async def startup_event():
     
 @app.get("/")
 async def root():
-    return {"message": "NetworkMapper API", "version": "1.2.0", "cors_origins": settings.CORS_ORIGINS}
+    return {"message": "NetworkMapper API", "version": "1.2.1", "cors_origins": settings.CORS_ORIGINS}
 
 @app.get("/health")
 async def health_check():

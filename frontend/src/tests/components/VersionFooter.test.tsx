@@ -5,7 +5,7 @@ import VersionFooter from '../../components/VersionFooter';
 
 // Mock environment variables
 const mockEnv = {
-  REACT_APP_VERSION: '1.5.0',
+  REACT_APP_VERSION: '1.4.1',
   REACT_APP_BUILD_TIME: '2024-01-01T12:00:00.000Z',
   REACT_APP_GIT_COMMIT: 'abc123def456',
 };

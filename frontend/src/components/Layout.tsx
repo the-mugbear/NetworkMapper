@@ -18,7 +18,6 @@ import {
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
-  CloudUpload as UploadIcon,
   Computer as HostsIcon,
   Assessment as ScansIcon,
   NetworkCheck as ScopesIcon,

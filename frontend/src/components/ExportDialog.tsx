@@ -18,7 +18,6 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Divider,
   LinearProgress,
   IconButton,
 } from '@mui/material';
@@ -33,7 +32,6 @@ import {
   Assessment as ExcelIcon,
   Slideshow as PowerPointIcon,
   Info as InfoIcon,
-  Warning as WarningIcon,
 } from '@mui/icons-material';
 
 export interface ExportDialogProps {

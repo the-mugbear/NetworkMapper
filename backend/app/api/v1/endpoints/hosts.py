@@ -489,15 +489,42 @@ def get_tool_ready_hosts(
         host_ids_with_ports = port_subquery.distinct().subquery()
         query = query.filter(models.Host.id.in_(host_ids_with_ports))
     
-    # Search filter
+    # Search filter (comprehensive search matching main hosts endpoint)
     if search:
-        query = query.filter(
-            or_(
-                models.Host.ip_address.ilike(f'%{search}%'),
-                models.Host.hostname.ilike(f'%{search}%'),
-                models.Host.os_name.ilike(f'%{search}%')
+        host_search_conditions = [
+            models.Host.ip_address.contains(search),
+            models.Host.hostname.contains(search),
+            models.Host.os_name.contains(search),
+            models.Host.os_family.contains(search)
+        ]
+        
+        # Port-based search
+        search_lower = search.lower().strip()
+        port_search_conditions = []
+        
+        if search.isdigit():
+            port_search_conditions.append(models.Port.port_number == int(search))
+        
+        service_ports = SERVICE_PORT_MAPPINGS.get(search_lower)
+        if service_ports:
+            port_search_conditions.append(models.Port.port_number.in_(service_ports))
+        
+        if not search.isdigit():
+            port_search_conditions.extend([
+                models.Port.service_name.ilike(f'%{search}%'),
+                models.Port.service_product.ilike(f'%{search}%')
+            ])
+        
+        if port_search_conditions:
+            search_port_subquery = db.query(models.Host.id).join(models.Port).filter(or_(*port_search_conditions))
+            combined_search = or_(
+                or_(*host_search_conditions),
+                models.Host.id.in_(search_port_subquery)
             )
-        )
+        else:
+            combined_search = or_(*host_search_conditions)
+        
+        query = query.filter(combined_search)
     
     # Execute query
     hosts = query.all()

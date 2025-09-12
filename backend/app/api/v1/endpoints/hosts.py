@@ -226,7 +226,7 @@ def get_host_filter_data_v2(db: Session = Depends(get_db)):
         models.Port.state
     ).order_by(
         func.count(models.Port.id).desc()
-    ).limit(100).all()
+    ).limit(500).all()
     
     # Get unique services
     services = db.query(
@@ -239,7 +239,7 @@ def get_host_filter_data_v2(db: Session = Depends(get_db)):
         models.Port.service_name
     ).order_by(
         func.count(models.Port.id).desc()
-    ).limit(50).all()
+    ).limit(200).all()
     
     # Get unique operating systems
     operating_systems = db.query(
@@ -252,7 +252,7 @@ def get_host_filter_data_v2(db: Session = Depends(get_db)):
         models.Host.os_name
     ).order_by(
         func.count(models.Host.id).desc()
-    ).limit(20).all()
+    ).limit(100).all()
     
     # Get subnets (from v1 schema since subnet management hasn't changed)
     subnets = db.query(
@@ -267,7 +267,7 @@ def get_host_filter_data_v2(db: Session = Depends(get_db)):
         models.Subnet.id, models.Subnet.cidr, models.Scope.name
     ).order_by(
         func.count(models.HostSubnetMapping.id).desc()
-    ).limit(50).all()
+    ).limit(200).all()
     
     return {
         'common_ports': [

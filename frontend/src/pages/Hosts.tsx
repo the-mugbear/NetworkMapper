@@ -66,7 +66,9 @@ export default function Hosts() {
 
   const fetchFilterData = async () => {
     try {
+      console.log('Fetching filter data...');
       const data = await getHostFilterData();
+      console.log('Filter data received:', data);
       setFilterData(data);
     } catch (error) {
       console.error('Error fetching filter data:', error);
@@ -95,7 +97,21 @@ export default function Hosts() {
 
   useEffect(() => {
     fetchHosts();
+    // Refresh filter data when filters change to ensure latest data
+    fetchFilterData();
   }, [filters]);
+
+  // Refresh filter data when page becomes visible (e.g., after uploading scans)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchFilterData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const handleFiltersChange = (newFilters: HostFilterOptions) => {
     setFilters(newFilters);

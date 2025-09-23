@@ -111,7 +111,8 @@ export default function Scans() {
       'text/xml': ['.xml'],
       'application/json': ['.json'],
       'text/csv': ['.csv'],
-      'text/plain': ['.txt']
+      'text/plain': ['.txt', '.gnmap'],
+      'application/xml': ['.nessus']
     },
     multiple: false,
   });

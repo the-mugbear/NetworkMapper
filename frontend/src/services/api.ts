@@ -4,12 +4,49 @@ import { getApiBaseUrl } from '../utils/apiUrl';
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Debug logging for API configuration
+console.log('[API] Configuration:', {
+  API_BASE_URL,
+  REACT_APP_API_URL: process.env.REACT_APP_API_URL,
+  windowLocation: window.location.href,
+  finalBaseURL: `${API_BASE_URL}/api/v1`
+});
+
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Add request interceptor to include authentication token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle authentication errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token is invalid or expired
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export interface Scan {
   id: number;
@@ -78,6 +115,18 @@ export interface ParseErrorSummary {
   user_message: string | null;
   status: string;
   created_at: string;
+}
+
+export interface HostConflict {
+  id: number;
+  field_name: string;
+  confidence_score: number;
+  scan_type: string;
+  data_source: string;
+  method: string;
+  scan_id: number;
+  updated_at: string;
+  additional_factors?: any;
 }
 
 export interface DashboardStats {
@@ -237,6 +286,16 @@ export const getHosts = async (params: {
 export const getHost = async (hostId: number): Promise<Host> => {
   const response = await api.get(`/hosts/${hostId}`);
   return response.data;
+};
+
+export const getHostConflicts = async (hostId: number): Promise<HostConflict[]> => {
+  try {
+    const response = await api.get(`/hosts/${hostId}/conflicts`);
+    return response.data;
+  } catch (error) {
+    console.warn('Host conflicts endpoint not available:', error);
+    return [];
+  }
 };
 
 export const getHostsByScan = async (scanId: number, state?: string): Promise<Host[]> => {

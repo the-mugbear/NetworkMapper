@@ -5,39 +5,83 @@ from app.db.session import get_db
 from app.db import models
 from app.schemas.schemas import DashboardStats, ScanSummary, SubnetStats
 from app.services.subnet_calculator import SubnetCalculator
+from app.api.v1.endpoints.auth import get_current_user
+from app.db.models_auth import User
 
 router = APIRouter()
 
 @router.get("/stats", response_model=DashboardStats)
-def get_dashboard_stats(db: Session = Depends(get_db)):
+def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     # Get total counts
     total_scans = db.query(func.count(models.Scan.id)).scalar() or 0
     total_hosts = db.query(func.count(func.distinct(models.Host.ip_address))).scalar() or 0
     total_ports = db.query(func.count(models.Port.id)).scalar() or 0
     total_subnets = db.query(func.count(models.Subnet.id)).scalar() or 0
+
+    # Get overall up hosts and open ports counts
+    up_hosts = db.query(func.count(func.distinct(models.Host.ip_address))).filter(
+        models.Host.state == 'up'
+    ).scalar() or 0
+
+    open_ports = db.query(func.count(models.Port.id)).filter(
+        models.Port.state == 'open'
+    ).scalar() or 0
     
-    # Get recent scans (last 10) - simplified query without joins
+    # Get recent scans (last 10) with host and port counts
     recent_scans_query = (
         db.query(models.Scan)
         .order_by(desc(models.Scan.created_at))
         .limit(10)
     )
-    
+
     recent_results = recent_scans_query.all()
-    
-    recent_scans = [
-        ScanSummary(
+
+    recent_scans = []
+    for result in recent_results:
+        # Get host counts for this scan using HostScanHistory (v2 schema)
+        scan_total_hosts = db.query(func.count(models.HostScanHistory.host_id)).filter(
+            models.HostScanHistory.scan_id == result.id
+        ).scalar() or 0
+
+        scan_up_hosts = db.query(func.count(models.HostScanHistory.host_id)).join(
+            models.Host, models.HostScanHistory.host_id == models.Host.id
+        ).filter(
+            models.HostScanHistory.scan_id == result.id,
+            models.Host.state == 'up'
+        ).scalar() or 0
+
+        # Get port counts for this scan using host scan history
+        scan_total_ports = db.query(func.count(models.Port.id)).join(
+            models.Host, models.Port.host_id == models.Host.id
+        ).join(
+            models.HostScanHistory, models.HostScanHistory.host_id == models.Host.id
+        ).filter(
+            models.HostScanHistory.scan_id == result.id
+        ).scalar() or 0
+
+        scan_open_ports = db.query(func.count(models.Port.id)).join(
+            models.Host, models.Port.host_id == models.Host.id
+        ).join(
+            models.HostScanHistory, models.HostScanHistory.host_id == models.Host.id
+        ).filter(
+            models.HostScanHistory.scan_id == result.id,
+            models.Port.state == 'open'
+        ).scalar() or 0
+
+        recent_scans.append(ScanSummary(
             id=result.id,
             filename=result.filename,
             scan_type=result.scan_type,
             created_at=result.created_at,
-            total_hosts=0,
-            up_hosts=0,
-            total_ports=0,
-            open_ports=0
-        )
-        for result in recent_results
-    ]
+            total_hosts=scan_total_hosts,
+            up_hosts=scan_up_hosts,
+            total_ports=scan_total_ports,
+            open_ports=scan_open_ports
+        ))
+
     
     # Get enhanced subnet statistics with calculations
     subnet_stats = []
@@ -82,6 +126,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         total_scans=total_scans,
         total_hosts=total_hosts,
         total_ports=total_ports,
+        up_hosts=up_hosts,
+        open_ports=open_ports,
         total_subnets=total_subnets,
         recent_scans=recent_scans,
         subnet_stats=subnet_stats

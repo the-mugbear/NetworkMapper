@@ -172,14 +172,19 @@ class CommandExplanationService:
     
     def _parse_command_tokens(self, command_line: str) -> List[str]:
         """Parse command line into tokens, handling quoted strings"""
+        if not command_line or not command_line.strip():
+            return []
         # Simple tokenization - could be enhanced for complex quoting
-        return command_line.split()
+        return command_line.strip().split()
     
     def _extract_nmap_targets(self, tokens: List[str]) -> List[str]:
         """Extract target specifications from nmap tokens"""
+        if not tokens:
+            return []
+
         targets = []
         skip_next = False
-        
+
         for i, token in enumerate(tokens):
             if skip_next:
                 skip_next = False

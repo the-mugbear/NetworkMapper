@@ -67,10 +67,9 @@ class NmapXMLParser:
                     except ValueError:
                         logger.warning(f"Could not parse end time: {end_time_str}")
         
-        # Parse command line
-        args_elem = root.find('verbose')
-        if args_elem is not None:
-            scan.command_line = args_elem.get('level', '')
+        # Parse command line from nmaprun args attribute
+        scan.command_line = root.get('args', '')
+        scan.tool_name = 'nmap'
         
         # Add to database and get ID
         self.db.add(scan)

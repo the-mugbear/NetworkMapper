@@ -23,10 +23,13 @@ import {
   NetworkCheck as ScopesIcon,
   Error as ErrorIcon,
   Security as SecurityIcon,
+  Key as KeyIcon,
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
 } from '@mui/icons-material';
 import { useTheme as useCustomTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import UserMenu from './UserMenu';
 
 const drawerWidth = 240;
 
@@ -35,12 +38,13 @@ interface LayoutProps {
 }
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-  { text: 'Scans', icon: <ScansIcon />, path: '/scans' },
-  { text: 'Hosts', icon: <HostsIcon />, path: '/hosts' },
-  { text: 'Scopes', icon: <ScopesIcon />, path: '/scopes' },
-  { text: 'Risk Assessment', icon: <SecurityIcon />, path: '/risk-assessment' },
-  { text: 'Parse Errors', icon: <ErrorIcon />, path: '/parse-errors' },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', requiredRole: 'viewer' },
+  { text: 'Scans', icon: <ScansIcon />, path: '/scans', requiredRole: 'viewer' },
+  { text: 'Hosts', icon: <HostsIcon />, path: '/hosts', requiredRole: 'viewer' },
+  { text: 'Scopes', icon: <ScopesIcon />, path: '/scopes', requiredRole: 'analyst' },
+  { text: 'Risk Assessment', icon: <SecurityIcon />, path: '/risk-assessment', requiredRole: 'viewer' },
+  { text: 'Default Credentials', icon: <KeyIcon />, path: '/default-credentials', requiredRole: 'viewer' },
+  { text: 'Parse Errors', icon: <ErrorIcon />, path: '/parse-errors', requiredRole: 'analyst' },
 ];
 
 export default function Layout({ children }: LayoutProps) {
@@ -48,6 +52,7 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const { isDarkMode, toggleTheme } = useCustomTheme();
+  const { hasPermission } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -65,17 +70,19 @@ export default function Layout({ children }: LayoutProps) {
         </Typography>
       </Toolbar>
       <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton 
-              selected={location.pathname === item.path}
-              onClick={() => handleNavigation(item.path)}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        {menuItems
+          .filter((item) => hasPermission(item.requiredRole))
+          .map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                selected={location.pathname === item.path}
+                onClick={() => handleNavigation(item.path)}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
       </List>
     </div>
   );
@@ -101,17 +108,18 @@ export default function Layout({ children }: LayoutProps) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Network Mapper
+            NetworkMapper Security Platform
           </Typography>
           <Tooltip title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
-            <IconButton 
-              color="inherit" 
+            <IconButton
+              color="inherit"
               onClick={toggleTheme}
               aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
           </Tooltip>
+          <UserMenu />
         </Toolbar>
       </AppBar>
       <Box

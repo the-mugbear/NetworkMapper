@@ -30,6 +30,8 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 import { getDashboardStats, getPortStats, getOsStats } from '../services/api';
 import type { DashboardStats, Scan, SubnetStats } from '../services/api';
 import RiskAssessmentWidget from '../components/RiskAssessmentWidget';
+import RiskSummaryWidget from '../components/RiskSummaryWidget';
+import CriticalFindingsWidget from '../components/CriticalFindingsWidget';
 
 ChartJS.register(
   CategoryScale,
@@ -139,56 +141,69 @@ export default function Dashboard() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Dashboard
+        Security Intelligence Dashboard
       </Typography>
 
       <Grid container spacing={3}>
-        {/* Stats Cards */}
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Scans
-              </Typography>
-              <Typography variant="h4">
-                {stats?.total_scans || 0}
-              </Typography>
-            </CardContent>
-          </Card>
+        {/* Primary Risk Overview */}
+        <Grid item xs={12} lg={6}>
+          <RiskSummaryWidget />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Hosts
-              </Typography>
-              <Typography variant="h4">
-                {stats?.total_hosts || 0}
-              </Typography>
-            </CardContent>
-          </Card>
+
+        {/* Critical Findings */}
+        <Grid item xs={12} lg={6}>
+          <CriticalFindingsWidget />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
+
+        {/* Legacy Stats Cards - Reduced prominence */}
+        <Grid item xs={12}>
+          <Card sx={{ mb: 2 }}>
             <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Ports
+              <Typography variant="h6" gutterBottom>
+                Network Inventory Overview
               </Typography>
-              <Typography variant="h4">
-                {stats?.total_ports || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Subnets
-              </Typography>
-              <Typography variant="h4">
-                {stats?.total_subnets || 0}
-              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={6} sm={3}>
+                  <Box textAlign="center">
+                    <Typography variant="h5" color="primary">
+                      {stats?.total_scans || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Scans
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Box textAlign="center">
+                    <Typography variant="h5" color="primary">
+                      {stats?.total_hosts || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Hosts
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Box textAlign="center">
+                    <Typography variant="h5" color="primary">
+                      {stats?.total_ports || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Ports
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <Box textAlign="center">
+                    <Typography variant="h5" color="primary">
+                      {stats?.total_subnets || 0}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Subnets
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
         </Grid>

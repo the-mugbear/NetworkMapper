@@ -12,7 +12,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_, and_, distinct, func
 from app.db.session import get_db
+from app.api.v1.endpoints.auth import get_current_user
+from app.db.models_auth import User
 from app.db import models
+from app.db.models_confidence import HostConfidence, PortConfidence, ConflictHistory
 from app.schemas.schemas import Host as HostSchema
 
 # Service port mappings (same as v1)
@@ -92,7 +95,8 @@ def get_hosts_v2(
     subnets: Optional[str] = Query(None, description="Comma-separated list of subnet CIDRs (e.g., '192.168.1.0/24,10.0.0.0/8')"),
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get hosts from v2 schema (deduplicated by IP).
@@ -338,6 +342,96 @@ def get_hosts_by_scan_v2(
     # Apply pagination and return
     hosts = query.offset(skip).limit(limit).all()
     return hosts
+
+
+@router.get("/{host_id}/conflicts")
+def get_host_conflicts(host_id: int, db: Session = Depends(get_db)):
+    """Get confidence and conflict information for a host"""
+
+    # Check if host exists
+    host = db.query(models.Host).filter(models.Host.id == host_id).first()
+    if not host:
+        raise HTTPException(status_code=404, detail="Host not found")
+
+    # Get host confidence data
+    host_confidence = db.query(HostConfidence).filter(
+        HostConfidence.host_id == host_id
+    ).all()
+
+    # Get port confidence data for this host
+    port_confidence = db.query(PortConfidence).join(
+        models.Port, PortConfidence.port_id == models.Port.id
+    ).filter(
+        models.Port.host_id == host_id
+    ).all()
+
+    # Get conflict history for this host
+    host_conflicts = db.query(ConflictHistory).filter(
+        ConflictHistory.object_type == 'host',
+        ConflictHistory.object_id == host_id
+    ).order_by(ConflictHistory.resolved_at.desc()).limit(10).all()
+
+    # Get conflict history for ports of this host
+    port_ids = db.query(models.Port.id).filter(models.Port.host_id == host_id).subquery()
+    port_conflicts = db.query(ConflictHistory).filter(
+        ConflictHistory.object_type == 'port',
+        ConflictHistory.object_id.in_(port_ids)
+    ).order_by(ConflictHistory.resolved_at.desc()).limit(10).all()
+
+    # Format response
+    confidence_data = []
+
+    # Add host field confidence
+    for conf in host_confidence:
+        confidence_data.append({
+            'id': conf.id,
+            'field_name': conf.field_name,
+            'confidence_score': conf.confidence_score,
+            'scan_type': conf.scan_type,
+            'data_source': conf.data_source,
+            'method': conf.method,
+            'scan_id': conf.scan_id,
+            'updated_at': conf.updated_at.isoformat() if conf.updated_at else None,
+            'additional_factors': conf.additional_factors,
+            'object_type': 'host'
+        })
+
+    # Add port field confidence
+    for conf in port_confidence:
+        confidence_data.append({
+            'id': conf.id,
+            'field_name': f"port_{conf.port_id}_{conf.field_name}",
+            'confidence_score': conf.confidence_score,
+            'scan_type': conf.scan_type,
+            'data_source': conf.data_source,
+            'method': conf.method,
+            'scan_id': conf.scan_id,
+            'updated_at': conf.updated_at.isoformat() if conf.updated_at else None,
+            'additional_factors': conf.additional_factors,
+            'object_type': 'port',
+            'port_id': conf.port_id
+        })
+
+    # Format conflict history
+    conflicts = []
+    for conflict in host_conflicts + port_conflicts:
+        conflicts.append({
+            'id': conflict.id,
+            'object_type': conflict.object_type,
+            'object_id': conflict.object_id,
+            'field_name': conflict.field_name,
+            'previous_value': conflict.previous_value,
+            'previous_confidence': conflict.previous_confidence,
+            'previous_scan_id': conflict.previous_scan_id,
+            'previous_method': conflict.previous_method,
+            'new_value': conflict.new_value,
+            'new_confidence': conflict.new_confidence,
+            'new_scan_id': conflict.new_scan_id,
+            'new_method': conflict.new_method,
+            'resolved_at': conflict.resolved_at.isoformat() if conflict.resolved_at else None
+        })
+
+    return confidence_data
 
 
 def _parse_subnets(subnet_str: str):

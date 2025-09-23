@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Alert, 
-  Card, 
-  CardContent, 
-  CardActions, 
+import { useDropzone } from 'react-dropzone';
+import {
+  Box,
+  Typography,
+  Button,
+  Alert,
+  Card,
+  CardContent,
+  CardActions,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -19,9 +20,16 @@ import {
   Grid,
   IconButton,
   Divider,
-  LinearProgress
+  LinearProgress,
+  Paper,
+  Tooltip,
+  Collapse,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  Radio
 } from '@mui/material';
-import { 
+import {
   Upload as UploadIcon,
   Download as ExportIcon,
   Refresh as CorrelateIcon,
@@ -50,11 +58,12 @@ const Scopes: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [correlating, setCorrelating] = useState(false);
 
-  // Upload form state
-  const [showUploadForm, setShowUploadForm] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // Upload state
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [scopeName, setScopeName] = useState('');
   const [scopeDescription, setScopeDescription] = useState('');
+  const [showUploadOptions, setShowUploadOptions] = useState(false);
 
   // Export dialog state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -80,41 +89,52 @@ const Scopes: React.FC = () => {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    setSelectedFile(file || null);
-  };
+  // Upload functionality
+  const onDrop = async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
 
-  const handleUploadSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    
-    if (!selectedFile || !scopeName.trim()) {
-      setError('Please select a file and enter a scope name');
+    // Validate scope name
+    if (!scopeName.trim()) {
+      setUploadError('Please enter a scope name before uploading');
       return;
     }
 
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(null);
+
     try {
-      setUploading(true);
-      setError(null);
-      
-      await uploadSubnetFile(selectedFile, scopeName.trim(), scopeDescription.trim() || undefined);
-      
+      await uploadSubnetFile(file, scopeName.trim(), scopeDescription.trim() || undefined);
+      setUploadSuccess(`Subnet file "${file.name}" uploaded successfully!`);
+
       // Reset form
-      setSelectedFile(null);
       setScopeName('');
       setScopeDescription('');
-      setShowUploadForm(false);
-      
+      setShowUploadOptions(false);
+
       // Reload scopes
       await loadScopes();
-      
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setUploadSuccess(null);
+      }, 3000);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to upload subnet file');
-      console.error('Error uploading subnet file:', err);
+      setUploadError(err.response?.data?.detail || 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
   };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'text/plain': ['.txt'],
+      'text/csv': ['.csv']
+    },
+    multiple: false,
+  });
 
   const handleDelete = async (scopeId: number, scopeName: string) => {
     if (window.confirm(`Are you sure you want to delete the scope "${scopeName}"? This will also delete all its subnets and mappings.`)) {
@@ -175,193 +195,306 @@ const Scopes: React.FC = () => {
   }
 
   return (
-    <Box p={3}>
-      {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Scopes & Subnets
-        </Typography>
-        <Box display="flex" gap={2}>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={correlating ? <CircularProgress size={20} color="inherit" /> : <CorrelateIcon />}
-            onClick={handleCorrelateAll}
-            disabled={correlating}
-          >
-            {correlating ? 'Correlating...' : 'Correlate All Hosts'}
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<ExportIcon />}
-            onClick={handleOpenOutOfScopeExport}
-          >
-            Export Out-of-Scope
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<UploadIcon />}
-            onClick={() => setShowUploadForm(true)}
-          >
-            Upload Subnet File
-          </Button>
-        </Box>
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        Scopes & Subnets
+      </Typography>
+
+      {/* Header Actions */}
+      <Box display="flex" justifyContent="flex-end" alignItems="center" mb={3} gap={2}>
+        <Button
+          variant="contained"
+          color="success"
+          startIcon={correlating ? <CircularProgress size={20} color="inherit" /> : <CorrelateIcon />}
+          onClick={handleCorrelateAll}
+          disabled={correlating}
+        >
+          {correlating ? 'Correlating...' : 'Correlate All Hosts'}
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          startIcon={<ExportIcon />}
+          onClick={handleOpenOutOfScopeExport}
+        >
+          Export Out-of-Scope
+        </Button>
       </Box>
 
-      {/* Error Alert */}
+      {/* Upload Section */}
+      <Paper
+        {...getRootProps()}
+        sx={{
+          p: 4,
+          mb: 4,
+          border: '2px dashed',
+          borderColor: isDragActive ? 'primary.main' : 'grey.300',
+          bgcolor: isDragActive ? 'action.hover' : 'background.paper',
+          cursor: 'pointer',
+          textAlign: 'center',
+          '&:hover': {
+            borderColor: 'primary.main',
+            bgcolor: 'action.hover',
+          }
+        }}
+      >
+        <input {...getInputProps()} />
+        <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+        <Typography variant="h6" gutterBottom>
+          {isDragActive ? 'Drop the subnet files here...' : 'Upload Subnet Files'}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" mb={2}>
+          Drag and drop your subnet files here, or click to select files
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+          Supported formats: .txt, .csv (one subnet per line, e.g., 192.168.1.0/24)
+        </Typography>
+
+        <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1, border: 1, borderColor: 'divider' }}>
+          <Tooltip
+            title={
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Subnet File Configuration
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  Configure scope details before uploading your subnet file:
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
+                  • <strong>Scope Name:</strong> Unique identifier for this network scope
+                </Typography>
+                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
+                  • <strong>Description:</strong> Optional details about this scope's purpose
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                  Note: Scope name is required before uploading any files.
+                </Typography>
+              </Box>
+            }
+            arrow
+            placement="top"
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={showUploadOptions}
+                  onChange={(e) => setShowUploadOptions(e.target.checked)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              }
+              label={
+                <Box display="flex" alignItems="center" gap={1}>
+                  <span>Configure scope details</span>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      fontStyle: 'italic',
+                      textDecoration: 'underline dotted',
+                      cursor: 'help'
+                    }}
+                  >
+                    (hover for details)
+                  </Typography>
+                </Box>
+              }
+              onClick={(e) => e.stopPropagation()}
+            />
+          </Tooltip>
+
+          <Collapse in={showUploadOptions}>
+            <Box sx={{ mt: 2, ml: 4 }}>
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  label="Scope Name"
+                  placeholder="e.g., Internal Network, DMZ, External Ranges"
+                  value={scopeName}
+                  onChange={(e) => setScopeName(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  size="small"
+                  fullWidth
+                  required
+                  helperText="Required: Enter a unique name for this network scope"
+                  error={!scopeName.trim() && showUploadOptions}
+                />
+              </Box>
+              <Box>
+                <TextField
+                  label="Description"
+                  placeholder="Optional description of this scope's purpose or coverage"
+                  value={scopeDescription}
+                  onChange={(e) => setScopeDescription(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  size="small"
+                  fullWidth
+                  multiline
+                  rows={2}
+                  helperText="Optional: Describe the purpose or coverage of this scope"
+                />
+              </Box>
+            </Box>
+          </Collapse>
+        </Box>
+
+        {uploading && (
+          <Box mt={2}>
+            <CircularProgress size={24} />
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              Uploading and processing...
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+
+      {/* Upload Status Messages */}
+      {uploadError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
+      {uploadSuccess && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {uploadSuccess}
+        </Alert>
+      )}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
-      {/* Upload Dialog */}
-      <Dialog open={showUploadForm} onClose={() => setShowUploadForm(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          Upload Subnet File
-          <IconButton
-            onClick={() => setShowUploadForm(false)}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <form onSubmit={handleUploadSubmit}>
-          <DialogContent dividers>
-            <Box display="flex" flexDirection="column" gap={3}>
-              <TextField
-                label="Scope Name"
-                value={scopeName}
-                onChange={(e) => setScopeName(e.target.value)}
-                required
-                fullWidth
-                variant="outlined"
-              />
-              
-              <TextField
-                label="Description"
-                value={scopeDescription}
-                onChange={(e) => setScopeDescription(e.target.value)}
-                multiline
-                rows={3}
-                fullWidth
-                variant="outlined"
-              />
-              
-              <Box>
-                <input
-                  accept=".txt,.csv"
-                  style={{ display: 'none' }}
-                  id="subnet-file-upload"
-                  type="file"
-                  onChange={handleFileSelect}
-                  required
-                />
-                <label htmlFor="subnet-file-upload">
-                  <Button
-                    variant="outlined"
-                    component="span"
-                    startIcon={<CloudUpload />}
-                    fullWidth
-                    sx={{ mb: 1 }}
-                  >
-                    Select Subnet File (.txt, .csv)
-                  </Button>
-                </label>
-                {selectedFile && (
-                  <Typography variant="caption" display="block" color="textSecondary">
-                    Selected: {selectedFile.name}
-                  </Typography>
-                )}
-                <Typography variant="caption" display="block" color="textSecondary" sx={{ mt: 1 }}>
-                  File should contain one subnet per line (e.g., 192.168.1.0/24)
-                </Typography>
-              </Box>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowUploadForm(false)}>
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              variant="contained"
-              disabled={uploading}
-              startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : undefined}
-            >
-              {uploading ? 'Uploading...' : 'Upload'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+      <Divider sx={{ mb: 3 }} />
 
-      {/* Scopes Grid */}
+      {/* Scopes List */}
+      <Typography variant="h5" gutterBottom>
+        Your Scopes
+      </Typography>
+
       {scopes.length === 0 ? (
-        <Card>
-          <CardContent>
-            <Box textAlign="center" py={4}>
-              <Typography variant="h6" color="textSecondary" gutterBottom>
-                No scopes found
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Upload a subnet file to get started.
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
+        <Box textAlign="center" py={4}>
+          <Typography variant="body1" color="text.secondary">
+            No scopes uploaded yet. Use the upload area above to get started.
+          </Typography>
+        </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {scopes.map((scope) => (
-            <Grid item xs={12} md={6} lg={4} key={scope.id}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" component="h3" gutterBottom>
-                    {scope.name}
-                  </Typography>
-                  {scope.description && (
-                    <Typography variant="body2" color="textSecondary" paragraph>
-                      {scope.description}
-                    </Typography>
-                  )}
-                  <Box display="flex" gap={1} mb={2}>
-                    <Chip
-                      label={`${scope.subnet_count} subnets`}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                    />
+            <Grid item xs={12} key={scope.id}>
+              <Card
+                sx={{
+                  '&:hover': {
+                    boxShadow: 4,
+                    cursor: 'pointer'
+                  }
+                }}
+                onClick={() => navigate(`/scopes/${scope.id}`)}
+              >
+                <CardContent sx={{ py: 2 }}>
+                  <Box>
+                    {/* Top section - Main scope info and actions */}
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                      <Box flex={1} mr={2}>
+                        <Box display="flex" alignItems="center" gap={2} mb={1} flexWrap="wrap">
+                          <Typography variant="h6" component="div" sx={{ wordBreak: 'break-all', minWidth: 0, flex: 1 }}>
+                            {scope.name}
+                          </Typography>
+                          <Chip
+                            label={`${scope.subnet_count} subnets`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        </Box>
+                        {scope.description && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {scope.description}
+                          </Typography>
+                        )}
+                        <Typography variant="body2" color="text.secondary">
+                          Created: {new Date(scope.created_at).toLocaleString()}
+                        </Typography>
+                      </Box>
+
+                      {/* Actions - Always visible */}
+                      <Box display="flex" alignItems="center" gap={1} flexShrink={0}>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/scopes/${scope.id}`);
+                          }}
+                          startIcon={<ViewIcon />}
+                          size="small"
+                          sx={{ minWidth: 'auto', px: 2 }}
+                        >
+                          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                            View Details
+                          </Box>
+                          <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                            View
+                          </Box>
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenScopeExport(scope.id, scope.name);
+                          }}
+                          startIcon={<ExportIcon />}
+                          size="small"
+                          sx={{ minWidth: 'auto', px: 2 }}
+                        >
+                          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                            Export
+                          </Box>
+                          <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                            Export
+                          </Box>
+                        </Button>
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(scope.id, scope.name);
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+
+                    {/* Bottom section - Statistics */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                      <Box display="flex" alignItems="center" gap={3} flexWrap="wrap">
+                        <Box textAlign="center">
+                          <Typography variant="body2" color="text.secondary">
+                            Subnets
+                          </Typography>
+                          <Typography variant="h6">
+                            {scope.subnet_count}
+                          </Typography>
+                        </Box>
+                        <Box textAlign="center">
+                          <Typography variant="body2" color="text.secondary">
+                            Status
+                          </Typography>
+                          <Typography variant="h6" color="success.main">
+                            Active
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {/* Status indicator */}
+                      <Chip
+                        label={scope.subnet_count > 0 ? `${scope.subnet_count} subnet${scope.subnet_count !== 1 ? 's' : ''} defined` : 'No subnets'}
+                        color={scope.subnet_count > 0 ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </Box>
                   </Box>
-                  <Typography variant="caption" color="textSecondary">
-                    Created: {new Date(scope.created_at).toLocaleDateString()}
-                  </Typography>
                 </CardContent>
-                <Divider />
-                <CardActions>
-                  <Button
-                    size="small"
-                    startIcon={<ViewIcon />}
-                    onClick={() => navigate(`/scopes/${scope.id}`)}
-                  >
-                    View Details
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<ExportIcon />}
-                    onClick={() => handleOpenScopeExport(scope.id, scope.name)}
-                    color="success"
-                  >
-                    Export
-                  </Button>
-                  <Button
-                    size="small"
-                    startIcon={<DeleteIcon />}
-                    onClick={() => handleDelete(scope.id, scope.name)}
-                    color="error"
-                  >
-                    Delete
-                  </Button>
-                </CardActions>
               </Card>
             </Grid>
           ))}

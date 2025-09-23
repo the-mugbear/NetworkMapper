@@ -237,7 +237,22 @@ export default function ScanDetail() {
               <TableBody>
                 {hosts.map((host) => (
                   <TableRow key={host.id} hover>
-                    <TableCell>{host.ip_address}</TableCell>
+                    <TableCell>
+                      <Link
+                        component="button"
+                        variant="body1"
+                        onClick={() => navigate(`/hosts/${host.id}`)}
+                        sx={{
+                          color: 'primary.main',
+                          textDecoration: 'none',
+                          '&:hover': {
+                            textDecoration: 'underline',
+                          },
+                        }}
+                      >
+                        {host.ip_address}
+                      </Link>
+                    </TableCell>
                     <TableCell>{host.hostname || 'N/A'}</TableCell>
                     <TableCell>
                       <Chip
@@ -287,7 +302,22 @@ export default function ScanDetail() {
                 {hosts.flatMap(host => 
                   host.ports.map(port => (
                     <TableRow key={`${host.id}-${port.id}`} hover>
-                      <TableCell>{host.ip_address}</TableCell>
+                      <TableCell>
+                        <Link
+                          component="button"
+                          variant="body1"
+                          onClick={() => navigate(`/hosts/${host.id}`)}
+                          sx={{
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                            '&:hover': {
+                              textDecoration: 'underline',
+                            },
+                          }}
+                        >
+                          {host.ip_address}
+                        </Link>
+                      </TableCell>
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1}>
                           <span>{port.port_number}</span>

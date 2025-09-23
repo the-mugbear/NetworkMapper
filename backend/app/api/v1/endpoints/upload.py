@@ -5,11 +5,15 @@ import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.db.session import get_db
+from app.api.v1.endpoints.auth import get_current_user
+from app.db.models_auth import User
 from app.core.config import settings
 from app.parsers.nmap_parser import NmapXMLParser
 from app.parsers.eyewitness_parser import EyewitnessParser
 from app.parsers.masscan_parser import MasscanParser
 from app.parsers.dns_parser import DNSParser
+from app.parsers.netexec_parser import NetexecParser
+from app.services.nessus_integration_service import NessusIntegrationService
 from app.schemas.schemas import FileUploadResponse
 from app.services.dns_service import DNSService
 from app.services.parse_error_service import log_parse_error
@@ -23,10 +27,11 @@ async def upload_scan_file(
     file: UploadFile = File(...),
     enrich_dns: bool = False,
     dns_server: str = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     # Extended allowed extensions for multiple tools
-    allowed_extensions = ['.xml', '.json', '.csv', '.txt', '.gnmap']
+    allowed_extensions = ['.xml', '.json', '.csv', '.txt', '.gnmap', '.nessus']
     
     if not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
         raise HTTPException(
@@ -58,22 +63,42 @@ async def upload_scan_file(
         parsing_attempts = []
         
         # Try different parsers based on file type and name
+        if file.filename.lower().endswith('.nessus') or \
+           (file.filename.lower().endswith('.xml') and _is_nessus_file(content)):
+            # Nessus vulnerability scan file
+            parsing_attempts.append(("nessus_xml", NessusIntegrationService, "Nessus vulnerability scan"))
+
         if file.filename.lower().endswith('.xml'):
             # Try Nmap parser first
             parsing_attempts.append(("nmap_xml", NmapXMLParser, "Nmap XML file"))
             # Then try Masscan XML parser
             parsing_attempts.append(("masscan_xml", MasscanParser, "Masscan XML file"))
+            # Try Nessus parser as fallback for XML files
+            parsing_attempts.append(("nessus_xml", NessusIntegrationService, "Nessus vulnerability scan"))
             
         elif (file.filename.lower().endswith('.json') or file.filename.lower().endswith('.csv')) and \
              ('eyewitness' in file.filename.lower() or 'report' in file.filename.lower()):
             file_type = "eyewitness_json" if file.filename.lower().endswith('.json') else "eyewitness_csv"
             parsing_attempts.append((file_type, EyewitnessParser, "Eyewitness report"))
             
-        elif file.filename.lower().endswith('.json') and 'masscan' in file.filename.lower():
-            parsing_attempts.append(("masscan_json", MasscanParser, "Masscan JSON file"))
+        elif file.filename.lower().endswith('.json'):
+            # Check if it's netexec JSON output first
+            if ('netexec' in file.filename.lower() or
+                'nxc' in file.filename.lower() or
+                'spider' in file.filename.lower() or
+                _is_netexec_json_content(content)):
+                parsing_attempts.append(("netexec_json", NetexecParser, "NetExec JSON output"))
+            elif 'masscan' in file.filename.lower():
+                parsing_attempts.append(("masscan_json", MasscanParser, "Masscan JSON file"))
             
         elif file.filename.lower().endswith('.txt'):
-            parsing_attempts.append(("masscan_list", MasscanParser, "Masscan output file"))
+            # Check if it's netexec output or masscan
+            if ('netexec' in file.filename.lower() or
+                'nxc' in file.filename.lower() or
+                _is_netexec_content(content)):
+                parsing_attempts.append(("netexec_output", NetexecParser, "NetExec output file"))
+            else:
+                parsing_attempts.append(("masscan_list", MasscanParser, "Masscan output file"))
             
         elif file.filename.lower().endswith('.gnmap'):
             # Lazy import to avoid dependency issues at module load time
@@ -124,17 +149,27 @@ async def upload_scan_file(
             try:
                 logger.info(f"Attempting to parse {file.filename} with {parser_class.__name__}")
                 parse_start_time = time.time()
-                
-                parser = parser_class(db)
-                scan = parser.parse_file(temp_file_path, file.filename)
-                
+
+                if parser_class == NessusIntegrationService:
+                    # Special handling for Nessus integration service
+                    nessus_service = NessusIntegrationService(db)
+                    result = nessus_service.process_nessus_file(temp_file_path, file.filename)
+                    # For compatibility, create a mock scan object with the ID
+                    from types import SimpleNamespace
+                    scan = SimpleNamespace(id=result['scan_id'])
+                    logger.info(f"Processed Nessus file: {result}")
+                else:
+                    # Standard parser handling
+                    parser = parser_class(db)
+                    scan = parser.parse_file(temp_file_path, file.filename)
+
                 # Commit immediately after parsing to ensure persistence
                 db.commit()
                 logger.info(f"Committed scan {scan.id} to database after parsing")
-                
+
                 parse_elapsed = time.time() - parse_start_time
                 logger.info(f"Successfully parsed {file.filename} with {parser_class.__name__} in {parse_elapsed:.2f} seconds")
-                
+
                 message = f"{success_message} uploaded and parsed successfully (parsed in {parse_elapsed:.2f}s)"
                 break
             except Exception as e:
@@ -161,37 +196,36 @@ async def upload_scan_file(
         
         logger.info(f"Parsing completed successfully, scan ID: {scan.id}")
         
-        # TODO: Re-enable DNS enrichment after fixing scan.hosts relationship
-        # # Enrich with DNS data if requested
-        # if enrich_dns and scan:
-        #     try:
-        #         dns_service = DNSService(db, custom_dns_server=dns_server if dns_server else None)
-        #         enriched_count = 0
-        #         
-        #         # Get hosts associated with this scan from the database
-        #         from app.db import models
-        #         from sqlalchemy.orm import Session
-        #         scan_hosts = db.query(models.Host).join(models.HostScanHistory).filter(
-        #             models.HostScanHistory.scan_id == scan.id
-        #         ).all()
-        #         
-        #         logger.info(f"Starting DNS enrichment for scan {scan.id} with {len(scan_hosts)} hosts"
-        #                    f" using {'custom DNS server: ' + dns_server if dns_server else 'system default DNS'}")
-        #         
-        #         for host in scan_hosts:
-        #             try:
-        #                 enrichment_data = dns_service.enrich_host_data(host)
-        #                 if enrichment_data['reverse_dns'] or enrichment_data['dns_records']:
-        #                     enriched_count += 1
-        #             except Exception as e:
-        #                 # Log but don't fail the entire upload
-        #                 logger.warning(f"DNS enrichment failed for host {host.ip_address}: {str(e)}")
-        #         
-        #         if enriched_count > 0:
-        #             message += f" (DNS enriched {enriched_count} hosts using {'custom server: ' + dns_server if dns_server else 'system DNS'})"
-        #     except Exception as e:
-        #         logger.error(f"DNS enrichment failed for scan {scan.id}: {str(e)}")
-        #         # Continue without DNS enrichment
+        # Enrich with DNS data if requested
+        if enrich_dns and scan:
+            try:
+                dns_service = DNSService(db, custom_dns_server=dns_server if dns_server else None)
+                enriched_count = 0
+
+                # Get hosts associated with this scan from the database
+                from app.db import models
+                from sqlalchemy.orm import Session
+                scan_hosts = db.query(models.Host).join(models.HostScanHistory).filter(
+                    models.HostScanHistory.scan_id == scan.id
+                ).all()
+
+                logger.info(f"Starting DNS enrichment for scan {scan.id} with {len(scan_hosts)} hosts"
+                           f" using {'custom DNS server: ' + dns_server if dns_server else 'system default DNS'}")
+
+                for host in scan_hosts:
+                    try:
+                        enrichment_data = dns_service.enrich_host_data(host)
+                        if enrichment_data['reverse_dns'] or enrichment_data['dns_records']:
+                            enriched_count += 1
+                    except Exception as e:
+                        # Log but don't fail the entire upload
+                        logger.warning(f"DNS enrichment failed for host {host.ip_address}: {str(e)}")
+
+                if enriched_count > 0:
+                    message += f" (DNS enriched {enriched_count} hosts using {'custom server: ' + dns_server if dns_server else 'system DNS'})"
+            except Exception as e:
+                logger.error(f"DNS enrichment failed for scan {scan.id}: {str(e)}")
+                # Continue without DNS enrichment
         
         return FileUploadResponse(
             message=message,
@@ -213,3 +247,81 @@ async def upload_scan_file(
         # Clean up temporary file
         if os.path.exists(temp_file_path):
             os.unlink(temp_file_path)
+
+
+def _is_netexec_content(content: bytes) -> bool:
+    """Check if content appears to be NetExec console output"""
+    try:
+        text = content.decode('utf-8', errors='ignore').lower()
+
+        # Look for netexec indicators
+        netexec_indicators = [
+            'smb         ',  # SMB enumeration output
+            'ldap        ',  # LDAP enumeration output
+            'winrm       ',  # WinRM enumeration output
+            'rdp         ',  # RDP enumeration output
+            '[*] windows',   # Windows detection
+            '[+]',           # Success indicators
+            '[-]',           # Failure indicators
+            'netexec',       # Tool name
+            'nxc ',          # Short tool name
+        ]
+
+        return any(indicator in text for indicator in netexec_indicators)
+    except:
+        return False
+
+
+def _is_netexec_json_content(content: bytes) -> bool:
+    """Check if JSON content appears to be NetExec JSON output"""
+    try:
+        import json
+        text = content.decode('utf-8', errors='ignore')
+        data = json.loads(text)
+
+        # Check for NetExec JSON structure patterns
+        if isinstance(data, dict):
+            # Spider_plus output structure
+            for key, value in data.items():
+                if isinstance(value, dict) and any(
+                    share_key in ['shares', 'files', 'directories'] or '/' in str(share_key)
+                    for share_key in value.keys()
+                ):
+                    return True
+
+            # Check for IP addresses as keys
+            import re
+            ip_pattern = re.compile(r'^\d+\.\d+\.\d+\.\d+$')
+            if any(ip_pattern.match(str(key)) for key in data.keys()):
+                return True
+
+        return False
+    except:
+        return False
+
+
+def _is_nessus_file(content: bytes) -> bool:
+    """Check if content appears to be a Nessus XML file"""
+    try:
+        text = content.decode('utf-8', errors='ignore').lower()
+
+        # Look for Nessus-specific XML indicators
+        nessus_indicators = [
+            '<nessusc',  # NessusClientData_v2 tag
+            'nessusc',   # Partial match for the root tag
+            'nessus',    # General Nessus indicator
+            'tenable',   # Tenable (company that makes Nessus)
+            'reporthost', # ReportHost tag
+            'reportitem', # ReportItem tag
+            'pluginid',   # pluginID attribute
+            'plugin_name' # plugin_name tag
+        ]
+
+        # Check for multiple indicators to reduce false positives
+        found_indicators = sum(1 for indicator in nessus_indicators if indicator in text)
+
+        # Require at least 3 indicators to be confident it's a Nessus file
+        return found_indicators >= 3
+
+    except:
+        return False

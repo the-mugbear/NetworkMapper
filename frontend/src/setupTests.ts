@@ -3,44 +3,48 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Mock axios for API calls
-jest.mock('axios');
+vi.mock('axios');
 
 // Mock Chart.js for charts
-jest.mock('chart.js', () => ({
+vi.mock('chart.js', () => ({
   Chart: {
-    register: jest.fn(),
+    register: vi.fn(),
   },
-  CategoryScale: jest.fn(),
-  LinearScale: jest.fn(),
-  BarElement: jest.fn(),
-  Title: jest.fn(),
-  Tooltip: jest.fn(),
-  Legend: jest.fn(),
+  CategoryScale: vi.fn(),
+  LinearScale: vi.fn(),
+  BarElement: vi.fn(),
+  Title: vi.fn(),
+  Tooltip: vi.fn(),
+  Legend: vi.fn(),
 }));
 
 // Mock react-chartjs-2
-jest.mock('react-chartjs-2', () => ({
+vi.mock('react-chartjs-2', () => ({
   Bar: () => 'Bar Chart Mock',
   Doughnut: () => 'Doughnut Chart Mock',
 }));
 
 // Mock react-router-dom for navigation
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => jest.fn(),
-  useParams: () => ({ id: '1' }),
-  useLocation: () => ({
-    pathname: '/',
-    search: '',
-    hash: '',
-    state: null,
-  }),
-}));
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+    useParams: () => ({ id: '1' }),
+    useLocation: () => ({
+      pathname: '/',
+      search: '',
+      hash: '',
+      state: null,
+    }),
+  };
+});
 
 // Mock file download - this will be handled by jsdom
 global.URL = global.URL || {
-  createObjectURL: jest.fn(() => 'mock-url'),
-  revokeObjectURL: jest.fn(),
+  createObjectURL: vi.fn(() => 'mock-url'),
+  revokeObjectURL: vi.fn(),
 };

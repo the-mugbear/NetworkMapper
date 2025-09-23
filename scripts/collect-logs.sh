@@ -257,12 +257,78 @@ print_info "Analyzing error patterns..."
     fi
 } > "$LOG_DIR/error_analysis.txt"
 
+# Authentication and Audit Logs
+print_info "Collecting authentication and audit logs..."
+{
+    echo "=== AUTHENTICATION AND AUDIT LOGS ==="
+    echo "Frontend Browser Logs (if available):"
+    # Try to extract authentication logs from browser developer tools if running
+    if docker-compose ps frontend > /dev/null 2>&1; then
+        echo "Frontend authentication logging is instrumented - check browser console for:"
+        echo "- AUTH category logs"
+        echo "- LOGIN_ATTEMPT, LOGIN_SUCCESS, LOGIN_FAILED audit events"
+        echo "- PROTECTED_ROUTE access decisions"
+        echo "- Authentication state changes"
+        echo ""
+    fi
+
+    echo "Backend Authentication Logs:"
+    if [[ -f "$LOG_DIR/backend_logs.txt" ]]; then
+        grep -i "auth\|login\|token\|password\|audit\|bcrypt\|jwt" "$LOG_DIR/backend_logs.txt" | tail -30 || echo "No authentication events found"
+    else
+        echo "Backend logs not available"
+    fi
+
+    echo ""
+    echo "Audit Endpoint Activity:"
+    if [[ -f "$LOG_DIR/backend_logs.txt" ]]; then
+        grep -i "audit.*log\|/api/v1/audit" "$LOG_DIR/backend_logs.txt" | tail -20 || echo "No audit endpoint activity found"
+    else
+        echo "Backend logs not available"
+    fi
+
+    echo ""
+    echo "Authentication Errors:"
+    if [[ -f "$LOG_DIR/backend_logs.txt" ]]; then
+        grep -i "401\|unauthorized\|forbidden\|invalid.*password\|bcrypt.*error" "$LOG_DIR/backend_logs.txt" | tail -20 || echo "No authentication errors found"
+    else
+        echo "Backend logs not available"
+    fi
+} > "$LOG_DIR/auth_audit_logs.txt"
+
+# Browser Storage Information
+print_info "Collecting browser storage information..."
+{
+    echo "=== BROWSER STORAGE ANALYSIS ==="
+    echo "This log collection cannot directly access browser storage, but here's what to check:"
+    echo ""
+    echo "LocalStorage Keys to Examine:"
+    echo "- auth_token: JWT token for API authentication"
+    echo "- auth_user: Serialized user object with role information"
+    echo ""
+    echo "SessionStorage Keys to Examine:"
+    echo "- debug_session_id: Logging session identifier"
+    echo ""
+    echo "Browser Console Commands for Manual Debugging:"
+    echo "// Check authentication state"
+    echo "console.log('Auth Token:', localStorage.getItem('auth_token'));"
+    echo "console.log('Auth User:', localStorage.getItem('auth_user'));"
+    echo "console.log('Session ID:', sessionStorage.getItem('debug_session_id'));"
+    echo ""
+    echo "// Export authentication logs (if logger is available)"
+    echo "if (window.logger) { console.log(logger.getAuthLogs()); }"
+    echo ""
+    echo "// Check comprehensive logs"
+    echo "if (window.logger) { console.log(logger.exportLogs()); }"
+} > "$LOG_DIR/browser_storage_info.txt"
+
 # Create summary file
 print_info "Creating troubleshooting summary..."
 {
     echo "=== TROUBLESHOOTING SUMMARY ==="
     echo "Generated: $(date)"
-    echo "NetworkMapper Version: Backend 1.1.0, Frontend 1.3.0"
+    echo "NetworkMapper Version: Backend 1.2.1, Frontend 1.4.1"
+    echo "Authentication System: JWT with comprehensive logging"
     echo ""
     
     # Quick health summary
@@ -291,6 +357,8 @@ print_info "Creating troubleshooting summary..."
     echo "- git_info.txt: Repository status and recent changes"
     echo "- filesystem_info.txt: File system and directory information"
     echo "- error_analysis.txt: Error pattern analysis"
+    echo "- auth_audit_logs.txt: Authentication and audit event logs"
+    echo "- browser_storage_info.txt: Browser storage debugging guide"
     echo ""
     echo "To share these logs:"
     echo "1. Review the files for any sensitive information"

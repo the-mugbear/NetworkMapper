@@ -26,6 +26,7 @@ services:
       - ./uploads:/app/uploads
       - ./backend/tests:/app/tests
       - ./backend/pytest.ini:/app/pytest.ini
+      - ./scripts:/app/scripts
     networks:
       - app-network
 

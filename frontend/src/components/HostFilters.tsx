@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   TextField,
@@ -28,6 +28,11 @@ import {
   NetworkCheck as NetworkCheckIcon,
   Search as SearchIcon,
   Storage as StorageIcon,
+  Error as CriticalIcon,
+  Warning as HighRiskIcon,
+  Shield as DefenseIcon,
+  BugReport as VulnIcon,
+  Assessment as RiskIcon,
 } from '@mui/icons-material';
 
 export interface HostFilterOptions {
@@ -39,6 +44,12 @@ export interface HostFilterOptions {
   hasOpenPorts?: boolean;
   osFilter?: string;
   subnets?: string[];
+  riskLevel?: string;
+  hasCriticalVulns?: boolean;
+  hasHighVulns?: boolean;
+  minRiskScore?: number;
+  exposedServices?: boolean;
+  dangerousPorts?: boolean;
 }
 
 export interface HostFiltersProps {
@@ -52,37 +63,81 @@ export interface HostFiltersProps {
   };
 }
 
-// Predefined filter shortcuts
-const COMMON_FILTER_PRESETS = [
+// Security-focused filter presets
+const SECURITY_FILTER_PRESETS = [
+  {
+    name: 'Critical Risk',
+    icon: <CriticalIcon />,
+    description: 'Hosts with critical security risks',
+    filters: { riskLevel: 'critical', hasCriticalVulns: true },
+    category: 'risk'
+  },
+  {
+    name: 'High Risk',
+    icon: <HighRiskIcon />,
+    description: 'Hosts with high security risks',
+    filters: { riskLevel: 'high', hasHighVulns: true },
+    category: 'risk'
+  },
+  {
+    name: 'Vulnerable Hosts',
+    icon: <VulnIcon />,
+    description: 'Hosts with known vulnerabilities',
+    filters: { hasCriticalVulns: true },
+    category: 'vuln'
+  },
+  {
+    name: 'Exposed Services',
+    icon: <NetworkCheckIcon />,
+    description: 'Hosts with exposed network services',
+    filters: { exposedServices: true },
+    category: 'exposure'
+  },
+  {
+    name: 'Dangerous Ports',
+    icon: <HighRiskIcon />,
+    description: 'Hosts with dangerous open ports',
+    filters: { dangerousPorts: true },
+    category: 'exposure'
+  }
+];
+
+// Traditional network filter presets
+const NETWORK_FILTER_PRESETS = [
   {
     name: 'Web Servers',
     icon: <NetworkCheckIcon />,
     description: 'Hosts with web services (HTTP/HTTPS)',
-    filters: { services: ['http', 'https'], portStates: ['open'] }
+    filters: { services: ['http', 'https'], portStates: ['open'] },
+    category: 'service'
   },
   {
     name: 'SSH Servers',
     icon: <SecurityIcon />,
     description: 'Hosts with SSH access',
-    filters: { ports: ['22'], portStates: ['open'] }
+    filters: { ports: ['22'], portStates: ['open'] },
+    category: 'service'
   },
   {
     name: 'Database Servers',
     icon: <ComputerIcon />,
     description: 'Common database ports',
-    filters: { ports: ['3306', '5432', '1433', '27017'], portStates: ['open'] }
+    filters: { ports: ['3306', '5432', '1433', '27017'], portStates: ['open'] },
+    category: 'service'
   },
   {
     name: 'Windows Hosts',
     icon: <ComputerIcon />,
     description: 'Windows-specific services',
-    filters: { ports: ['135', '139', '445'], portStates: ['open'] }
+    filters: { ports: ['135', '139', '445'], portStates: ['open'] },
+    category: 'os'
   },
   {
-    name: 'High Risk Ports',
-    icon: <SecurityIcon />,
-    description: 'Potentially high-risk open ports',
-    filters: { ports: ['21', '23', '135', '139', '445', '1433', '3389'], portStates: ['open'] }
+    name: 'Legacy Protocols',
+    icon: <HighRiskIcon />,
+    description: 'Hosts running legacy/insecure protocols',
+    filters: { ports: ['21', '23', '53', '69', '135', '139'], portStates: ['open'] },
+    category: 'security'
   }
 ];
 
@@ -137,12 +192,42 @@ const HOST_STATE_OPTIONS = [
   { value: 'down', label: 'Down' }
 ];
 
-const HostFilters: React.FC<HostFiltersProps> = ({ 
-  filters, 
-  onFiltersChange, 
-  availableData 
+const RISK_LEVEL_OPTIONS = [
+  { value: '', label: 'All Risk Levels' },
+  { value: 'critical', label: 'Critical', color: 'error' },
+  { value: 'high', label: 'High', color: 'warning' },
+  { value: 'medium', label: 'Medium', color: 'info' },
+  { value: 'low', label: 'Low', color: 'success' }
+];
+
+const HostFilters: React.FC<HostFiltersProps> = ({
+  filters,
+  onFiltersChange,
+  availableData
 }) => {
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const [localSearchValue, setLocalSearchValue] = useState(filters.search || '');
+
+  // Update local search value when filters.search changes externally
+  useEffect(() => {
+    setLocalSearchValue(filters.search || '');
+  }, [filters.search]);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localSearchValue !== filters.search) {
+        onFiltersChange({ ...filters, search: localSearchValue || undefined });
+      }
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timeoutId);
+  }, [localSearchValue]); // Only depend on localSearchValue to avoid infinite loops
+
+  // Handle local search input changes
+  const handleSearchChange = (value: string) => {
+    setLocalSearchValue(value);
+  };
 
   // Update active filters count
   useEffect(() => {
@@ -153,9 +238,16 @@ const HostFilters: React.FC<HostFiltersProps> = ({
       filters.services?.length,
       filters.portStates?.length,
       filters.hasOpenPorts !== undefined,
-      filters.osFilter
+      filters.osFilter,
+      filters.riskLevel,
+      filters.hasCriticalVulns !== undefined,
+      filters.hasHighVulns !== undefined,
+      filters.minRiskScore !== undefined,
+      filters.exposedServices !== undefined,
+      filters.dangerousPorts !== undefined,
+      filters.subnets?.length
     ].filter(Boolean).length;
-    
+
     setActiveFiltersCount(count);
   }, [filters]);
 
@@ -164,14 +256,20 @@ const HostFilters: React.FC<HostFiltersProps> = ({
   };
 
   const handleClearFilters = () => {
+    setLocalSearchValue('');
     onFiltersChange({});
   };
 
-  const applyPreset = (preset: typeof COMMON_FILTER_PRESETS[0]) => {
+  const applySecurityPreset = (preset: typeof SECURITY_FILTER_PRESETS[0]) => {
+    onFiltersChange({ ...filters, ...preset.filters });
+  };
+
+  const applyNetworkPreset = (preset: typeof NETWORK_FILTER_PRESETS[0]) => {
     onFiltersChange({ ...filters, ...preset.filters });
   };
 
   const applyServiceSearch = (preset: typeof SERVICE_SEARCH_PRESETS[0]) => {
+    setLocalSearchValue(preset.searchTerm);
     onFiltersChange({ ...filters, search: preset.searchTerm });
   };
 
@@ -245,8 +343,8 @@ const HostFilters: React.FC<HostFiltersProps> = ({
           fullWidth
           label="Search hosts"
           placeholder="Enter IP, hostname, OS, port number, or service name (ssh, http, snmp, etc.)"
-          value={filters.search || ''}
-          onChange={(e) => handleFilterChange('search', e.target.value)}
+          value={localSearchValue}
+          onChange={(e) => handleSearchChange(e.target.value)}
           InputProps={{
             startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
           }}
@@ -254,26 +352,46 @@ const HostFilters: React.FC<HostFiltersProps> = ({
           sx={{ mb: 2 }}
         />
 
-        {/* Filter Presets */}
+        {/* Security Filter Presets */}
         <Box mb={2}>
-          <Typography variant="subtitle2" gutterBottom>
-            Quick Filters
+          <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <RiskIcon /> Security Intelligence Filters
           </Typography>
-          <Box display="flex" gap={1} flexWrap="wrap" mb={1}>
-            {COMMON_FILTER_PRESETS.map((preset, index) => (
+          <Box display="flex" gap={1} flexWrap="wrap" mb={2}>
+            {SECURITY_FILTER_PRESETS.map((preset, index) => (
               <Tooltip key={index} title={preset.description}>
                 <Chip
                   icon={preset.icon}
                   label={preset.name}
-                  onClick={() => applyPreset(preset)}
+                  onClick={() => applySecurityPreset(preset)}
                   variant="outlined"
                   size="small"
                   clickable
+                  color={preset.category === 'risk' ? 'error' : preset.category === 'vuln' ? 'warning' : 'primary'}
                 />
               </Tooltip>
             ))}
           </Box>
-          
+
+          <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <NetworkCheckIcon /> Network Service Filters
+          </Typography>
+          <Box display="flex" gap={1} flexWrap="wrap" mb={1}>
+            {NETWORK_FILTER_PRESETS.map((preset, index) => (
+              <Tooltip key={index} title={preset.description}>
+                <Chip
+                  icon={preset.icon}
+                  label={preset.name}
+                  onClick={() => applyNetworkPreset(preset)}
+                  variant="outlined"
+                  size="small"
+                  clickable
+                  color="info"
+                />
+              </Tooltip>
+            ))}
+          </Box>
+
           <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
             Service Search
           </Typography>
@@ -298,6 +416,24 @@ const HostFilters: React.FC<HostFiltersProps> = ({
           <Divider sx={{ my: 2 }} />
           
           <Grid container spacing={3}>
+              {/* Risk Level Filter */}
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Risk Level</InputLabel>
+                  <Select
+                    value={filters.riskLevel || ''}
+                    label="Risk Level"
+                    onChange={(e) => handleFilterChange('riskLevel', e.target.value || undefined)}
+                  >
+                    {RISK_LEVEL_OPTIONS.map(option => (
+                      <MenuItem key={option?.value} value={option?.value}>
+                        {option?.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
               {/* Host State Filter */}
               <Grid item xs={12} sm={6} md={3}>
                 <FormControl fullWidth size="small">
@@ -329,8 +465,75 @@ const HostFilters: React.FC<HostFiltersProps> = ({
                 />
               </Grid>
 
+              {/* Critical Vulnerabilities Toggle */}
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={filters.hasCriticalVulns || false}
+                      onChange={(e) => handleFilterChange('hasCriticalVulns', e.target.checked || undefined)}
+                    />
+                  }
+                  label="Critical Vulnerabilities"
+                />
+              </Grid>
+
+              {/* High Vulnerabilities Toggle */}
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={filters.hasHighVulns || false}
+                      onChange={(e) => handleFilterChange('hasHighVulns', e.target.checked || undefined)}
+                    />
+                  }
+                  label="High Vulnerabilities"
+                />
+              </Grid>
+
+              {/* Exposed Services Toggle */}
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={filters.exposedServices || false}
+                      onChange={(e) => handleFilterChange('exposedServices', e.target.checked || undefined)}
+                    />
+                  }
+                  label="Exposed Services"
+                />
+              </Grid>
+
+              {/* Dangerous Ports Toggle */}
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={filters.dangerousPorts || false}
+                      onChange={(e) => handleFilterChange('dangerousPorts', e.target.checked || undefined)}
+                    />
+                  }
+                  label="Dangerous Ports"
+                />
+              </Grid>
+
+              {/* Minimum Risk Score */}
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="Min Risk Score"
+                  placeholder="0-100"
+                  value={filters.minRiskScore || ''}
+                  onChange={(e) => handleFilterChange('minRiskScore', e.target.value ? parseInt(e.target.value) : undefined)}
+                  inputProps={{ min: 0, max: 100 }}
+                  helperText="Risk score 0-100"
+                />
+              </Grid>
+
               {/* Operating System Filter */}
-              <Grid item xs={12} sm={6} md={6}>
+              <Grid item xs={12} sm={6} md={4}>
                 <Autocomplete
                   size="small"
                   options={getOsOptions()}
@@ -357,7 +560,7 @@ const HostFilters: React.FC<HostFiltersProps> = ({
               </Grid>
 
               {/* Port Numbers Filter */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={4}>
                 <Autocomplete
                   multiple
                   size="small"
@@ -397,7 +600,7 @@ const HostFilters: React.FC<HostFiltersProps> = ({
               </Grid>
 
               {/* Services Filter */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={4}>
                 <Autocomplete
                   multiple
                   size="small"
@@ -437,7 +640,7 @@ const HostFilters: React.FC<HostFiltersProps> = ({
               </Grid>
 
               {/* Port States Filter */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={4}>
                 <Autocomplete
                   multiple
                   size="small"
@@ -464,7 +667,7 @@ const HostFilters: React.FC<HostFiltersProps> = ({
               </Grid>
 
               {/* Subnets Filter */}
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={4}>
                 <Autocomplete
                   multiple
                   size="small"

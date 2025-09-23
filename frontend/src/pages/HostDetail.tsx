@@ -18,20 +18,32 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Tooltip,
+  IconButton,
+  Alert,
+  Badge,
+  Divider,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
   ExpandMore as ExpandMoreIcon,
   Computer as ComputerIcon,
   Security as SecurityIcon,
+  Warning as WarningIcon,
+  Info as InfoIcon,
+  Timeline as TimelineIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
-import { getHost } from '../services/api';
-import type { Host } from '../services/api';
+import { getHost, getHostConflicts } from '../services/api';
+import type { Host, HostConflict } from '../services/api';
+import HostRiskAnalysis from '../components/HostRiskAnalysis';
 
 export default function HostDetail() {
   const { hostId } = useParams<{ hostId: string }>();
   const navigate = useNavigate();
   const [host, setHost] = useState<Host | null>(null);
+  const [conflicts, setConflicts] = useState<HostConflict[]>([]);
+  const [showConflicts, setShowConflicts] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,8 +51,12 @@ export default function HostDetail() {
       if (!hostId) return;
 
       try {
-        const data = await getHost(parseInt(hostId));
-        setHost(data);
+        const [hostData, conflictData] = await Promise.all([
+          getHost(parseInt(hostId)),
+          getHostConflicts(parseInt(hostId))
+        ]);
+        setHost(hostData);
+        setConflicts(conflictData || []);
       } catch (error) {
         console.error('Error fetching host details:', error);
       } finally {
@@ -61,6 +77,23 @@ export default function HostDetail() {
       default: return 'default';
     }
   };
+
+  const getConfidenceColor = (score: number) => {
+    if (score >= 90) return 'success';
+    if (score >= 70) return 'warning';
+    return 'error';
+  };
+
+  const formatConfidenceTooltip = (conflict: HostConflict) => {
+    return `Confidence: ${conflict.confidence_score}% | Source: ${conflict.scan_type} | Method: ${conflict.method}`;
+  };
+
+  const hasConflicts = conflicts.length > 0;
+  const conflictsByField = conflicts.reduce((acc, conflict) => {
+    if (!acc[conflict.field_name]) acc[conflict.field_name] = [];
+    acc[conflict.field_name].push(conflict);
+    return acc;
+  }, {} as Record<string, HostConflict[]>);
 
   if (loading) {
     return (
@@ -89,18 +122,40 @@ export default function HostDetail() {
 
   return (
     <Box>
-      <Box display="flex" alignItems="center" mb={3}>
-        <Button
-          startIcon={<BackIcon />}
-          onClick={() => navigate('/hosts')}
-          sx={{ mr: 2 }}
-        >
-          Back to Hosts
-        </Button>
-        <ComputerIcon sx={{ mr: 1, color: 'primary.main' }} />
-        <Typography variant="h4">
-          {host.ip_address}
-        </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+        <Box display="flex" alignItems="center">
+          <Button
+            startIcon={<BackIcon />}
+            onClick={() => navigate('/hosts')}
+            sx={{ mr: 2 }}
+          >
+            Back to Hosts
+          </Button>
+          <ComputerIcon sx={{ mr: 1, color: 'primary.main' }} />
+          <Typography variant="h4">
+            {host.ip_address}
+          </Typography>
+          {hasConflicts && (
+            <Tooltip title={`${conflicts.length} data conflicts detected`}>
+              <Badge badgeContent={conflicts.length} color="warning" sx={{ ml: 2 }}>
+                <WarningIcon color="warning" />
+              </Badge>
+            </Tooltip>
+          )}
+        </Box>
+
+        <Box display="flex" gap={1}>
+          {hasConflicts && (
+            <Button
+              variant={showConflicts ? 'contained' : 'outlined'}
+              startIcon={showConflicts ? <VisibilityIcon /> : <TimelineIcon />}
+              onClick={() => setShowConflicts(!showConflicts)}
+              color="warning"
+            >
+              {showConflicts ? 'Hide' : 'Show'} Conflicts
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {/* Host Information */}
@@ -121,30 +176,78 @@ export default function HostDetail() {
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Hostname
-                  </Typography>
-                  <Typography variant="body1">
-                    {host.hostname || 'N/A'}
-                  </Typography>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Hostname
+                        {conflictsByField.hostname && (
+                          <Tooltip title={formatConfidenceTooltip(conflictsByField.hostname[0])}>
+                            <InfoIcon fontSize="small" color="info" sx={{ ml: 0.5 }} />
+                          </Tooltip>
+                        )}
+                      </Typography>
+                      <Typography variant="body1">
+                        {host.hostname || 'N/A'}
+                      </Typography>
+                    </Box>
+                    {conflictsByField.hostname && showConflicts && (
+                      <Chip
+                        size="small"
+                        label={`${conflictsByField.hostname[0].confidence_score}%`}
+                        color={getConfidenceColor(conflictsByField.hostname[0].confidence_score)}
+                      />
+                    )}
+                  </Box>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    State
-                  </Typography>
-                  <Chip
-                    label={host.state || 'unknown'}
-                    color={getStateColor(host.state)}
-                    size="small"
-                  />
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        State
+                        {conflictsByField.state && (
+                          <Tooltip title={formatConfidenceTooltip(conflictsByField.state[0])}>
+                            <InfoIcon fontSize="small" color="info" sx={{ ml: 0.5 }} />
+                          </Tooltip>
+                        )}
+                      </Typography>
+                      <Chip
+                        label={host.state || 'unknown'}
+                        color={getStateColor(host.state)}
+                        size="small"
+                      />
+                    </Box>
+                    {conflictsByField.state && showConflicts && (
+                      <Chip
+                        size="small"
+                        label={`${conflictsByField.state[0].confidence_score}%`}
+                        color={getConfidenceColor(conflictsByField.state[0].confidence_score)}
+                      />
+                    )}
+                  </Box>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Operating System
-                  </Typography>
-                  <Typography variant="body1">
-                    {host.os_name || 'Unknown'}
-                  </Typography>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Operating System
+                        {conflictsByField.os_name && (
+                          <Tooltip title={formatConfidenceTooltip(conflictsByField.os_name[0])}>
+                            <InfoIcon fontSize="small" color="info" sx={{ ml: 0.5 }} />
+                          </Tooltip>
+                        )}
+                      </Typography>
+                      <Typography variant="body1">
+                        {host.os_name || 'Unknown'}
+                      </Typography>
+                    </Box>
+                    {conflictsByField.os_name && showConflicts && (
+                      <Chip
+                        size="small"
+                        label={`${conflictsByField.os_name[0].confidence_score}%`}
+                        color={getConfidenceColor(conflictsByField.os_name[0].confidence_score)}
+                      />
+                    )}
+                  </Box>
                 </Grid>
               </Grid>
             </CardContent>
@@ -179,6 +282,52 @@ export default function HostDetail() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Risk Analysis Section */}
+      <HostRiskAnalysis hostId={parseInt(hostId!)} />
+
+      {/* Conflicts Section */}
+      {showConflicts && hasConflicts && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              <WarningIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              Data Conflicts & Confidence
+            </Typography>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              This host has conflicting information from different scans. The displayed values represent the highest confidence data.
+            </Alert>
+
+            {Object.entries(conflictsByField).map(([fieldName, fieldConflicts]) => (
+              <Box key={fieldName} sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, textTransform: 'capitalize' }}>
+                  {fieldName.replace('_', ' ')}
+                </Typography>
+                <Grid container spacing={1}>
+                  {fieldConflicts.map((conflict, index) => (
+                    <Grid item key={index}>
+                      <Tooltip title={`${conflict.scan_type} | ${conflict.method} | Scan ID: ${conflict.scan_id}`}>
+                        <Chip
+                          label={`${conflict.confidence_score}% - ${conflict.scan_type}`}
+                          color={getConfidenceColor(conflict.confidence_score)}
+                          size="small"
+                          variant={index === 0 ? 'filled' : 'outlined'}
+                        />
+                      </Tooltip>
+                    </Grid>
+                  ))}
+                </Grid>
+                {fieldConflicts.length > 1 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                    {fieldConflicts.length} different values detected across scans
+                  </Typography>
+                )}
+                <Divider sx={{ mt: 1 }} />
+              </Box>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Ports Details */}
       <Paper>

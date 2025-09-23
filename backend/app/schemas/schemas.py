@@ -133,6 +133,8 @@ class DashboardStats(BaseModel):
     total_scans: int
     total_hosts: int
     total_ports: int
+    up_hosts: int
+    open_ports: int
     total_subnets: int
     recent_scans: List[ScanSummary]
     subnet_stats: List[SubnetStats]

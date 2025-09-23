@@ -6,17 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Production Deployment
 ```bash
-# Standard deployment with network configuration
-./setup-network.sh
+# Unified deployment script with all options
+./scripts/deploy.sh
 
-# Nuclear option for persistent Docker cache issues
-./force-clean-rebuild.sh
-
+# Quick options for specific scenarios:
 # Local development
 docker-compose up -d
 
-# Development with hot reload (modify docker-compose.yml volumes as needed)
-docker-compose up
+# Network production (requires .env.network)
+docker-compose --env-file .env.network up -d
+
+# Test instance (ports 3001/8001)
+docker-compose -f docker-compose.test.yml -p networkmapper-test up -d
 ```
 
 ### Frontend Commands
@@ -38,8 +39,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000  # Development server
 
 ### Troubleshooting and Debugging
 ```bash
-# Collect comprehensive logs for debugging
-./collect-logs.sh
+# Collect comprehensive logs for debugging (includes auth/audit logs)
+./scripts/collect-logs.sh
 
 # Check container status
 docker-compose ps
@@ -47,6 +48,11 @@ docker-compose logs [service]
 
 # API documentation
 curl http://localhost:8000/docs  # Interactive API docs
+
+# Authentication debugging (browser console)
+localStorage.getItem('auth_token')    # Check JWT token
+localStorage.getItem('auth_user')     # Check user data
+logger.getAuthLogs()                  # Get auth logs (if available)
 ```
 
 ## Architecture Overview
@@ -189,3 +195,48 @@ docker-compose exec backend python -m app.db.migrate_to_v2 rollback
 - Performance: Compare query times between v1 and v2 endpoints
 
 See `V2_ARCHITECTURE.md` for complete technical details.
+
+## Unified Deployment System
+
+NetworkMapper now uses a consolidated deployment script that replaces multiple individual scripts:
+
+### New Unified Script
+```bash
+./scripts/deploy.sh
+```
+
+**Deployment Options:**
+1. **Local Development** - Quick localhost setup for development
+2. **Network Production** - Production deployment using .env.network
+3. **Test Instance** - Parallel test deployment (ports 3001/8001)
+4. **Nuclear Clean** - Remove all Docker data and rebuild
+5. **Ultra-Fresh Network** - Aggressive cache-busting network deployment
+
+### Available Scripts
+- `./scripts/deploy.sh` - **Main deployment script** with all deployment options
+- `./scripts/collect-logs.sh` - Comprehensive log collection with auth debugging
+- `./scripts/setup-users.sh` - User account management
+- `./scripts/status.sh` - Quick status check
+
+### Authentication & Logging
+
+The application includes comprehensive authentication logging:
+- **Frontend**: Browser-based logging with audit trails
+- **Backend**: JWT authentication with audit endpoints
+- **Log Collection**: Enhanced `./scripts/collect-logs.sh` captures auth logs
+
+**Debug Authentication Issues:**
+```javascript
+// Browser console commands
+localStorage.getItem('auth_token')       // Check JWT token
+localStorage.getItem('auth_user')        // Check user object
+logger.getAuthLogs()                     // Get authentication logs
+logger.exportLogs()                      // Export all logs
+```
+
+**Working Test Credentials:**
+```
+Username: testadmin2
+Password: admin123
+Role: admin
+```

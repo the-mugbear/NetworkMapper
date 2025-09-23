@@ -11,11 +11,22 @@ COPY package*.json ./
 COPY generate-build-info.js ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci --silent \
+RUN npm install --silent \
     && npm cache clean --force
 
 # Cache-busting argument
 ARG CACHE_BUST=default_value
+
+# API URL argument for build-time environment variable
+ARG REACT_APP_API_URL
+
+# Set environment variable for build process
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+
+# Debug: Show environment variables during build
+RUN echo "Build-time environment variables:" && \
+    echo "REACT_APP_API_URL: $REACT_APP_API_URL" && \
+    env | grep REACT_APP || echo "No REACT_APP variables found"
 
 # Use cache-bust to invalidate layers for source code
 RUN echo "Cache bust: $CACHE_BUST" > /tmp/cache_bust.txt

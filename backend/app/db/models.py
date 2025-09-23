@@ -36,9 +36,11 @@ class Host(Base):
     
     # Relationships
     ports = relationship("Port", back_populates="host", cascade="all, delete-orphan")
-    host_scripts = relationship("HostScript", back_populates="host", cascade="all, delete-orphan") 
+    host_scripts = relationship("HostScript", back_populates="host", cascade="all, delete-orphan")
     scan_history = relationship("HostScanHistory", back_populates="host", cascade="all, delete-orphan")
     last_updated_scan = relationship("Scan", foreign_keys=[last_updated_scan_id])
+    # Risk assessment relationship
+    risk_assessments = relationship("HostRiskAssessment", back_populates="host", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index('idx_host_ip_address', 'ip_address'),

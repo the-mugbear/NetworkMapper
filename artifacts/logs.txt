@@ -1,138 +1,141 @@
 === ALL CONTAINER LOGS COMBINED ===
-db-1  | 2025-09-23T04:45:04.903748319Z The files belonging to this database system will be owned by user "postgres".
-db-1  | 2025-09-23T04:45:04.903792524Z This user must also own the server process.
-db-1  | 2025-09-23T04:45:04.903795864Z 
-db-1  | 2025-09-23T04:45:04.903804026Z The database cluster will be initialized with locale "en_US.utf8".
-db-1  | 2025-09-23T04:45:04.903806176Z The default database encoding has accordingly been set to "UTF8".
-db-1  | 2025-09-23T04:45:04.903807992Z The default text search configuration will be set to "english".
-db-1  | 2025-09-23T04:45:04.903809703Z 
-db-1  | 2025-09-23T04:45:04.903811336Z Data page checksums are disabled.
-db-1  | 2025-09-23T04:45:04.903830420Z 
-db-1  | 2025-09-23T04:45:04.903874211Z fixing permissions on existing directory /var/lib/postgresql/data ... ok
-db-1  | 2025-09-23T04:45:04.906198896Z creating subdirectories ... ok
-db-1  | 2025-09-23T04:45:04.906210050Z selecting dynamic shared memory implementation ... posix
-db-1  | 2025-09-23T04:45:04.929440739Z selecting default max_connections ... 100
-db-1  | 2025-09-23T04:45:04.959899992Z selecting default shared_buffers ... 128MB
-db-1  | 2025-09-23T04:45:04.980560509Z selecting default time zone ... Etc/UTC
-db-1  | 2025-09-23T04:45:04.980580611Z creating configuration files ... ok
-db-1  | 2025-09-23T04:45:05.213630024Z running bootstrap script ... ok
-db-1  | 2025-09-23T04:45:05.747572872Z performing post-bootstrap initialization ... ok
-db-1  | 2025-09-23T04:45:05.805762263Z initdb: warning: enabling "trust" authentication for local connections
-db-1  | 2025-09-23T04:45:05.805811175Z initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
-db-1  | 2025-09-23T04:45:05.805843686Z syncing data to disk ... ok
-db-1  | 2025-09-23T04:45:05.805847370Z 
-db-1  | 2025-09-23T04:45:05.805849096Z 
-db-1  | 2025-09-23T04:45:05.805850781Z Success. You can now start the database server using:
-db-1  | 2025-09-23T04:45:05.805853136Z 
-db-1  | 2025-09-23T04:45:05.805855130Z     pg_ctl -D /var/lib/postgresql/data -l logfile start
-db-1  | 2025-09-23T04:45:05.805856924Z 
-db-1  | 2025-09-23T04:45:05.854862447Z waiting for server to start....2025-09-23 04:45:05.854 UTC [48] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-db-1  | 2025-09-23T04:45:05.855425904Z 2025-09-23 04:45:05.855 UTC [48] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-db-1  | 2025-09-23T04:45:05.862584362Z 2025-09-23 04:45:05.862 UTC [51] LOG:  database system was shut down at 2025-09-23 04:45:05 UTC
-db-1  | 2025-09-23T04:45:05.867201643Z 2025-09-23 04:45:05.867 UTC [48] LOG:  database system is ready to accept connections
-db-1  | 2025-09-23T04:45:05.934262943Z  done
-db-1  | 2025-09-23T04:45:05.934282795Z server started
-db-1  | 2025-09-23T04:45:06.117377518Z CREATE DATABASE
-db-1  | 2025-09-23T04:45:06.118012754Z 
-db-1  | 2025-09-23T04:45:06.118167629Z 
-db-1  | 2025-09-23T04:45:06.118194159Z /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
-db-1  | 2025-09-23T04:45:06.118197196Z 
-db-1  | 2025-09-23T04:45:06.119621523Z waiting for server to shut down...2025-09-23 04:45:06.119 UTC [48] LOG:  received fast shutdown request
-db-1  | 2025-09-23T04:45:06.120783392Z .2025-09-23 04:45:06.120 UTC [48] LOG:  aborting any active transactions
-db-1  | 2025-09-23T04:45:06.125447873Z 2025-09-23 04:45:06.125 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
-db-1  | 2025-09-23T04:45:06.128157351Z 2025-09-23 04:45:06.126 UTC [49] LOG:  shutting down
-db-1  | 2025-09-23T04:45:06.131348425Z 2025-09-23 04:45:06.131 UTC [49] LOG:  checkpoint starting: shutdown immediate
-db-1  | 2025-09-23T04:45:06.169390727Z 2025-09-23 04:45:06.169 UTC [49] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.025 s, sync=0.006 s, total=0.043 s; sync files=301, longest=0.003 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
-db-1  | 2025-09-23T04:45:06.179323850Z 2025-09-23 04:45:06.179 UTC [48] LOG:  database system is shut down
-db-1  | 2025-09-23T04:45:06.220942898Z  done
-db-1  | 2025-09-23T04:45:06.221121923Z server stopped
-db-1  | 2025-09-23T04:45:06.226196872Z 
-db-1  | 2025-09-23T04:45:06.226215296Z PostgreSQL init process complete; ready for start up.
-db-1  | 2025-09-23T04:45:06.226218356Z 
-db-1  | 2025-09-23T04:45:06.247342667Z 2025-09-23 04:45:06.247 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-db-1  | 2025-09-23T04:45:06.247479035Z 2025-09-23 04:45:06.247 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-db-1  | 2025-09-23T04:45:06.247490022Z 2025-09-23 04:45:06.247 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-db-1  | 2025-09-23T04:45:06.248256859Z 2025-09-23 04:45:06.248 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-db-1  | 2025-09-23T04:45:06.251665037Z 2025-09-23 04:45:06.251 UTC [64] LOG:  database system was shut down at 2025-09-23 04:45:06 UTC
-db-1  | 2025-09-23T04:45:06.257582537Z 2025-09-23 04:45:06.257 UTC [1] LOG:  database system is ready to accept connections
-backend-1  | 2025-09-23T04:45:07.269061678Z INFO:     Started server process [1]
-backend-1  | 2025-09-23T04:45:07.269125385Z INFO:     Waiting for application startup.
-backend-1  | 2025-09-23T04:45:07.269363267Z 2025-09-23 04:45:07,269 - app.main - INFO - NetworkMapper API starting up...
-backend-1  | 2025-09-23T04:45:07.269421320Z 2025-09-23 04:45:07,269 - app.main - INFO - CORS origins: ['http://localhost:3000', 'http://10.32.56.174:3000']
-backend-1  | 2025-09-23T04:45:07.340731248Z 2025-09-23 04:45:07,340 - app.main - INFO - Creating default admin user...
-backend-1  | 2025-09-23T04:45:07.665393376Z 2025-09-23 04:45:07,665 - app.main - INFO - Default admin user created successfully
-backend-1  | 2025-09-23T04:45:07.665656537Z INFO:     Application startup complete.
-backend-1  | 2025-09-23T04:45:07.666002763Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-backend-1  | 2025-09-23T04:45:35.223104429Z INFO:     127.0.0.1:43762 - "GET /health HTTP/1.1" 200 OK
-frontend-1  | 2025-09-23T04:45:05.647302400Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
-frontend-1  | 2025-09-23T04:45:05.647346630Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
-frontend-1  | 2025-09-23T04:45:05.647493475Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
-frontend-1  | 2025-09-23T04:45:05.661134893Z 10-listen-on-ipv6-by-default.sh: info: can not modify /etc/nginx/conf.d/default.conf (read-only file system?)
-frontend-1  | 2025-09-23T04:45:05.662378938Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
-frontend-1  | 2025-09-23T04:45:05.662388181Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
-frontend-1  | 2025-09-23T04:45:05.667893308Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
-frontend-1  | 2025-09-23T04:45:05.670299717Z /docker-entrypoint.sh: Configuration complete; ready for start up
-frontend-1  | 2025-09-23T04:45:05.673876581Z 2025/09/23 04:45:05 [warn] 1#1: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
-frontend-1  | 2025-09-23T04:45:05.673897594Z nginx: [warn] the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
-frontend-1  | 2025-09-23T04:45:05.684460391Z 2025/09/23 04:45:05 [emerg] 1#1: cannot load certificate "/etc/ssl/certs/networkmapper.crt": PEM_read_bio_X509_AUX() failed (SSL: error:0480006C:PEM routines::no start line:Expecting: TRUSTED CERTIFICATE)
-frontend-1  | 2025-09-23T04:45:05.684475347Z nginx: [emerg] cannot load certificate "/etc/ssl/certs/networkmapper.crt": PEM_read_bio_X509_AUX() failed (SSL: error:0480006C:PEM routines::no start line:Expecting: TRUSTED CERTIFICATE)
+db-1  | 2025-09-23T05:07:36.479152045Z The files belonging to this database system will be owned by user "postgres".
+db-1  | 2025-09-23T05:07:36.479388621Z This user must also own the server process.
+db-1  | 2025-09-23T05:07:36.479393728Z 
+db-1  | 2025-09-23T05:07:36.479428954Z The database cluster will be initialized with locale "en_US.utf8".
+db-1  | 2025-09-23T05:07:36.479431951Z The default database encoding has accordingly been set to "UTF8".
+db-1  | 2025-09-23T05:07:36.479433848Z The default text search configuration will be set to "english".
+db-1  | 2025-09-23T05:07:36.479435585Z 
+db-1  | 2025-09-23T05:07:36.479437271Z Data page checksums are disabled.
+db-1  | 2025-09-23T05:07:36.479438897Z 
+db-1  | 2025-09-23T05:07:36.479440529Z fixing permissions on existing directory /var/lib/postgresql/data ... ok
+db-1  | 2025-09-23T05:07:36.479799211Z creating subdirectories ... ok
+db-1  | 2025-09-23T05:07:36.479872201Z selecting dynamic shared memory implementation ... posix
+db-1  | 2025-09-23T05:07:36.498701108Z selecting default max_connections ... 100
+db-1  | 2025-09-23T05:07:36.528721097Z selecting default shared_buffers ... 128MB
+db-1  | 2025-09-23T05:07:36.552169628Z selecting default time zone ... Etc/UTC
+db-1  | 2025-09-23T05:07:36.552190800Z creating configuration files ... ok
+db-1  | 2025-09-23T05:07:36.707602070Z running bootstrap script ... ok
+db-1  | 2025-09-23T05:07:37.206106757Z performing post-bootstrap initialization ... ok
+db-1  | 2025-09-23T05:07:37.293056215Z syncing data to disk ... ok
+db-1  | 2025-09-23T05:07:37.293080751Z 
+db-1  | 2025-09-23T05:07:37.293083305Z 
+db-1  | 2025-09-23T05:07:37.293085159Z Success. You can now start the database server using:
+db-1  | 2025-09-23T05:07:37.293087067Z 
+db-1  | 2025-09-23T05:07:37.293088713Z     pg_ctl -D /var/lib/postgresql/data -l logfile start
+db-1  | 2025-09-23T05:07:37.293090472Z 
+db-1  | 2025-09-23T05:07:37.293117803Z initdb: warning: enabling "trust" authentication for local connections
+db-1  | 2025-09-23T05:07:37.293130742Z initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+db-1  | 2025-09-23T05:07:37.363588656Z waiting for server to start....2025-09-23 05:07:37.363 UTC [48] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+db-1  | 2025-09-23T05:07:37.367667519Z 2025-09-23 05:07:37.367 UTC [48] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1  | 2025-09-23T05:07:37.382209129Z 2025-09-23 05:07:37.381 UTC [51] LOG:  database system was shut down at 2025-09-23 05:07:37 UTC
+db-1  | 2025-09-23T05:07:37.387140842Z 2025-09-23 05:07:37.386 UTC [48] LOG:  database system is ready to accept connections
+db-1  | 2025-09-23T05:07:37.422635037Z  done
+db-1  | 2025-09-23T05:07:37.422657872Z server started
+db-1  | 2025-09-23T05:07:37.660594067Z CREATE DATABASE
+db-1  | 2025-09-23T05:07:37.663667785Z 
+db-1  | 2025-09-23T05:07:37.663751959Z 
+db-1       | 2025-09-23T05:07:37.663804864Z /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+db-1       | 2025-09-23T05:07:37.663807598Z 
+db-1       | 2025-09-23T05:07:37.665871406Z waiting for server to shut down....2025-09-23 05:07:37.665 UTC [48] LOG:  received fast shutdown request
+db-1       | 2025-09-23T05:07:37.668769273Z 2025-09-23 05:07:37.668 UTC [48] LOG:  aborting any active transactions
+db-1       | 2025-09-23T05:07:37.673803769Z 2025-09-23 05:07:37.673 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
+db-1       | 2025-09-23T05:07:37.676933579Z 2025-09-23 05:07:37.676 UTC [49] LOG:  shutting down
+db-1       | 2025-09-23T05:07:37.681355276Z 2025-09-23 05:07:37.681 UTC [49] LOG:  checkpoint starting: shutdown immediate
+db-1       | 2025-09-23T05:07:37.738124918Z 2025-09-23 05:07:37.737 UTC [49] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.030 s, sync=0.014 s, total=0.061 s; sync files=301, longest=0.004 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+db-1       | 2025-09-23T05:07:37.746727756Z 2025-09-23 05:07:37.746 UTC [48] LOG:  database system is shut down
+db-1       | 2025-09-23T05:07:37.765425848Z  done
+db-1       | 2025-09-23T05:07:37.765447960Z server stopped
+db-1       | 2025-09-23T05:07:37.766626478Z 
+db-1       | 2025-09-23T05:07:37.766633753Z PostgreSQL init process complete; ready for start up.
+db-1       | 2025-09-23T05:07:37.766635794Z 
+db-1       | 2025-09-23T05:07:37.802096079Z 2025-09-23 05:07:37.801 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+db-1       | 2025-09-23T05:07:37.802224434Z 2025-09-23 05:07:37.802 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+db-1       | 2025-09-23T05:07:37.802228206Z 2025-09-23 05:07:37.802 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+db-1       | 2025-09-23T05:07:37.806806684Z 2025-09-23 05:07:37.806 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1       | 2025-09-23T05:07:37.821132526Z 2025-09-23 05:07:37.820 UTC [64] LOG:  database system was shut down at 2025-09-23 05:07:37 UTC
+db-1       | 2025-09-23T05:07:37.832369309Z 2025-09-23 05:07:37.832 UTC [1] LOG:  database system is ready to accept connections
+backend-1  | 2025-09-23T05:07:38.969702259Z INFO:     Started server process [1]
+backend-1  | 2025-09-23T05:07:38.969761384Z INFO:     Waiting for application startup.
+backend-1  | 2025-09-23T05:07:38.969898863Z 2025-09-23 05:07:38,969 - app.main - INFO - NetworkMapper API starting up...
+backend-1  | 2025-09-23T05:07:38.969930118Z 2025-09-23 05:07:38,969 - app.main - INFO - CORS origins: ['http://localhost:3000', 'http://10.32.56.174:3000']
+backend-1  | 2025-09-23T05:07:39.043042687Z 2025-09-23 05:07:39,042 - app.main - INFO - Creating default admin user...
+backend-1  | 2025-09-23T05:07:39.368420187Z 2025-09-23 05:07:39,368 - app.main - INFO - Default admin user created successfully
+backend-1  | 2025-09-23T05:07:39.368632342Z INFO:     Application startup complete.
+backend-1  | 2025-09-23T05:07:39.368961131Z INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+backend-1  | 2025-09-23T05:08:06.810706187Z INFO:     127.0.0.1:37156 - "GET /health HTTP/1.1" 200 OK
+frontend-1  | 2025-09-23T05:07:37.326171536Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+frontend-1  | 2025-09-23T05:07:37.326216365Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+frontend-1  | 2025-09-23T05:07:37.328272321Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+frontend-1  | 2025-09-23T05:07:37.331651778Z 10-listen-on-ipv6-by-default.sh: info: can not modify /etc/nginx/conf.d/default.conf (read-only file system?)
+frontend-1  | 2025-09-23T05:07:37.332016694Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
+frontend-1  | 2025-09-23T05:07:37.332340796Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+frontend-1  | 2025-09-23T05:07:37.338834555Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+frontend-1  | 2025-09-23T05:07:37.343953180Z /docker-entrypoint.sh: Configuration complete; ready for start up
+frontend-1  | 2025-09-23T05:07:37.349460739Z 2025/09/23 05:07:37 [warn] 1#1: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
+frontend-1  | 2025-09-23T05:07:37.349488858Z nginx: [warn] the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
+frontend-1  | 2025-09-23T05:07:37.355626179Z 2025/09/23 05:07:37 [emerg] 1#1: cannot load certificate "/etc/ssl/certs/networkmapper.crt": PEM_read_bio_X509_AUX() failed (SSL: error:0480006C:PEM routines::no start line:Expecting: TRUSTED CERTIFICATE)
+frontend-1  | 2025-09-23T05:07:37.355646587Z nginx: [emerg] cannot load certificate "/etc/ssl/certs/networkmapper.crt": PEM_read_bio_X509_AUX() failed (SSL: error:0480006C:PEM routines::no start line:Expecting: TRUSTED CERTIFICATE)
 
-=== DOCKER CONTAINER STATUS ===
-Running containers:
-CONTAINER ID   IMAGE                   COMMAND                  CREATED          STATUS                    PORTS                                       NAMES
-1421bb20c1ca   networkmapper-backend   "uvicorn app.main:ap…"   37 seconds ago   Up 35 seconds (healthy)   0.0.0.0:8000->8000/tcp, :::8000->8000/tcp   networkmapper-backend-1
-1f4c5d50d06d   postgres:15             "docker-entrypoint.s…"   37 seconds ago   Up 36 seconds             5432/tcp                                    networkmapper-db-1
 
-All containers:
-CONTAINER ID   IMAGE                    COMMAND                  CREATED          STATUS                      PORTS                                       NAMES
-c946881b9db8   networkmapper-frontend   "/docker-entrypoint.…"   37 seconds ago   Exited (1) 35 seconds ago                                               networkmapper-frontend-1
-1421bb20c1ca   networkmapper-backend    "uvicorn app.main:ap…"   37 seconds ago   Up 35 seconds (healthy)     0.0.0.0:8000->8000/tcp, :::8000->8000/tcp   networkmapper-backend-1
-1f4c5d50d06d   postgres:15              "docker-entrypoint.s…"   37 seconds ago   Up 36 seconds               5432/tcp                                    networkmapper-db-1
+=== DATABASE CONTAINER LOGS ===
+db-1  | The files belonging to this database system will be owned by user "postgres".
+db-1  | This user must also own the server process.
+db-1  | 
+db-1  | The database cluster will be initialized with locale "en_US.utf8".
+db-1  | The default database encoding has accordingly been set to "UTF8".
+db-1  | The default text search configuration will be set to "english".
+db-1  | 
+db-1  | Data page checksums are disabled.
+db-1  | 
+db-1  | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+db-1  | creating subdirectories ... ok
+db-1  | selecting dynamic shared memory implementation ... posix
+db-1  | selecting default max_connections ... 100
+db-1  | selecting default shared_buffers ... 128MB
+db-1  | selecting default time zone ... Etc/UTC
+db-1  | creating configuration files ... ok
+db-1  | running bootstrap script ... ok
+db-1  | performing post-bootstrap initialization ... ok
+db-1  | syncing data to disk ... ok
+db-1  | 
+db-1  | 
+db-1  | Success. You can now start the database server using:
+db-1  | 
+db-1  |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+db-1  | 
+db-1  | initdb: warning: enabling "trust" authentication for local connections
+db-1  | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+db-1  | waiting for server to start....2025-09-23 05:07:37.363 UTC [48] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+db-1  | 2025-09-23 05:07:37.367 UTC [48] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1  | 2025-09-23 05:07:37.381 UTC [51] LOG:  database system was shut down at 2025-09-23 05:07:37 UTC
+db-1  | 2025-09-23 05:07:37.386 UTC [48] LOG:  database system is ready to accept connections
+db-1  |  done
+db-1  | server started
+db-1  | CREATE DATABASE
+db-1  | 
+db-1  | 
+db-1  | /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+db-1  | 
+db-1  | waiting for server to shut down....2025-09-23 05:07:37.665 UTC [48] LOG:  received fast shutdown request
+db-1  | 2025-09-23 05:07:37.668 UTC [48] LOG:  aborting any active transactions
+db-1  | 2025-09-23 05:07:37.673 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
+db-1  | 2025-09-23 05:07:37.676 UTC [49] LOG:  shutting down
+db-1  | 2025-09-23 05:07:37.681 UTC [49] LOG:  checkpoint starting: shutdown immediate
+db-1  | 2025-09-23 05:07:37.737 UTC [49] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.030 s, sync=0.014 s, total=0.061 s; sync files=301, longest=0.004 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+db-1  | 2025-09-23 05:07:37.746 UTC [48] LOG:  database system is shut down
+db-1  |  done
+db-1  | server stopped
+db-1  | 
+db-1  | PostgreSQL init process complete; ready for start up.
+db-1  | 
+db-1  | 2025-09-23 05:07:37.801 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+db-1  | 2025-09-23 05:07:37.802 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+db-1  | 2025-09-23 05:07:37.802 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+db-1  | 2025-09-23 05:07:37.806 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1  | 2025-09-23 05:07:37.820 UTC [64] LOG:  database system was shut down at 2025-09-23 05:07:37 UTC
+db-1  | 2025-09-23 05:07:37.832 UTC [1] LOG:  database system is ready to accept connections
 
-Docker images:
-REPOSITORY               TAG       IMAGE ID       CREATED              SIZE
-networkmapper-frontend   latest    5a5b8828c3f8   51 seconds ago       71.7MB
-networkmapper-backend    latest    f06a1155df85   About a minute ago   269MB
-postgres                 15        b3d48187cc8a   2 weeks ago          445MB
-
-Docker networks:
-NETWORK ID     NAME                        DRIVER    SCOPE
-36557bef0782   bridge                      bridge    local
-d7b44253ad12   host                        host      local
-1660bca143ee   networkmapper_app-network   bridge    local
-e5041955e91a   none                        null      local
-
-Docker volumes:
-DRIVER    VOLUME NAME
-local     networkmapper_postgres_data
-
-=== ENVIRONMENT CONFIGURATION ===
-Contents of .env.network:
-File not found
-
-Contents of docker-compose.yml:
-File not found
-
-=== FILE SYSTEM INFORMATION ===
-Current directory contents:
-total 100
-drwxrwxr-x 3 kcharles kcharles  4096 Sep 22 21:45 .
-drwxrwxr-x 8 kcharles kcharles  4096 Sep 22 21:45 ..
--rw-rw-r-- 1 kcharles kcharles  4440 Sep 22 21:28 DEPLOYMENT_MIGRATION.md
--rw-rw-r-- 1 kcharles kcharles  3670 Sep 22 21:28 README.md
--rwxr-xr-x 1 kcharles kcharles 13946 Sep 22 21:28 collect-logs.sh
--rwxr-xr-x 1 kcharles kcharles  7190 Sep 22 21:28 create_admin_user.py
--rwxr-xr-x 1 kcharles kcharles 25068 Sep 22 21:28 deploy.sh
--rwxr-xr-x 1 kcharles kcharles  8615 Sep 22 21:28 generate-ssl-cert.sh
--rwxr-xr-x 1 kcharles kcharles  5882 Sep 22 21:28 setup-users.sh
--rwxr-xr-x 1 kcharles kcharles  4091 Sep 22 21:28 status.sh
-drwxrwxr-x 2 kcharles kcharles  4096 Sep 22 21:45 troubleshooting_logs_20250922_214540
-
-Disk space:
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/sda2        61G   55G  2.6G  96% /
-
-Key file sizes:
 
 === FRONTEND CONTAINER LOGS ===
 frontend-1  | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
@@ -143,48 +146,7 @@ frontend-1  | /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-reso
 frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
 frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
 frontend-1  | /docker-entrypoint.sh: Configuration complete; ready for start up
-frontend-1  | 2025/09/23 04:45:05 [warn] 1#1: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
+frontend-1  | 2025/09/23 05:07:37 [warn] 1#1: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
 frontend-1  | nginx: [warn] the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
-frontend-1  | 2025/09/23 04:45:05 [emerg] 1#1: cannot load certificate "/etc/ssl/certs/networkmapper.crt": PEM_read_bio_X509_AUX() failed (SSL: error:0480006C:PEM routines::no start line:Expecting: TRUSTED CERTIFICATE)
+frontend-1  | 2025/09/23 05:07:37 [emerg] 1#1: cannot load certificate "/etc/ssl/certs/networkmapper.crt": PEM_read_bio_X509_AUX() failed (SSL: error:0480006C:PEM routines::no start line:Expecting: TRUSTED CERTIFICATE)
 frontend-1  | nginx: [emerg] cannot load certificate "/etc/ssl/certs/networkmapper.crt": PEM_read_bio_X509_AUX() failed (SSL: error:0480006C:PEM routines::no start line:Expecting: TRUSTED CERTIFICATE)
-
-=== APPLICATION HEALTH CHECKS ===
-No .env.network file found
-
-Port connectivity tests:
-❌ Port 3000 is not listening
-✅ Port 8000 is listening
-
-=== TROUBLESHOOTING SUMMARY ===
-Generated: Mon Sep 22 21:45:41 MST 2025
-NetworkMapper Version: Backend 1.2.1, Frontend 1.4.1
-Authentication System: JWT with comprehensive logging
-
-Not configured for network deployment
-
-Container Status:
-networkmapper-backend-1   networkmapper-backend   "uvicorn app.main:ap…"   backend   37 seconds ago   Up 36 seconds (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
-networkmapper-db-1        postgres:15             "docker-entrypoint.s…"   db        37 seconds ago   Up 36 seconds             5432/tcp
-
-Files collected in this troubleshooting package:
-- system_info.txt: System and software versions
-- network_info.txt: Network configuration and connectivity
-- environment_config.txt: Environment and Docker configuration
-- docker_status.txt: Docker container, image, and network status
-- backend_logs.txt: Backend application logs
-- frontend_logs.txt: Frontend application logs
-- database_logs.txt: Database logs
-- all_container_logs.txt: Combined timestamped logs
-- health_checks.txt: Application connectivity and health tests
-- git_info.txt: Repository status and recent changes
-- filesystem_info.txt: File system and directory information
-- error_analysis.txt: Error pattern analysis
-- auth_audit_logs.txt: Authentication and audit event logs
-- browser_storage_info.txt: Browser storage debugging guide
-
-To share these logs:
-1. Review the files for any sensitive information
-2. Create archive: tar -czf troubleshooting_logs_20250922_214540.tar.gz troubleshooting_logs_20250922_214540
-3. Share the archive file for troubleshooting
-
-

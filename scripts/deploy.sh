@@ -112,8 +112,10 @@ case $DEPLOY_CHOICE in
         # Check/generate SSL certificates
         if [[ ! -f "ssl/certs/networkmapper.crt" || ! -f "ssl/certs/networkmapper.key" ]]; then
             print_warning "SSL certificates not found. Generating for IP: $CONFIGURED_IP"
-            if [[ -x "scripts/generate-ssl-cert.sh" ]]; then
-                ./scripts/generate-ssl-cert.sh -d "$CONFIGURED_IP" -s localhost -s 127.0.0.1
+            if [[ -x "scripts/generate-ssl-cert-simple.sh" ]]; then
+                # Remove any partial certificate files to avoid prompts
+                rm -f ssl/certs/networkmapper.key ssl/certs/networkmapper.crt ssl/certs/openssl.conf
+                ./scripts/generate-ssl-cert-simple.sh "$CONFIGURED_IP"
             else
                 print_error "SSL certificate generation script not found!"
                 exit 1
@@ -128,11 +130,19 @@ case $DEPLOY_CHOICE in
 
         # Build and start with production configuration
         print_info "Building and starting production containers..."
+
+        # Create temporary compose override for SSL mode
+        cat > docker-compose.override.yml << 'EOF'
+services:
+  backend:
+    ports: []  # No external ports in SSL mode
+  frontend:
+    ports:
+      - "443:443"
+EOF
+
         CACHE_BUST=$(date +%s) \
         SSL_MODE=true \
-        FRONTEND_PORT= \
-        BACKEND_PORT= \
-        HTTPS_PORT=443 \
         NGINX_CONFIG=./ssl-nginx.conf \
         docker-compose --env-file .env.network up --build -d
 
@@ -152,6 +162,9 @@ case $DEPLOY_CHOICE in
         else
             print_error "Frontend not responding on HTTPS"
         fi
+
+        # Clean up temporary override file
+        rm -f docker-compose.override.yml
 
         print_success "Production deployment complete!"
         echo "🔒 Frontend: https://$CONFIGURED_IP"

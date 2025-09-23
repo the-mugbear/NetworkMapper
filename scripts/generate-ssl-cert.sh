@@ -19,8 +19,8 @@ DAYS=365
 COUNTRY="US"
 STATE="State"
 CITY="City"
-ORG="NetworkMapper Organization"
-OU="IT Department"
+ORG="NetworkMapper-Organization"
+OU="IT-Department"
 CN=""
 EMAIL=""
 
@@ -218,36 +218,36 @@ if [[ -n "$EMAIL" ]]; then
 fi
 
 # Create config file with SAN extensions
-cat > "$CONFIG_FILE" << EOF
-[req]
-default_bits = $KEY_SIZE
-prompt = no
-distinguished_name = req_distinguished_name
-req_extensions = v3_req
-
-[req_distinguished_name]
-C = $COUNTRY
-ST = $STATE
-L = $CITY
-O = $ORG
-OU = $OU
-CN = $CN
-EOF
+{
+    echo "[req]"
+    echo "default_bits = $KEY_SIZE"
+    echo "prompt = no"
+    echo "distinguished_name = req_distinguished_name"
+    echo "req_extensions = v3_req"
+    echo ""
+    echo "[req_distinguished_name]"
+    echo "C = $COUNTRY"
+    echo "ST = $STATE"
+    echo "L = $CITY"
+    echo "O = $ORG"
+    echo "OU = $OU"
+    echo "CN = $CN"
+} > "$CONFIG_FILE"
 
 if [[ -n "$EMAIL" ]]; then
     echo "emailAddress = $EMAIL" >> "$CONFIG_FILE"
 fi
 
-cat >> "$CONFIG_FILE" << EOF
-
-[v3_req]
-basicConstraints = CA:FALSE
-keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
-subjectAltName = @alt_names
-
-[alt_names]
-EOF
+{
+    echo ""
+    echo "[v3_req]"
+    echo "basicConstraints = CA:FALSE"
+    echo "keyUsage = nonRepudiation, digitalSignature, keyEncipherment"
+    echo "extendedKeyUsage = serverAuth"
+    echo "subjectAltName = @alt_names"
+    echo ""
+    echo "[alt_names]"
+} >> "$CONFIG_FILE"
 
 # Add primary CN as first SAN
 if [[ "$CN" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then

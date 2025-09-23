@@ -6,18 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Production Deployment
 ```bash
-# Unified deployment script with all options
+# Unified deployment script (recommended)
 ./scripts/deploy.sh
 
-# Quick options for specific scenarios:
-# Local development
-docker-compose up -d
+# Direct deployment options:
+# Local development (HTTP)
+docker-compose --env-file .env.development up -d
 
-# Network production (requires .env.network)
-docker-compose --env-file .env.network up -d
+# Production (HTTPS with SSL)
+SSL_MODE=true HTTPS_PORT=443 docker-compose --env-file .env.network up -d
 
-# Test instance (ports 3001/8001)
-docker-compose -f docker-compose.test.yml -p networkmapper-test up -d
+# Test instance (alternate ports)
+docker-compose --env-file .env.test up -d
 ```
 
 ### Frontend Commands

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import {
   Box,
   Paper,
@@ -22,15 +22,11 @@ export default function Upload() {
   const [success, setSuccess] = useState<string | null>(null);
   const [enrichDns, setEnrichDns] = useState(false);
 
-  const onDrop = async (acceptedFiles: File[], rejectedFiles: any[]) => {
-    console.log('onDrop called:', { acceptedFiles, rejectedFiles });
+  const onDrop = async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
     const file = acceptedFiles[0];
     if (!file) {
-      console.log('No accepted file');
       return;
     }
-
-    console.log('File details:', { name: file.name, type: file.type, size: file.size });
     setUploading(true);
     setError(null);
     setSuccess(null);
@@ -52,9 +48,9 @@ export default function Upload() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    onDragEnter: () => console.log('Drag enter'),
-    onDragOver: () => console.log('Drag over'),
-    onDragLeave: () => console.log('Drag leave'),
+    onDragEnter: () => {},
+    onDragOver: () => {},
+    onDragLeave: () => {},
     accept: {
       'text/xml': ['.xml'],
       'application/json': ['.json'],

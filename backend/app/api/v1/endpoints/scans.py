@@ -140,7 +140,7 @@ def delete_scan(scan_id: int, db: Session = Depends(get_db)):
         port_scan_count = db.query(models.PortScanHistory).filter(models.PortScanHistory.scan_id == scan_id).count()
         db.query(models.PortScanHistory).filter(models.PortScanHistory.scan_id == scan_id).delete()
         db.commit()
-        print(f"Deleted {port_scan_count} port_scan_history records for scan {scan_id}")
+        logger.info(f"Deleted {port_scan_count} port_scan_history records for scan {scan_id}")
         
         # Step 9: Delete host_scan_history entries (after updating all references)
         host_scan_count = db.query(models.HostScanHistory).filter(models.HostScanHistory.scan_id == scan_id).delete()

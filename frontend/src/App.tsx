@@ -17,6 +17,8 @@ import ScopeDetail from './pages/ScopeDetail';
 import ParseErrors from './pages/ParseErrors';
 import RiskAssessment from './pages/RiskAssessment';
 import DefaultCredentials from './pages/DefaultCredentials';
+import Profile from './pages/Profile';
+import SystemSettings from './pages/SystemSettings';
 
 function App() {
   return (
@@ -106,6 +108,22 @@ function App() {
                         element={
                           <ProtectedRoute requiredRole="viewer">
                             <DefaultCredentials />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/profile"
+                        element={
+                          <ProtectedRoute requiredRole="viewer">
+                            <Profile />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/system-settings"
+                        element={
+                          <ProtectedRoute requiredRole="admin">
+                            <SystemSettings />
                           </ProtectedRoute>
                         }
                       />

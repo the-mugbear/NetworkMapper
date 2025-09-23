@@ -2,7 +2,17 @@ import os
 from typing import List
 
 class Settings:
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://nmapuser:nmappass@localhost:5432/networkMapper")
+    # Database configuration
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "postgresql://nmapuser:nmappass@localhost:5432/networkMapper"
+    )
+
+    # Security settings
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     
     # CORS origins - read from environment variable, fall back to localhost
     @property
@@ -16,10 +26,17 @@ class Settings:
         ]
     
     # File upload settings
-    UPLOAD_DIR: str = os.path.join(os.getcwd(), "uploads")
-    MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", os.path.join(os.getcwd(), "uploads"))
+    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", str(100 * 1024 * 1024)))  # 100MB default
     
-    # Supported file extensions
-    ALLOWED_EXTENSIONS: List[str] = [".xml"]
+    # Supported file extensions for scan uploads
+    ALLOWED_EXTENSIONS: List[str] = [
+        ".xml",     # Nmap XML, Masscan XML, Nessus XML
+        ".nessus",  # Nessus vulnerability scan files
+        ".gnmap",   # Nmap grepable format
+        ".json",    # Masscan JSON, Eyewitness JSON, NetExec JSON
+        ".csv",     # Eyewitness CSV, DNS records CSV
+        ".txt"      # Masscan list format, NetExec output
+    ]
 
 settings = Settings()

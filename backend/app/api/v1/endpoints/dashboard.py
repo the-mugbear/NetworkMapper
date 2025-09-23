@@ -119,7 +119,7 @@ def get_dashboard_stats(
         subnet_stats.sort(key=lambda x: (x.utilization_percentage, x.host_count), reverse=True)
         
     except Exception as e:
-        print(f"Subnet stats error: {e}")
+        logger.error(f"Error calculating subnet statistics: {e}")
         subnet_stats = []
     
     return DashboardStats(

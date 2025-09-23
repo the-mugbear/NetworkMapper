@@ -21,11 +21,13 @@ import {
   Analytics as AnalystIcon,
   Assessment as AuditorIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const UserMenu: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { user, logout, hasPermission } = useAuth();
+  const navigate = useNavigate();
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -38,6 +40,16 @@ const UserMenu: React.FC = () => {
   const handleLogout = () => {
     handleClose();
     logout();
+  };
+
+  const handleProfileClick = () => {
+    handleClose();
+    navigate('/profile');
+  };
+
+  const handleSettingsClick = () => {
+    handleClose();
+    navigate('/system-settings');
   };
 
   const getRoleIcon = (role: string) => {
@@ -129,7 +141,7 @@ const UserMenu: React.FC = () => {
         <Divider />
 
         {/* Profile Menu Item */}
-        <MenuItem onClick={handleClose}>
+        <MenuItem onClick={handleProfileClick}>
           <ListItemIcon>
             <AccountCircle fontSize="small" />
           </ListItemIcon>
@@ -143,7 +155,7 @@ const UserMenu: React.FC = () => {
 
         {/* Settings (Admin only) */}
         {hasPermission('admin') && (
-          <MenuItem onClick={handleClose}>
+          <MenuItem onClick={handleSettingsClick}>
             <ListItemIcon>
               <Settings fontSize="small" />
             </ListItemIcon>

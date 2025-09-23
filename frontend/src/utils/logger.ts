@@ -16,7 +16,7 @@ export interface LogEntry {
   level: LogLevel;
   category: string;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   userId?: string;
   sessionId?: string;
   stackTrace?: string;
@@ -43,7 +43,7 @@ class Logger {
     level: LogLevel,
     category: string,
     message: string,
-    details?: any,
+    details?: Record<string, unknown>,
     includeStack = false
   ): LogEntry {
     const entry: LogEntry = {
@@ -121,46 +121,46 @@ class Logger {
   }
 
   // Public logging methods
-  debug(category: string, message: string, details?: any): void {
+  debug(category: string, message: string, details?: Record<string, unknown>): void {
     if (this.currentLogLevel <= LogLevel.DEBUG) {
       this.addLog(this.createLogEntry(LogLevel.DEBUG, category, message, details));
     }
   }
 
-  info(category: string, message: string, details?: any): void {
+  info(category: string, message: string, details?: Record<string, unknown>): void {
     if (this.currentLogLevel <= LogLevel.INFO) {
       this.addLog(this.createLogEntry(LogLevel.INFO, category, message, details));
     }
   }
 
-  warn(category: string, message: string, details?: any): void {
+  warn(category: string, message: string, details?: Record<string, unknown>): void {
     if (this.currentLogLevel <= LogLevel.WARN) {
       this.addLog(this.createLogEntry(LogLevel.WARN, category, message, details));
     }
   }
 
-  error(category: string, message: string, details?: any): void {
+  error(category: string, message: string, details?: Record<string, unknown>): void {
     this.addLog(this.createLogEntry(LogLevel.ERROR, category, message, details, true));
   }
 
-  audit(category: string, action: string, details?: any): void {
+  audit(category: string, action: string, details?: Record<string, unknown>): void {
     this.addLog(this.createLogEntry(LogLevel.AUDIT, category, `AUDIT: ${action}`, details));
   }
 
   // Authentication-specific logging
-  authDebug(message: string, details?: any): void {
+  authDebug(message: string, details?: Record<string, unknown>): void {
     this.debug('AUTH', message, details);
   }
 
-  authInfo(message: string, details?: any): void {
+  authInfo(message: string, details?: Record<string, unknown>): void {
     this.info('AUTH', message, details);
   }
 
-  authError(message: string, details?: any): void {
+  authError(message: string, details?: Record<string, unknown>): void {
     this.error('AUTH', message, details);
   }
 
-  authAudit(action: string, details?: any): void {
+  authAudit(action: string, details?: Record<string, unknown>): void {
     this.audit('AUTH', action, details);
   }
 
@@ -232,10 +232,10 @@ window.addEventListener('unhandledrejection', (event) => {
 
 // Export utility functions
 export const createAuthLogger = () => ({
-  debug: (message: string, details?: any) => logger.authDebug(message, details),
-  info: (message: string, details?: any) => logger.authInfo(message, details),
-  error: (message: string, details?: any) => logger.authError(message, details),
-  audit: (action: string, details?: any) => logger.authAudit(action, details),
+  debug: (message: string, details?: Record<string, unknown>) => logger.authDebug(message, details),
+  info: (message: string, details?: Record<string, unknown>) => logger.authInfo(message, details),
+  error: (message: string, details?: Record<string, unknown>) => logger.authError(message, details),
+  audit: (action: string, details?: Record<string, unknown>) => logger.authAudit(action, details),
   timer: (label: string) => logger.startTimer(`AUTH: ${label}`)
 });
 

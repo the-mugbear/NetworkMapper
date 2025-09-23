@@ -344,7 +344,7 @@ class CommandExplanationService:
                     return f"High detectability: High packet rate ({rate} pps)"
                 else:
                     return f"Medium detectability: Moderate packet rate ({rate} pps)"
-            except:
+            except (ValueError, TypeError, AttributeError):
                 pass
                 
         return "High detectability: Fast scanning tool, likely to trigger IDS/IPS"

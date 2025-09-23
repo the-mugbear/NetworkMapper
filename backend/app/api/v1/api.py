@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import scans, hosts, dashboard, upload, scopes, export, dns, parse_errors, reports, auth, risk, audit
+from app.api.v1.endpoints import scans, hosts, dashboard, upload, scopes, export, dns, parse_errors, reports, auth, risk, audit, users
 
 api_router = APIRouter()
 
@@ -18,3 +18,4 @@ api_router.include_router(parse_errors.router, prefix="/parse-errors", tags=["pa
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(risk.router, prefix="/risk", tags=["risk"])
 api_router.include_router(audit.router, prefix="/audit", tags=["audit"])
+api_router.include_router(users.router, prefix="/users", tags=["users"])

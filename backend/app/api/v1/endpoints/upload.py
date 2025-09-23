@@ -6,7 +6,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.api.v1.endpoints.auth import get_current_user
-from app.db.models_auth import User
+from app.db.models_unified import User, Host, HostScanHistory
 from app.core.config import settings
 from app.parsers.nmap_parser import NmapXMLParser
 from app.parsers.eyewitness_parser import EyewitnessParser
@@ -203,10 +203,9 @@ async def upload_scan_file(
                 enriched_count = 0
 
                 # Get hosts associated with this scan from the database
-                from app.db import models
                 from sqlalchemy.orm import Session
-                scan_hosts = db.query(models.Host).join(models.HostScanHistory).filter(
-                    models.HostScanHistory.scan_id == scan.id
+                scan_hosts = db.query(Host).join(HostScanHistory).filter(
+                    HostScanHistory.scan_id == scan.id
                 ).all()
 
                 logger.info(f"Starting DNS enrichment for scan {scan.id} with {len(scan_hosts)} hosts"
@@ -268,7 +267,7 @@ def _is_netexec_content(content: bytes) -> bool:
         ]
 
         return any(indicator in text for indicator in netexec_indicators)
-    except:
+    except (UnicodeDecodeError, AttributeError):
         return False
 
 
@@ -296,7 +295,7 @@ def _is_netexec_json_content(content: bytes) -> bool:
                 return True
 
         return False
-    except:
+    except (UnicodeDecodeError, json.JSONDecodeError, AttributeError, KeyError):
         return False
 
 
@@ -323,5 +322,5 @@ def _is_nessus_file(content: bytes) -> bool:
         # Require at least 3 indicators to be confident it's a Nessus file
         return found_indicators >= 3
 
-    except:
+    except (UnicodeDecodeError, AttributeError):
         return False

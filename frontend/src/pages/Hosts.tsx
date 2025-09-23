@@ -26,6 +26,13 @@ import HostFilters, { HostFilterOptions } from '../components/HostFilters';
 import ReportsDialog from '../components/ReportsDialog';
 import ToolReadyOutput from '../components/ToolReadyOutput';
 
+interface HostPort {
+  state: string;
+  service_name?: string;
+  port: number;
+  protocol: string;
+}
+
 export default function Hosts() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,9 +73,7 @@ export default function Hosts() {
 
   const fetchFilterData = async () => {
     try {
-      console.log('Fetching filter data...');
       const data = await getHostFilterData();
-      console.log('Filter data received:', data);
       setFilterData(data);
     } catch (error) {
       console.error('Error fetching filter data:', error);
@@ -143,7 +148,7 @@ export default function Hosts() {
     return <ComputerIcon />;
   };
 
-  const getTopServices = (hostPorts: any[]) => {
+  const getTopServices = (hostPorts: HostPort[]) => {
     if (!hostPorts) return [];
     return hostPorts
       .filter(port => port.state === 'open' && port.service_name)

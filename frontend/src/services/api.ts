@@ -4,13 +4,10 @@ import { getApiBaseUrl } from '../utils/apiUrl';
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Debug logging for API configuration
-console.log('[API] Configuration:', {
-  API_BASE_URL,
-  REACT_APP_API_URL: process.env.REACT_APP_API_URL,
-  windowLocation: window.location.href,
-  finalBaseURL: `${API_BASE_URL}/api/v1`
-});
+// API Configuration
+// Base URL: ${API_BASE_URL}/api/v1
+// Environment URL: ${process.env.REACT_APP_API_URL}
+// Current Location: ${window.location.href}
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,

@@ -6,8 +6,11 @@ dramatically improving performance over linear searches through subnet lists.
 """
 
 import ipaddress
+import logging
 from typing import List, Optional, Set, Union
 from app.db.models import Subnet
+
+logger = logging.getLogger(__name__)
 
 
 class TrieNode:
@@ -57,7 +60,7 @@ class IPTrie:
                 
         except ValueError as e:
             # Skip invalid CIDR blocks
-            print(f"Warning: Invalid CIDR block {subnet.cidr}: {e}")
+            logger.warning(f"Invalid CIDR block {subnet.cidr}: {e}")
     
     def _add_ipv4_subnet(self, network: ipaddress.IPv4Network, subnet: Subnet):
         """Add an IPv4 subnet to the trie."""

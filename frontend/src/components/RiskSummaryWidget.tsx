@@ -180,15 +180,17 @@ const RiskSummaryWidget: React.FC = () => {
             severity={empty_state.is_positive ? "success" : "info"}
             sx={{ mt: 2 }}
             action={
-              <Tooltip title="Go to the hosts page where you can select individual hosts and run security assessments to analyze vulnerabilities, exposed services, and configuration risks.">
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={() => window.location.href = empty_state.action_url}
-                >
-                  {empty_state.action_text}
-                </Button>
-              </Tooltip>
+              empty_state.action_text && empty_state.action_url ? (
+                <Tooltip title="Upload new scans to analyze more hosts.">
+                  <Button
+                    color="inherit"
+                    size="small"
+                    onClick={() => window.location.href = empty_state.action_url!}
+                  >
+                    {empty_state.action_text}
+                  </Button>
+                </Tooltip>
+              ) : undefined
             }
           >
             <strong>{empty_state.title}</strong><br/>

@@ -386,8 +386,25 @@ export default function Scans() {
 
       {/* Upload Status Messages */}
       {uploadError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          action={activeJob?.parse_error_id ? (
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => navigate('/parse-errors')}
+            >
+              View Parse Errors
+            </Button>
+          ) : undefined}
+        >
           {uploadError}
+          {activeJob?.parse_error_id && (
+            <Typography variant="caption" color="text.secondary" display="block">
+              Parse error ID: {activeJob.parse_error_id}
+            </Typography>
+          )}
         </Alert>
       )}
       {uploadSuccess && (
@@ -395,7 +412,7 @@ export default function Scans() {
           {uploadSuccess}
         </Alert>
       )}
-      {activeJob && activeJob.status !== 'completed' && (
+      {activeJob && activeJob.status === 'processing' && (
         <Alert severity="info" sx={{ mb: 2 }}>
           <strong>Processing:</strong> {activeJob.original_filename}{' '}
           <Typography component="span" variant="body2" color="text.secondary">

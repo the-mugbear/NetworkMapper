@@ -9,7 +9,8 @@ Key changes:
 - Added conflict resolution fields for host metadata
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, UniqueConstraint, Index, func, JSON
+import enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, UniqueConstraint, Index, func, JSON, BigInteger, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 
@@ -39,8 +40,15 @@ class Host(Base):
     host_scripts = relationship("HostScript", back_populates="host", cascade="all, delete-orphan")
     scan_history = relationship("HostScanHistory", back_populates="host", cascade="all, delete-orphan")
     last_updated_scan = relationship("Scan", foreign_keys=[last_updated_scan_id])
-    # Risk assessment relationship
-    risk_assessments = relationship("HostRiskAssessment", back_populates="host", cascade="all, delete-orphan")
+
+    # New vulnerability and attribute relationships
+    vulnerabilities = relationship("Vulnerability", back_populates="host", cascade="all, delete-orphan")
+    attributes = relationship("HostAttribute", back_populates="host", cascade="all, delete-orphan")
+    follows = relationship("HostFollow", back_populates="host", cascade="all, delete-orphan")
+    notes = relationship("HostNote", back_populates="host", cascade="all, delete-orphan")
+
+    # Risk assessment relationship (commented out temporarily to fix Nessus uploads)
+    # risk_assessments = relationship("HostRiskAssessment", back_populates="host", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index('idx_host_ip_address', 'ip_address'),
@@ -73,6 +81,10 @@ class Port(Base):
     host = relationship("Host", back_populates="ports")
     scripts = relationship("Script", back_populates="port", cascade="all, delete-orphan")
     last_updated_scan = relationship("Scan", foreign_keys=[last_updated_scan_id])
+
+    # New vulnerability and attribute relationships
+    vulnerabilities = relationship("Vulnerability", back_populates="port", cascade="all, delete-orphan")
+    attributes = relationship("PortAttribute", back_populates="port", cascade="all, delete-orphan")
 
     __table_args__ = (
         UniqueConstraint('host_id', 'port_number', 'protocol', name='uq_host_port_protocol'),
@@ -194,6 +206,7 @@ class Scan(Base):
     # Relationships
     scan_info = relationship("ScanInfo", back_populates="scan", cascade="all, delete-orphan")
     eyewitness_results = relationship("EyewitnessResult", back_populates="scan", cascade="all, delete-orphan")
+    vulnerabilities = relationship("Vulnerability", back_populates="scan", cascade="all, delete-orphan")
 
 class Scope(Base):
     __tablename__ = "scopes"
@@ -311,3 +324,74 @@ class ParseError(Base):
     status = Column(String, default="unresolved")  # unresolved, reviewed, fixed, ignored
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class IngestionJob(Base):
+    __tablename__ = "ingestion_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    storage_path = Column(String, nullable=False)
+    status = Column(String, nullable=False, default="queued")  # queued, processing, completed, failed
+    message = Column(Text)
+    error_message = Column(Text)
+    tool_name = Column(String)
+    file_size = Column(BigInteger)
+    options = Column(JSON, default=dict)
+
+    submitted_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    scan_id = Column(Integer, ForeignKey("scans.id"), nullable=True)
+    parse_error_id = Column(Integer, ForeignKey("parse_errors.id"), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+
+    scan = relationship("Scan")
+    parse_error = relationship("ParseError")
+
+
+class FollowStatus(str, enum.Enum):
+    WATCHING = "watching"
+    IN_REVIEW = "in_review"
+    REVIEWED = "reviewed"
+
+
+class HostFollow(Base):
+    __tablename__ = "host_follows"
+
+    id = Column(Integer, primary_key=True, index=True)
+    host_id = Column(Integer, ForeignKey("hosts_v2.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(SQLEnum(FollowStatus), nullable=False, default=FollowStatus.WATCHING)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    host = relationship("Host", back_populates="follows")
+    user = relationship("User", back_populates="host_follows")
+
+    __table_args__ = (
+        UniqueConstraint('host_id', 'user_id', name='uq_host_follow_user'),
+    )
+
+
+class NoteStatus(str, enum.Enum):
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    RESOLVED = "resolved"
+
+
+class HostNote(Base):
+    __tablename__ = "host_notes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    host_id = Column(Integer, ForeignKey("hosts_v2.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    body = Column(Text, nullable=False)
+    status = Column(SQLEnum(NoteStatus), nullable=False, default=NoteStatus.OPEN)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    host = relationship("Host", back_populates="notes")
+    author = relationship("User", back_populates="host_notes")

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone, FileRejection } from 'react-dropzone';
 import {
@@ -13,7 +13,8 @@ import {
   Checkbox,
 } from '@mui/material';
 import { CloudUpload as UploadIcon } from '@mui/icons-material';
-import { uploadFile } from '../services/api';
+import { getIngestionJob, uploadFile } from '../services/api';
+import type { IngestionJob } from '../services/api';
 
 export default function Upload() {
   const navigate = useNavigate();
@@ -21,6 +22,9 @@ export default function Upload() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [enrichDns, setEnrichDns] = useState(false);
+  const [jobId, setJobId] = useState<number | null>(null);
+  const [jobStatus, setJobStatus] = useState<IngestionJob | null>(null);
+  const jobCompletionHandled = useRef(false);
 
   const onDrop = async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
     const file = acceptedFiles[0];
@@ -34,17 +38,85 @@ export default function Upload() {
     try {
       const dnsConfig = { enabled: enrichDns };
       const result = await uploadFile(file, dnsConfig);
-      setSuccess(`File "${result.filename}" uploaded successfully!`);
-      
-      setTimeout(() => {
-        navigate(`/scans/${result.scan_id}`);
-      }, 2000);
+      setJobId(result.job_id);
+      jobCompletionHandled.current = false;
+      setJobStatus(null);
+      setSuccess(
+        `File "${result.filename}" queued for processing. Job #${result.job_id}.`
+      );
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
   };
+
+  useEffect(() => {
+    if (!jobId) {
+      return undefined;
+    }
+
+    let isActive = true;
+
+    const pollJob = async () => {
+      try {
+        const job = await getIngestionJob(jobId);
+        if (!isActive) return;
+        setJobStatus(job);
+
+        if (job.status === 'completed') {
+          setSuccess(
+            `Processing complete for "${job.filename}". Redirecting to scan details...`
+          );
+          if (job.scan_id && !jobCompletionHandled.current) {
+            jobCompletionHandled.current = true;
+            setTimeout(() => {
+              navigate(`/scans/${job.scan_id}`);
+            }, 2000);
+          }
+          return false;
+        }
+
+        if (job.status == 'failed') {
+          setError(job.error_message || 'Ingestion job failed. Check server logs for details.');
+          setSuccess(null);
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        if (isActive) {
+          console.error('Failed to fetch ingestion job status', error);
+        }
+        return true;
+      }
+    };
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = async () => {
+      const shouldContinue = await pollJob();
+      if (!isActive || !shouldContinue) {
+        return;
+      }
+      intervalId = setInterval(async () => {
+        const keepGoing = await pollJob();
+        if (!keepGoing && intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      }, 4000);
+    };
+
+    startPolling();
+
+    return () => {
+      isActive = false;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [jobId, navigate]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -131,6 +203,57 @@ export default function Upload() {
       {success && (
         <Alert severity="success" sx={{ mt: 2 }}>
           {success}
+        </Alert>
+      )}
+
+      {jobStatus && jobStatus.status !== 'failed' && (
+        <Alert
+          severity={jobStatus.status === 'completed' ? 'success' : 'info'}
+          sx={{ mt: 2 }}
+        >
+          <strong>Job Status:</strong> {jobStatus.status.toUpperCase()}
+          {jobStatus.message && (
+            <>
+              <br />
+              {jobStatus.message}
+            </>
+          )}
+          {jobStatus.status !== 'completed' && (
+            <>
+              <br />
+              Waiting for background processing to finish...
+              <LinearProgress sx={{ mt: 1 }} />
+            </>
+          )}
+        </Alert>
+      )}
+
+      {jobStatus && jobStatus.status === 'failed' && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          <strong>Ingestion Failed:</strong> {jobStatus.error_message || 'Unable to process this file.'}
+          {jobStatus.message && (
+            <>
+              <br />
+              {jobStatus.message}
+            </>
+          )}
+          {jobStatus.parse_error_id && (
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+              Parse error ID: {jobStatus.parse_error_id}
+            </Typography>
+          )}
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Review the upload format and try again. Inspect the Parse Errors view for additional diagnostics.
+          </Typography>
+          {jobStatus.parse_error_id && (
+            <Button
+              size="small"
+              sx={{ mt: 1 }}
+              onClick={() => navigate('/parse-errors')}
+            >
+              View Parse Errors
+            </Button>
+          )}
         </Alert>
       )}
 

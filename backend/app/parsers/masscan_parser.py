@@ -1,498 +1,348 @@
-import xml.etree.ElementTree as ET
+"""Masscan parser with streaming ingestion and deduplicated persistence."""
+
+from __future__ import annotations
+
 import json
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-from sqlalchemy.orm import Session
-from app.db import models
-from app.services.subnet_correlation import SubnetCorrelationService
 import logging
-import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional
+
+from lxml import etree
+from sqlalchemy.orm import Session
+
+from app.db import models
+from app.services.host_deduplication_service import HostDeduplicationService
+from app.services.subnet_correlation import SubnetCorrelationService
 
 logger = logging.getLogger(__name__)
 
+
 class MasscanParser:
+    """Parse Masscan output formats while preserving low memory usage."""
+
+    OUT_OF_SCOPE_BATCH_SIZE = 250
+
     def __init__(self, db: Session):
         self.db = db
+        self.dedup_service = HostDeduplicationService(db)
         self.correlation_service = SubnetCorrelationService(db)
 
     def parse_file(self, file_path: str, filename: str) -> models.Scan:
-        """Parse Masscan output files (XML, JSON, or list format)"""
-        start_time = time.time()
-        logger.info(f"Starting Masscan parse of {filename}")
-        
-        try:
-            if filename.lower().endswith('.xml'):
-                result = self._parse_xml_file(file_path, filename)
-            elif filename.lower().endswith('.json'):
-                result = self._parse_json_file(file_path, filename)
-            else:
-                # Assume list format (default masscan output)
-                result = self._parse_list_file(file_path, filename)
-            
-            elapsed_time = time.time() - start_time
-            logger.info(f"Successfully parsed Masscan {filename} in {elapsed_time:.2f} seconds")
-            return result
-        except Exception as e:
-            elapsed_time = time.time() - start_time
-            logger.error(f"Error parsing Masscan file {filename} after {elapsed_time:.2f} seconds: {str(e)}")
-            raise
+        """Dispatch to format-specific parsers based on file extension."""
+        scan = self._create_scan_record(filename)
+        pending_out_of_scope: Dict[str, Dict[str, Any]] = {}
+        processed_hosts = 0
 
-    def _parse_xml_file(self, file_path: str, filename: str) -> models.Scan:
-        """Parse Masscan XML output using single database transaction"""
-        tree = ET.parse(file_path)
-        root = tree.getroot()
-        
-        # Parse and validate all data before database operations
-        processed_hosts = {}
-        out_of_scope_entries = []
-        
-        for host_elem in root.findall('host'):
-            # Get IP address
-            addr_elem = host_elem.find('address')
-            if addr_elem is None:
-                continue
-                
-            ip_address = addr_elem.get('addr')
-            if not ip_address:
-                continue
-            
-            # Get host state
-            status_elem = host_elem.find('status')
-            state = status_elem.get('state') if status_elem is not None else 'unknown'
-            
-            # Skip hosts that are down or filtered - they provide no useful information
-            if state in ['down', 'filtered']:
-                continue
-            
-            # Check if host has any meaningful data (open ports)
-            has_meaningful_data = False
-            host_ports = []
-            ports_elem = host_elem.find('ports')
-            if ports_elem is not None:
-                for port_elem in ports_elem.findall('port'):
-                    try:
-                        port_number = int(port_elem.get('portid'))
-                        protocol = port_elem.get('protocol')
-                        state_elem = port_elem.find('state')
-                        port_state = state_elem.get('state') if state_elem is not None else 'unknown'
-                        
-                        port_info = {
-                            'port_number': port_number,
-                            'protocol': protocol,
-                            'state': port_state
-                        }
-                        host_ports.append(port_info)
-                        
-                        if port_state == 'open':
-                            has_meaningful_data = True
-                    except (ValueError, AttributeError) as e:
-                        logger.warning(f"Error parsing port for host {ip_address}: {str(e)}")
-                        continue
-            
-            # Skip hosts with no meaningful data
-            if not has_meaningful_data:
-                continue
-            
-            # Check if IP is in scope
-            matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)
-            
-            if matching_subnets:
-                # Store in-scope host data
-                processed_hosts[ip_address] = {
-                    'state': state,
-                    'ports': host_ports
-                }
-            else:
-                # Store out-of-scope host data
-                ports_data = [{'port': p['port_number'], 'protocol': p['protocol'], 'state': p['state']} 
-                             for p in host_ports]
-                out_of_scope_info = {
-                    'ip_address': ip_address,
-                    'ports': {'masscan_ports': ports_data},
-                    'tool_source': 'masscan',
-                    'reason': 'IP address not found in any defined subnet scope'
-                }
-                out_of_scope_entries.append(out_of_scope_info)
-        
-        # Now create all database records in a single transaction
         try:
-            # Create scan record
-            scan = models.Scan(
-                filename=filename,
-                scan_type='port_scan',
-                tool_name='masscan',
-                version=root.get('version'),
-                command_line=root.get('args'),
-                start_time=self._parse_timestamp(root.get('start')),
-                created_at=datetime.utcnow()
-            )
-            self.db.add(scan)
-            self.db.flush()  # Get scan ID without committing
-            
-            # Bulk create host records
-            hosts_data = []
-            for ip_address, host_data in processed_hosts.items():
-                hosts_data.append({
-                    'scan_id': scan.id,
-                    'ip_address': ip_address,
-                    'state': host_data['state']
-                })
-            
-            if hosts_data:
-                self.db.bulk_insert_mappings(models.Host, hosts_data)
-                self.db.flush()
-                
-                # Get host ID mappings
-                host_id_map = {}
-                hosts = self.db.query(models.Host).filter(models.Host.scan_id == scan.id).all()
-                for host in hosts:
-                    host_id_map[host.ip_address] = host.id
-                
-                # Bulk create port records
-                ports_data = []
-                for ip_address, host_data in processed_hosts.items():
-                    host_id = host_id_map[ip_address]
-                    for port_info in host_data['ports']:
-                        ports_data.append({
-                            'host_id': host_id,
-                            'port_number': port_info['port_number'],
-                            'protocol': port_info['protocol'],
-                            'state': port_info['state']
-                        })
-                
-                if ports_data:
-                    self.db.bulk_insert_mappings(models.Port, ports_data)
-            
-            # Bulk create out-of-scope records
-            if out_of_scope_entries:
-                oos_data = []
-                for oos_info in out_of_scope_entries:
-                    oos_data.append({
-                        'scan_id': scan.id,
-                        **oos_info
-                    })
-                self.db.bulk_insert_mappings(models.OutOfScopeHost, oos_data)
-            
-            # Correlate hosts to subnets
-            mappings_created = 0
+            suffix = Path(filename).suffix.lower()
+            if suffix == ".xml":
+                processed_hosts = self._parse_xml(file_path, scan, pending_out_of_scope)
+            elif suffix == ".json":
+                processed_hosts = self._parse_json(file_path, scan, pending_out_of_scope)
+            else:
+                processed_hosts = self._parse_list(file_path, scan, pending_out_of_scope)
+
+            self._flush_out_of_scope(scan.id, pending_out_of_scope)
+            self.db.flush()
+
             try:
-                mappings_created = self.correlation_service.correlate_scan_hosts_to_subnets(scan.id)
-                logger.info(f"Created {mappings_created} host-subnet mappings for Masscan scan {scan.id}")
-            except Exception as e:
-                logger.warning(f"Failed to correlate hosts to subnets for scan {scan.id}: {str(e)}")
-            
-            # Commit all changes as single transaction
+                correlated = self.correlation_service.batch_correlate_scan_hosts_to_subnets(scan.id)
+                logger.info(
+                    "Masscan scan %s correlated %s hosts to subnets", scan.id, correlated
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning("Masscan scan %s correlation failed: %s", scan.id, exc)
+
             self.db.commit()
-            
-            logger.info(f"Processed {len(processed_hosts)} in-scope hosts and {len(out_of_scope_entries)} out-of-scope hosts from Masscan XML")
+            logger.info(
+                "Masscan parser processed %s hosts (filename=%s)", processed_hosts, filename
+            )
             return scan
-            
-        except Exception as e:
+        except Exception:
             self.db.rollback()
-            logger.error(f"Database transaction failed, rolling back: {str(e)}")
+            logger.exception("Masscan parser failed for %s", filename)
             raise
 
-    def _parse_json_file(self, file_path: str, filename: str) -> models.Scan:
-        """Parse Masscan JSON output using single database transaction"""
-        with open(file_path, 'r') as f:
-            data = json.load(f)
-        
-        # Parse and validate all data before database operations
-        processed_hosts = {}
-        out_of_scope_entries = []
-        
-        for entry in data:
-            ip_address = entry.get('ip')
+    # ------------------------------------------------------------------
+    # Format-specific parsers
+
+    def _parse_xml(
+        self,
+        file_path: str,
+        scan: models.Scan,
+        pending_out_of_scope: Dict[str, Dict[str, Any]],
+    ) -> int:
+        processed_hosts = 0
+        context = etree.iterparse(file_path, events=("start", "end"))
+
+        for event, elem in context:
+            tag = self._strip_namespace(elem.tag)
+
+            if event == "start" and tag in {"nmaprun", "masscan"}:
+                scan.version = elem.get("version")
+                scan.command_line = elem.get("args")
+                scan.tool_name = elem.get("scanner", "masscan")
+                scan.start_time = self._parse_timestamp(elem.get("start"))
+
+            if event == "end" and tag == "host":
+                host_info = self._extract_xml_host(elem)
+                if host_info:
+                    if self._handle_host(scan.id, host_info["ip_address"], host_info["ports"], pending_out_of_scope):
+                        processed_hosts += 1
+                self._clear_element(elem)
+
+        return processed_hosts
+
+    def _parse_json(
+        self,
+        file_path: str,
+        scan: models.Scan,
+        pending_out_of_scope: Dict[str, Dict[str, Any]],
+    ) -> int:
+        processed_hosts = 0
+        for entry in self._iter_json_entries(file_path):
+            ip_address = entry.get("ip") or entry.get("addr")
             if not ip_address:
                 continue
-            
-            # Extract port data with validation
-            host_ports = []
-            has_meaningful_data = False
-            
-            for port_info in entry.get('ports', []):
+
+            ports = []
+            for port_info in entry.get("ports", []):
                 try:
-                    port_number = port_info.get('port')
-                    protocol = port_info.get('proto', 'tcp')
-                    port_status = port_info.get('status', 'open')
-                    
-                    if port_number is None:
-                        continue
-                        
-                    port_data = {
-                        'port_number': int(port_number),
-                        'protocol': protocol,
-                        'state': port_status
-                    }
-                    host_ports.append(port_data)
-                    
-                    if port_status == 'open':
-                        has_meaningful_data = True
-                        
-                except (ValueError, TypeError) as e:
-                    logger.warning(f"Error parsing port data for host {ip_address}: {str(e)}")
+                    port_number = int(port_info.get("port"))
+                except (TypeError, ValueError):
                     continue
-            
-            # Skip hosts with no meaningful data
-            if not has_meaningful_data:
-                continue
-            
-            # Check if IP is in scope
-            matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)
-            
-            if matching_subnets:
-                # Store or merge in-scope host data
-                if ip_address in processed_hosts:
-                    processed_hosts[ip_address]['ports'].extend(host_ports)
-                else:
-                    processed_hosts[ip_address] = {
-                        'state': 'up',
-                        'ports': host_ports
+                protocol = port_info.get("proto", "tcp")
+                state = port_info.get("status", "open")
+                if state != "open":
+                    continue
+                ports.append(
+                    {
+                        "port_number": port_number,
+                        "protocol": protocol,
+                        "state": state,
                     }
-            else:
-                # Store out-of-scope host data
-                out_of_scope_info = {
-                    'ip_address': ip_address,
-                    'ports': {'masscan_ports': entry.get('ports', [])},
-                    'tool_source': 'masscan',
-                    'reason': 'IP address not found in any defined subnet scope'
-                }
-                out_of_scope_entries.append(out_of_scope_info)
-        
-        # Now create all database records in a single transaction
-        try:
-            # Create scan record
-            scan = models.Scan(
-                filename=filename,
-                scan_type='port_scan',
-                tool_name='masscan',
-                created_at=datetime.utcnow()
-            )
-            self.db.add(scan)
-            self.db.flush()  # Get scan ID without committing
-            
-            # Bulk create host and port records
-            hosts_data = []
-            for ip_address, host_data in processed_hosts.items():
-                hosts_data.append({
-                    'scan_id': scan.id,
-                    'ip_address': ip_address,
-                    'state': host_data['state']
-                })
-            
-            if hosts_data:
-                self.db.bulk_insert_mappings(models.Host, hosts_data)
-                self.db.flush()
-                
-                # Get host ID mappings
-                host_id_map = {}
-                hosts = self.db.query(models.Host).filter(models.Host.scan_id == scan.id).all()
-                for host in hosts:
-                    host_id_map[host.ip_address] = host.id
-                
-                # Bulk create port records
-                ports_data = []
-                for ip_address, host_data in processed_hosts.items():
-                    host_id = host_id_map[ip_address]
-                    for port_info in host_data['ports']:
-                        ports_data.append({
-                            'host_id': host_id,
-                            'port_number': port_info['port_number'],
-                            'protocol': port_info['protocol'],
-                            'state': port_info['state']
-                        })
-                
-                if ports_data:
-                    self.db.bulk_insert_mappings(models.Port, ports_data)
-            
-            # Bulk create out-of-scope records
-            if out_of_scope_entries:
-                oos_data = []
-                for oos_info in out_of_scope_entries:
-                    oos_data.append({
-                        'scan_id': scan.id,
-                        **oos_info
-                    })
-                self.db.bulk_insert_mappings(models.OutOfScopeHost, oos_data)
-            
-            # Correlate hosts to subnets
-            mappings_created = 0
-            try:
-                mappings_created = self.correlation_service.correlate_scan_hosts_to_subnets(scan.id)
-                logger.info(f"Created {mappings_created} host-subnet mappings for Masscan scan {scan.id}")
-            except Exception as e:
-                logger.warning(f"Failed to correlate hosts to subnets for scan {scan.id}: {str(e)}")
-            
-            # Commit all changes as single transaction
-            self.db.commit()
-            
-            logger.info(f"Processed {len(processed_hosts)} in-scope hosts and {len(out_of_scope_entries)} out-of-scope hosts from Masscan JSON")
-            return scan
-            
-        except Exception as e:
-            self.db.rollback()
-            logger.error(f"Database transaction failed, rolling back: {str(e)}")
-            raise
+                )
 
-    def _parse_list_file(self, file_path: str, filename: str) -> models.Scan:
-        """Parse Masscan list format (default output) using single database transaction"""
-        # Parse and validate all data before database operations
-        processed_hosts = {}
-        out_of_scope_entries = []
-        
-        with open(file_path, 'r') as f:
-            for line in f:
+            if ports and self._handle_host(scan.id, ip_address, ports, pending_out_of_scope):
+                processed_hosts += 1
+
+        return processed_hosts
+
+    def _parse_list(
+        self,
+        file_path: str,
+        scan: models.Scan,
+        pending_out_of_scope: Dict[str, Dict[str, Any]],
+    ) -> int:
+        processed_hosts = 0
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as handle:
+            for line in handle:
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
-                
-                # Parse line format: "open tcp 80 1.2.3.4 1234567890"
+
                 parts = line.split()
                 if len(parts) < 4:
                     continue
-                
-                try:
-                    state = parts[0]  # open, closed, etc.
-                    protocol = parts[1]  # tcp, udp
-                    port_number = int(parts[2])
-                    ip_address = parts[3]
-                    
-                    # Skip non-open ports for optimization (closed/filtered provide limited value)
-                    if state not in ['open']:
-                        continue
-                    
-                    # Prepare port data
-                    port_info = {
-                        'port_number': port_number,
-                        'protocol': protocol,
-                        'state': state
-                    }
-                    
-                    # Check if IP is in scope
-                    matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)
-                    
-                    if matching_subnets:
-                        # Store or merge in-scope host data
-                        if ip_address in processed_hosts:
-                            processed_hosts[ip_address]['ports'].append(port_info)
-                        else:
-                            processed_hosts[ip_address] = {
-                                'state': 'up',
-                                'ports': [port_info]
-                            }
-                    else:
-                        # Store out-of-scope host data
-                        existing_oos = None
-                        for oos_entry in out_of_scope_entries:
-                            if oos_entry['ip_address'] == ip_address:
-                                existing_oos = oos_entry
-                                break
-                        
-                        if existing_oos:
-                            # Add port to existing out-of-scope host
-                            existing_oos['ports']['masscan_ports'].append({
-                                'port': port_number,
-                                'protocol': protocol,
-                                'state': state
-                            })
-                        else:
-                            # Create new out-of-scope host entry
-                            out_of_scope_info = {
-                                'ip_address': ip_address,
-                                'ports': {'masscan_ports': [{
-                                    'port': port_number,
-                                    'protocol': protocol,
-                                    'state': state
-                                }]},
-                                'tool_source': 'masscan',
-                                'reason': 'IP address not found in any defined subnet scope'
-                            }
-                            out_of_scope_entries.append(out_of_scope_info)
-                
-                except (ValueError, IndexError) as e:
-                    logger.warning(f"Error parsing Masscan line '{line}': {str(e)}")
-                    continue
-        
-        # Now create all database records in a single transaction
-        try:
-            # Create scan record
-            scan = models.Scan(
-                filename=filename,
-                scan_type='port_scan',
-                tool_name='masscan',
-                created_at=datetime.utcnow()
-            )
-            self.db.add(scan)
-            self.db.flush()  # Get scan ID without committing
-            
-            # Bulk create host and port records
-            hosts_data = []
-            for ip_address, host_data in processed_hosts.items():
-                hosts_data.append({
-                    'scan_id': scan.id,
-                    'ip_address': ip_address,
-                    'state': host_data['state']
-                })
-            
-            if hosts_data:
-                self.db.bulk_insert_mappings(models.Host, hosts_data)
-                self.db.flush()
-                
-                # Get host ID mappings
-                host_id_map = {}
-                hosts = self.db.query(models.Host).filter(models.Host.scan_id == scan.id).all()
-                for host in hosts:
-                    host_id_map[host.ip_address] = host.id
-                
-                # Bulk create port records
-                ports_data = []
-                for ip_address, host_data in processed_hosts.items():
-                    host_id = host_id_map[ip_address]
-                    for port_info in host_data['ports']:
-                        ports_data.append({
-                            'host_id': host_id,
-                            'port_number': port_info['port_number'],
-                            'protocol': port_info['protocol'],
-                            'state': port_info['state']
-                        })
-                
-                if ports_data:
-                    self.db.bulk_insert_mappings(models.Port, ports_data)
-            
-            # Bulk create out-of-scope records
-            if out_of_scope_entries:
-                oos_data = []
-                for oos_info in out_of_scope_entries:
-                    oos_data.append({
-                        'scan_id': scan.id,
-                        **oos_info
-                    })
-                self.db.bulk_insert_mappings(models.OutOfScopeHost, oos_data)
-            
-            # Correlate hosts to subnets
-            mappings_created = 0
-            try:
-                mappings_created = self.correlation_service.correlate_scan_hosts_to_subnets(scan.id)
-                logger.info(f"Created {mappings_created} host-subnet mappings for Masscan scan {scan.id}")
-            except Exception as e:
-                logger.warning(f"Failed to correlate hosts to subnets for scan {scan.id}: {str(e)}")
-            
-            # Commit all changes as single transaction
-            self.db.commit()
-            
-            logger.info(f"Processed {len(processed_hosts)} in-scope hosts and {len(out_of_scope_entries)} out-of-scope hosts from Masscan list")
-            return scan
-            
-        except Exception as e:
-            self.db.rollback()
-            logger.error(f"Database transaction failed, rolling back: {str(e)}")
-            raise
 
-    def _parse_timestamp(self, timestamp_str: str) -> Optional[datetime]:
-        """Parse timestamp from Masscan XML"""
-        if not timestamp_str:
+                state, protocol, port_str, ip_address = parts[:4]
+                if state != "open":
+                    continue
+
+                try:
+                    port_number = int(port_str)
+                except ValueError:
+                    continue
+
+                ports = [
+                    {
+                        "port_number": port_number,
+                        "protocol": protocol,
+                        "state": state,
+                    }
+                ]
+
+                if self._handle_host(scan.id, ip_address, ports, pending_out_of_scope):
+                    processed_hosts += 1
+
+        return processed_hosts
+
+    # ------------------------------------------------------------------
+    # Host handling helpers
+
+    def _handle_host(
+        self,
+        scan_id: int,
+        ip_address: str,
+        ports: List[Dict[str, Any]],
+        pending_out_of_scope: Dict[str, Dict[str, Any]],
+    ) -> bool:
+        if not ports:
+            return False
+
+        matching_subnets = self.correlation_service.parser.find_matching_subnets(ip_address)
+        if matching_subnets:
+            host_data = {
+                "state": "up",
+            }
+            host = self.dedup_service.find_or_create_host(ip_address, scan_id, host_data)
+            for port in ports:
+                port_payload = {
+                    "port_number": port["port_number"],
+                    "protocol": port.get("protocol", "tcp"),
+                    "state": port.get("state", "open"),
+                }
+                self.dedup_service.find_or_create_port(host.id, scan_id, port_payload)
+            return True
+
+        self._queue_out_of_scope(ip_address, ports, pending_out_of_scope)
+        self._conditionally_flush_out_of_scope(scan_id, pending_out_of_scope)
+        return False
+
+    def _queue_out_of_scope(
+        self,
+        ip_address: str,
+        ports: List[Dict[str, Any]],
+        pending_out_of_scope: Dict[str, Dict[str, Any]],
+    ) -> None:
+        entry = pending_out_of_scope.setdefault(
+            ip_address,
+            {
+                "ip_address": ip_address,
+                "ports": {"masscan_ports": []},
+                "tool_source": "masscan",
+                "reason": "IP address not found in any defined subnet scope",
+            },
+        )
+
+        for port in ports:
+            entry["ports"]["masscan_ports"].append(
+                {
+                    "port": port["port_number"],
+                    "protocol": port.get("protocol", "tcp"),
+                    "state": port.get("state", "open"),
+                }
+            )
+
+    def _conditionally_flush_out_of_scope(
+        self,
+        scan_id: int,
+        pending_out_of_scope: Dict[str, Dict[str, Any]],
+    ) -> None:
+        if len(pending_out_of_scope) >= self.OUT_OF_SCOPE_BATCH_SIZE:
+            self._flush_out_of_scope(scan_id, pending_out_of_scope)
+
+    def _flush_out_of_scope(
+        self,
+        scan_id: int,
+        pending_out_of_scope: Dict[str, Dict[str, Any]],
+    ) -> None:
+        if not pending_out_of_scope:
+            return
+
+        payload = [
+            {
+                "scan_id": scan_id,
+                **entry,
+            }
+            for entry in pending_out_of_scope.values()
+        ]
+        self.db.bulk_insert_mappings(models.OutOfScopeHost, payload)
+        pending_out_of_scope.clear()
+
+    # ------------------------------------------------------------------
+    # Utility helpers
+
+    def _create_scan_record(self, filename: str) -> models.Scan:
+        scan = models.Scan(
+            filename=filename,
+            scan_type="port_scan",
+            tool_name="masscan",
+            created_at=datetime.utcnow(),
+        )
+        self.db.add(scan)
+        self.db.flush()
+        return scan
+
+    def _extract_xml_host(self, host_elem: etree._Element) -> Optional[Dict[str, Any]]:
+        address_elem = host_elem.find("address")
+        if address_elem is None:
+            return None
+        ip_address = address_elem.get("addr")
+        if not ip_address:
+            return None
+
+        ports: List[Dict[str, Any]] = []
+        ports_elem = host_elem.find("ports")
+        if ports_elem is not None:
+            for port_elem in ports_elem.findall("port"):
+                try:
+                    port_number = int(port_elem.get("portid"))
+                except (TypeError, ValueError):
+                    continue
+                protocol = port_elem.get("protocol", "tcp")
+                state_elem = port_elem.find("state")
+                state = state_elem.get("state") if state_elem is not None else "open"
+                if state != "open":
+                    continue
+                ports.append(
+                    {
+                        "port_number": port_number,
+                        "protocol": protocol,
+                        "state": state,
+                    }
+                )
+
+        if not ports:
+            return None
+
+        return {
+            "ip_address": ip_address,
+            "ports": ports,
+        }
+
+    def _iter_json_entries(self, file_path: str) -> Iterable[Dict[str, Any]]:
+        decoder = json.JSONDecoder()
+        buffer = ""
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as handle:
+            for chunk in handle:
+                buffer += chunk.strip()
+                while buffer:
+                    buffer = buffer.lstrip(", \n\r\t[")
+                    if not buffer:
+                        break
+                    if buffer.startswith("]"):
+                        buffer = buffer[1:]
+                        continue
+                    try:
+                        entry, index = decoder.raw_decode(buffer)
+                    except json.JSONDecodeError:
+                        break
+                    yield entry
+                    buffer = buffer[index:]
+        buffer = buffer.strip(", \n\r\t[]")
+        if buffer:
+            try:
+                entry, _ = decoder.raw_decode(buffer)
+                yield entry
+            except json.JSONDecodeError:
+                logger.warning("Trailing JSON buffer ignored while parsing Masscan output")
+
+    def _strip_namespace(self, tag: str) -> str:
+        return tag.split("}", 1)[-1] if "}" in tag else tag
+
+    def _clear_element(self, elem: etree._Element) -> None:
+        parent = elem.getparent()
+        elem.clear()
+        if parent is not None:
+            while elem.getprevious() is not None:
+                del parent[0]
+
+    def _parse_timestamp(self, timestamp: Optional[str]) -> Optional[datetime]:
+        if not timestamp:
             return None
         try:
-            return datetime.fromtimestamp(int(timestamp_str))
+            return datetime.fromtimestamp(int(timestamp))
         except (ValueError, TypeError):
             return None

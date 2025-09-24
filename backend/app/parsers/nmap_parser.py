@@ -5,7 +5,7 @@ Uses the host deduplication service to eliminate duplicate host entries
 and maintain scan history.
 """
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, Optional, Any
 from datetime import datetime
 from lxml import etree
 from sqlalchemy.orm import Session
@@ -26,112 +26,116 @@ class NmapXMLParser:
 
     def parse_file(self, file_path: str, filename: str) -> models.Scan:
         start_time = time.time()
-        logger.info(f"Starting parse of {filename} with deduplication")
-        
+        logger.info(f"Starting streamed parse of {filename}")
+
         try:
-            with open(file_path, 'rb') as f:
-                logger.info(f"Loading XML tree for {filename}")
-                tree = etree.parse(f)
-                root = tree.getroot()
-                logger.info(f"XML tree loaded successfully for {filename}")
-                
-            result = self._parse_root(root, filename)
+            scan = self._stream_parse(file_path, filename)
             elapsed_time = time.time() - start_time
             logger.info(f"Successfully parsed {filename} in {elapsed_time:.2f} seconds")
-            return result
+            return scan
         except Exception as e:
             elapsed_time = time.time() - start_time
             logger.error(f"Error parsing XML file {filename} after {elapsed_time:.2f} seconds: {str(e)}")
             raise
 
-    def _parse_root(self, root: etree.Element, filename: str) -> models.Scan:
-        logger.info(f"Creating scan record for {filename}")
-        
-        # Create scan record first
-        scan = models.Scan(
-            filename=filename,
-            scan_type='nmap',
-            version=root.get('version'),
-            xml_output_version=root.get('xmloutputversion'),
-        )
-        
-        # Parse run info to get timestamps
-        runstats = root.find('runstats')
-        if runstats is not None:
-            finished = runstats.find('finished')
-            if finished is not None:
-                end_time_str = finished.get('timestr')
-                if end_time_str:
-                    try:
-                        scan.end_time = datetime.strptime(end_time_str, '%a %b %d %H:%M:%S %Y')
-                    except ValueError:
-                        logger.warning(f"Could not parse end time: {end_time_str}")
-        
-        # Parse command line from nmaprun args attribute
-        scan.command_line = root.get('args', '')
-        scan.tool_name = 'nmap'
-        
-        # Add to database and get ID
-        self.db.add(scan)
-        self.db.flush()
-        scan_id = scan.id
-        
-        # Parse scan info
-        self._parse_scan_info(root, scan_id)
-        
-        # Parse hosts with deduplication
-        hosts_processed = self._parse_hosts_with_deduplication(root, scan_id)
-        
-        # Update scan statistics - temporarily disabled
-        # self.dedup_service.update_scan_statistics(scan_id)
-        
+    def _stream_parse(self, file_path: str, filename: str) -> models.Scan:
+        scan: Optional[models.Scan] = None
+        scan_id: Optional[int] = None
+        hosts_processed = 0
+
+        context = etree.iterparse(file_path, events=("start", "end"))
+
+        for event, elem in context:
+            tag = self._strip_namespace(elem.tag)
+
+            if event == "start" and tag == "nmaprun":
+                scan = self._create_scan_record(elem, filename)
+                scan_id = scan.id
+                continue
+
+            if scan_id is None:
+                continue
+
+            if event == "end":
+                if tag == "scaninfo":
+                    self._parse_scan_info_element(elem, scan_id)
+                    self._clear_element(elem)
+                elif tag == "host":
+                    if self._host_has_address(elem):
+                        try:
+                            self._process_host_with_deduplication(elem, scan_id)
+                            hosts_processed += 1
+                            if hosts_processed % 100 == 0:
+                                logger.info(f"Processed {hosts_processed} hosts so far")
+                        finally:
+                            self._clear_element(elem)
+                    else:
+                        self._clear_element(elem)
+                elif tag == "finished" and scan is not None:
+                    self._update_scan_end_time(scan, elem)
+                    self._clear_element(elem)
+
+        if scan is None or scan_id is None:
+            raise ValueError("Unable to locate nmaprun element in XML")
+
         # Correlate hosts to subnets
         try:
             logger.info(f"Starting subnet correlation for scan {scan_id}")
             hosts_correlated = self.correlation_service.batch_correlate_scan_hosts_to_subnets(scan_id)
             logger.info(f"Correlated {hosts_correlated} hosts to subnets")
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - defensive
             logger.error(f"Error in subnet correlation: {e}")
-            # Continue parsing even if correlation fails
-        
+
         logger.info(f"Parsed {hosts_processed} host records from {filename}")
         return scan
 
-    def _parse_scan_info(self, root: etree.Element, scan_id: int):
-        """Parse scan info elements"""
-        scaninfo_elem = root.find('scaninfo')
-        if scaninfo_elem is not None:
-            scan_info = models.ScanInfo(
-                scan_id=scan_id,
-                type=scaninfo_elem.get('type'),
-                protocol=scaninfo_elem.get('protocol'),
-                numservices=int(scaninfo_elem.get('numservices', 0)),
-                services=scaninfo_elem.get('services')
-            )
-            self.db.add(scan_info)
+    def _create_scan_record(self, nmaprun_elem: etree.Element, filename: str) -> models.Scan:
+        scan = models.Scan(
+            filename=filename,
+            scan_type='nmap',
+            version=nmaprun_elem.get('version'),
+            xml_output_version=nmaprun_elem.get('xmloutputversion'),
+            command_line=nmaprun_elem.get('args', ''),
+            tool_name='nmap',
+        )
 
-    def _parse_hosts_with_deduplication(self, root: etree.Element, scan_id: int) -> int:
-        """Parse all hosts using deduplication service"""
-        host_elements = root.findall('.//host')
-        meaningful_hosts = self._filter_meaningful_hosts(host_elements)
-        
-        logger.info(f"Processing {len(meaningful_hosts)} meaningful hosts out of {len(host_elements)} total")
-        
-        hosts_processed = 0
-        
-        for host_elem in meaningful_hosts:
+        self.db.add(scan)
+        self.db.flush()
+        return scan
+
+    def _parse_scan_info_element(self, scaninfo_elem: etree.Element, scan_id: int):
+        scan_info = models.ScanInfo(
+            scan_id=scan_id,
+            type=scaninfo_elem.get('type'),
+            protocol=scaninfo_elem.get('protocol'),
+            numservices=int(scaninfo_elem.get('numservices', 0)),
+            services=scaninfo_elem.get('services'),
+        )
+        self.db.add(scan_info)
+
+    def _update_scan_end_time(self, scan: models.Scan, finished_elem: etree.Element) -> None:
+        end_time_str = finished_elem.get('timestr')
+        if end_time_str:
             try:
-                self._process_host_with_deduplication(host_elem, scan_id)
-                hosts_processed += 1
-                
-                if hosts_processed % 100 == 0:
-                    logger.info(f"Processed {hosts_processed} hosts")
-                    
-            except Exception as e:
-                logger.error(f"Error processing host: {e}")
-                continue
-        
-        return hosts_processed
+                scan.end_time = datetime.strptime(end_time_str, '%a %b %d %H:%M:%S %Y')
+            except ValueError:
+                logger.warning(f"Could not parse end time: {end_time_str}")
+
+    def _strip_namespace(self, tag: str) -> str:
+        return tag.split('}', 1)[-1] if '}' in tag else tag
+
+    def _clear_element(self, elem: etree.Element) -> None:
+        parent = elem.getparent()
+        elem.clear()
+        if parent is not None:
+            while elem.getprevious() is not None:
+                del parent[0]
+
+    def _host_has_address(self, host_elem: etree.Element) -> bool:
+        address_elem = host_elem.find('address[@addrtype="ipv4"]')
+        if address_elem is None:
+            address_elem = host_elem.find('address[@addrtype="ipv6"]')
+        return address_elem is not None
 
     def _process_host_with_deduplication(self, host_elem: etree.Element, scan_id: int):
         """Process a single host using deduplication"""
@@ -258,22 +262,4 @@ class NmapXMLParser:
                 'script_id': script_elem.get('id'),
                 'output': script_elem.get('output', '')
             }
-            
             self.dedup_service.add_or_update_host_script(host_id, scan_id, script_data)
-
-    def _filter_meaningful_hosts(self, host_elements: List[etree.Element]) -> List[etree.Element]:
-        """Filter out hosts without meaningful data"""
-        meaningful = []
-        
-        for host_elem in host_elements:
-            # Must have an IP address
-            address_elem = host_elem.find('address[@addrtype="ipv4"]')
-            if address_elem is None:
-                address_elem = host_elem.find('address[@addrtype="ipv6"]')
-            if address_elem is None:
-                continue
-            
-            # Include all hosts with IP addresses - even basic status is useful
-            meaningful.append(host_elem)
-        
-        return meaningful

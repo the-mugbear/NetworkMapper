@@ -46,9 +46,9 @@ def get_risk_summary(
         summary['empty_state'] = {
             'type': 'no_assessments' if summary.get('total_hosts', 0) > 0 else 'no_hosts',
             'title': 'No Risk Assessments Available' if summary.get('total_hosts', 0) > 0 else 'No Hosts Discovered',
-            'message': f'Run security assessments on your {summary.get("total_hosts", 0)} hosts to view risk analysis' if summary.get('total_hosts', 0) > 0 else 'Upload network scan files to discover hosts before running risk assessments',
-            'action_text': 'Start Assessment' if summary.get('total_hosts', 0) > 0 else 'Upload Scan',
-            'action_url': '/hosts' if summary.get('total_hosts', 0) > 0 else '/upload'
+            'message': f'Run security assessments on hosts directly from the host details page to view risk analysis' if summary.get('total_hosts', 0) > 0 else 'Upload network scan files to discover hosts before running risk assessments',
+            'action_text': None,
+            'action_url': '/upload' if summary.get('total_hosts', 0) == 0 else None
         }
 
         return summary
@@ -81,10 +81,10 @@ def get_high_risk_hosts(
             'empty_state': {
                 'type': 'no_high_risk' if total_assessments > 0 else ('no_assessments' if total_hosts > 0 else 'no_hosts'),
                 'title': 'No Critical Security Findings' if total_assessments > 0 else ('No Risk Assessments Available' if total_hosts > 0 else 'No Hosts Discovered'),
-                'message': f'Great news! No hosts currently have critical security issues (risk score ≥{min_risk_score})' if total_assessments > 0 else (f'Run security assessments on your {total_hosts} hosts to identify potential risks' if total_hosts > 0 else 'Upload network scan files to discover hosts before running security assessments'),
-                'action_text': 'View All Hosts' if total_assessments > 0 else ('Start Assessment' if total_hosts > 0 else 'Upload Scan'),
-                'action_url': '/hosts' if total_assessments > 0 else ('/hosts' if total_hosts > 0 else '/upload'),
-                'is_positive': total_assessments > 0 and len(high_risk_hosts) == 0  # Good news when no high-risk hosts but assessments exist
+                'message': f'Great news! No hosts currently have critical security issues (risk score ≥{min_risk_score})' if total_assessments > 0 else (f'Review hosts individually to trigger security assessments and identify risks' if total_hosts > 0 else 'Upload network scan files to discover hosts before running security assessments'),
+                'action_text': 'View All Hosts' if total_assessments > 0 else (None if total_hosts > 0 else 'Upload Scan'),
+                'action_url': '/hosts' if total_assessments > 0 else (None if total_hosts > 0 else '/upload'),
+                'is_positive': total_assessments > 0 and len(high_risk_hosts) == 0
             }
         }
 

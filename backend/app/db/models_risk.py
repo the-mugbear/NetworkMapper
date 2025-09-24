@@ -43,7 +43,7 @@ class HostRiskAssessment(Base):
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    host = relationship("Host", back_populates="risk_assessments")
+    host = relationship("Host")
     vulnerabilities = relationship("HostVulnerability", back_populates="risk_assessment")
     security_findings = relationship("SecurityFinding", back_populates="risk_assessment")
 

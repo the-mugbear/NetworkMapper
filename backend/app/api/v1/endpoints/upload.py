@@ -1,326 +1,96 @@
-import os
-import tempfile
-import time
 import logging
+from typing import List
+
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
-from app.db.session import get_db
+
 from app.api.v1.endpoints.auth import get_current_user
-from app.db.models_unified import User, Host, HostScanHistory
-from app.core.config import settings
-from app.parsers.nmap_parser import NmapXMLParser
-from app.parsers.eyewitness_parser import EyewitnessParser
-from app.parsers.masscan_parser import MasscanParser
-from app.parsers.dns_parser import DNSParser
-from app.parsers.netexec_parser import NetexecParser
-from app.services.nessus_integration_service import NessusIntegrationService
-from app.schemas.schemas import FileUploadResponse
-from app.services.dns_service import DNSService
-from app.services.parse_error_service import log_parse_error
+from app.db.models import IngestionJob
+from app.db.models_auth import User
+from app.db.session import get_db
+from app.schemas.schemas import FileUploadResponse, IngestionJobSchema
+from app.services.ingestion_service import ingestion_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+ALLOWED_EXTENSIONS = {'.xml', '.json', '.csv', '.txt', '.gnmap', '.nessus'}
+
+
 @router.post("/", response_model=FileUploadResponse)
 async def upload_scan_file(
     file: UploadFile = File(...),
     enrich_dns: bool = False,
-    dns_server: str = None,
+    dns_server: str | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    # Extended allowed extensions for multiple tools
-    allowed_extensions = ['.xml', '.json', '.csv', '.txt', '.gnmap', '.nessus']
-    
-    if not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+
+    if not any(file.filename.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
         raise HTTPException(
             status_code=400,
-            detail=f"File type not allowed. Supported types: {', '.join(allowed_extensions)}"
+            detail=(
+                "File type not allowed. Supported types: "
+                + ", ".join(sorted(ALLOWED_EXTENSIONS))
+            ),
         )
-    
-    # Validate file size
-    content = await file.read()
-    if len(content) > settings.MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size: {settings.MAX_FILE_SIZE // (1024*1024)}MB"
+
+    options = {"enrich_dns": enrich_dns}
+    if dns_server:
+        options["dns_server"] = dns_server
+
+    try:
+        job = await ingestion_service.create_job(
+            db=db,
+            upload=file,
+            submitted_by_id=current_user.id if current_user else None,
+            options=options,
         )
-    
-    # Create uploads directory if it doesn't exist
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    
-    # Save file temporarily for parsing
-    file_extension = os.path.splitext(file.filename)[1]
-    with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
-        temp_file.write(content)
-        temp_file_path = temp_file.name
-    
-    try:
-        # Determine parser based on file content and name
-        scan = None
-        message = ""
-        parsing_attempts = []
-        
-        # Try different parsers based on file type and name
-        if file.filename.lower().endswith('.nessus') or \
-           (file.filename.lower().endswith('.xml') and _is_nessus_file(content)):
-            # Nessus vulnerability scan file
-            parsing_attempts.append(("nessus_xml", NessusIntegrationService, "Nessus vulnerability scan"))
+    except ValueError as exc:
+        logger.warning("Upload rejected: %s", exc)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception("Failed to queue ingestion job")
+        raise HTTPException(status_code=500, detail="Failed to queue ingestion job") from exc
 
-        if file.filename.lower().endswith('.xml'):
-            # Try Nmap parser first
-            parsing_attempts.append(("nmap_xml", NmapXMLParser, "Nmap XML file"))
-            # Then try Masscan XML parser
-            parsing_attempts.append(("masscan_xml", MasscanParser, "Masscan XML file"))
-            # Try Nessus parser as fallback for XML files
-            parsing_attempts.append(("nessus_xml", NessusIntegrationService, "Nessus vulnerability scan"))
-            
-        elif (file.filename.lower().endswith('.json') or file.filename.lower().endswith('.csv')) and \
-             ('eyewitness' in file.filename.lower() or 'report' in file.filename.lower()):
-            file_type = "eyewitness_json" if file.filename.lower().endswith('.json') else "eyewitness_csv"
-            parsing_attempts.append((file_type, EyewitnessParser, "Eyewitness report"))
-            
-        elif file.filename.lower().endswith('.json'):
-            # Check if it's netexec JSON output first
-            if ('netexec' in file.filename.lower() or
-                'nxc' in file.filename.lower() or
-                'spider' in file.filename.lower() or
-                _is_netexec_json_content(content)):
-                parsing_attempts.append(("netexec_json", NetexecParser, "NetExec JSON output"))
-            elif 'masscan' in file.filename.lower():
-                parsing_attempts.append(("masscan_json", MasscanParser, "Masscan JSON file"))
-            
-        elif file.filename.lower().endswith('.txt'):
-            # Check if it's netexec output or masscan
-            if ('netexec' in file.filename.lower() or
-                'nxc' in file.filename.lower() or
-                _is_netexec_content(content)):
-                parsing_attempts.append(("netexec_output", NetexecParser, "NetExec output file"))
-            else:
-                parsing_attempts.append(("masscan_list", MasscanParser, "Masscan output file"))
-            
-        elif file.filename.lower().endswith('.gnmap'):
-            # Lazy import to avoid dependency issues at module load time
-            try:
-                from app.parsers.gnmap_parser import GnmapParser
-                parsing_attempts.append(("nmap_gnmap", GnmapParser, "Nmap .gnmap file"))
-            except ImportError as e:
-                logger.warning(f"GnmapParser not available: {str(e)}")
-                parse_error = log_parse_error(
-                    db=db,
-                    filename=file.filename,
-                    file_content=content,
-                    error_type="import_error",
-                    file_type="nmap_gnmap",
-                    custom_message=f"GnmapParser dependencies not available: {str(e)}"
-                )
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Gnmap parser not available. Error ID: {parse_error.id}"
-                )
-        
-        elif file.filename.lower().endswith('.csv') and ('dns' in file.filename.lower() or 'ptr' in file.filename.lower()):
-            # DNS records CSV file
-            parsing_attempts.append(("dns_csv", DNSParser, "DNS records CSV file"))
-        
-        elif file.filename.lower().endswith('.csv'):
-            # Generic CSV - try DNS parser as fallback for CSV files
-            parsing_attempts.append(("dns_csv", DNSParser, "DNS records CSV file"))
-        
-        else:
-            # Log unsupported file type error
-            parse_error = log_parse_error(
-                db=db,
-                filename=file.filename,
-                file_content=content,
-                error_type="format_error",
-                file_type="unknown",
-                custom_message=f"Unsupported file type or format. Supported formats: Nmap XML/.gnmap, Masscan XML/JSON/List, Eyewitness JSON/CSV, DNS Records CSV"
-            )
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported file format. Error ID: {parse_error.id} - Check parse errors for details."
-            )
-        
-        # Try each parser until one succeeds
-        last_error = None
-        for file_type, parser_class, success_message in parsing_attempts:
-            try:
-                logger.info(f"Attempting to parse {file.filename} with {parser_class.__name__}")
-                parse_start_time = time.time()
+    ingestion_service.enqueue_job(job.id)
 
-                if parser_class == NessusIntegrationService:
-                    # Special handling for Nessus integration service
-                    nessus_service = NessusIntegrationService(db)
-                    result = nessus_service.process_nessus_file(temp_file_path, file.filename)
-                    # For compatibility, create a mock scan object with the ID
-                    from types import SimpleNamespace
-                    scan = SimpleNamespace(id=result['scan_id'])
-                    logger.info(f"Processed Nessus file: {result}")
-                else:
-                    # Standard parser handling
-                    parser = parser_class(db)
-                    scan = parser.parse_file(temp_file_path, file.filename)
-
-                # Commit immediately after parsing to ensure persistence
-                db.commit()
-                logger.info(f"Committed scan {scan.id} to database after parsing")
-
-                parse_elapsed = time.time() - parse_start_time
-                logger.info(f"Successfully parsed {file.filename} with {parser_class.__name__} in {parse_elapsed:.2f} seconds")
-
-                message = f"{success_message} uploaded and parsed successfully (parsed in {parse_elapsed:.2f}s)"
-                break
-            except Exception as e:
-                parse_elapsed = time.time() - parse_start_time
-                logger.warning(f"Failed to parse {file.filename} with {parser_class.__name__} after {parse_elapsed:.2f} seconds: {str(e)}")
-                last_error = e
-                continue
-        
-        # If all parsers failed, log the error
-        if not scan:
-            parse_error = log_parse_error(
-                db=db,
-                filename=file.filename,
-                file_content=content,
-                error=last_error,
-                error_type="parsing_error",
-                file_type=parsing_attempts[0][0] if parsing_attempts else "unknown"
-            )
-            
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to parse file. Error ID: {parse_error.id} - Check parse errors for detailed information and suggestions."
-            )
-        
-        logger.info(f"Parsing completed successfully, scan ID: {scan.id}")
-        
-        # Enrich with DNS data if requested
-        if enrich_dns and scan:
-            try:
-                dns_service = DNSService(db, custom_dns_server=dns_server if dns_server else None)
-                enriched_count = 0
-
-                # Get hosts associated with this scan from the database
-                from sqlalchemy.orm import Session
-                scan_hosts = db.query(Host).join(HostScanHistory).filter(
-                    HostScanHistory.scan_id == scan.id
-                ).all()
-
-                logger.info(f"Starting DNS enrichment for scan {scan.id} with {len(scan_hosts)} hosts"
-                           f" using {'custom DNS server: ' + dns_server if dns_server else 'system default DNS'}")
-
-                for host in scan_hosts:
-                    try:
-                        enrichment_data = dns_service.enrich_host_data(host)
-                        if enrichment_data['reverse_dns'] or enrichment_data['dns_records']:
-                            enriched_count += 1
-                    except Exception as e:
-                        # Log but don't fail the entire upload
-                        logger.warning(f"DNS enrichment failed for host {host.ip_address}: {str(e)}")
-
-                if enriched_count > 0:
-                    message += f" (DNS enriched {enriched_count} hosts using {'custom server: ' + dns_server if dns_server else 'system DNS'})"
-            except Exception as e:
-                logger.error(f"DNS enrichment failed for scan {scan.id}: {str(e)}")
-                # Continue without DNS enrichment
-        
-        return FileUploadResponse(
-            message=message,
-            scan_id=scan.id,
-            filename=file.filename
-        )
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Rollback the transaction on any error
-        db.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail=f"Error processing file: {str(e)}"
-        )
-    
-    finally:
-        # Clean up temporary file
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+    return FileUploadResponse(
+        job_id=job.id,
+        filename=job.original_filename,
+        status=job.status,
+        message="File queued for background processing",
+        scan_id=None,
+    )
 
 
-def _is_netexec_content(content: bytes) -> bool:
-    """Check if content appears to be NetExec console output"""
-    try:
-        text = content.decode('utf-8', errors='ignore').lower()
-
-        # Look for netexec indicators
-        netexec_indicators = [
-            'smb         ',  # SMB enumeration output
-            'ldap        ',  # LDAP enumeration output
-            'winrm       ',  # WinRM enumeration output
-            'rdp         ',  # RDP enumeration output
-            '[*] windows',   # Windows detection
-            '[+]',           # Success indicators
-            '[-]',           # Failure indicators
-            'netexec',       # Tool name
-            'nxc ',          # Short tool name
-        ]
-
-        return any(indicator in text for indicator in netexec_indicators)
-    except (UnicodeDecodeError, AttributeError):
-        return False
+@router.get("/jobs/{job_id}", response_model=IngestionJobSchema)
+def get_ingestion_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    job = db.query(IngestionJob).filter(IngestionJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Ingestion job not found")
+    return job
 
 
-def _is_netexec_json_content(content: bytes) -> bool:
-    """Check if JSON content appears to be NetExec JSON output"""
-    try:
-        import json
-        text = content.decode('utf-8', errors='ignore')
-        data = json.loads(text)
-
-        # Check for NetExec JSON structure patterns
-        if isinstance(data, dict):
-            # Spider_plus output structure
-            for key, value in data.items():
-                if isinstance(value, dict) and any(
-                    share_key in ['shares', 'files', 'directories'] or '/' in str(share_key)
-                    for share_key in value.keys()
-                ):
-                    return True
-
-            # Check for IP addresses as keys
-            import re
-            ip_pattern = re.compile(r'^\d+\.\d+\.\d+\.\d+$')
-            if any(ip_pattern.match(str(key)) for key in data.keys()):
-                return True
-
-        return False
-    except (UnicodeDecodeError, json.JSONDecodeError, AttributeError, KeyError):
-        return False
-
-
-def _is_nessus_file(content: bytes) -> bool:
-    """Check if content appears to be a Nessus XML file"""
-    try:
-        text = content.decode('utf-8', errors='ignore').lower()
-
-        # Look for Nessus-specific XML indicators
-        nessus_indicators = [
-            '<nessusc',  # NessusClientData_v2 tag
-            'nessusc',   # Partial match for the root tag
-            'nessus',    # General Nessus indicator
-            'tenable',   # Tenable (company that makes Nessus)
-            'reporthost', # ReportHost tag
-            'reportitem', # ReportItem tag
-            'pluginid',   # pluginID attribute
-            'plugin_name' # plugin_name tag
-        ]
-
-        # Check for multiple indicators to reduce false positives
-        found_indicators = sum(1 for indicator in nessus_indicators if indicator in text)
-
-        # Require at least 3 indicators to be confident it's a Nessus file
-        return found_indicators >= 3
-
-    except (UnicodeDecodeError, AttributeError):
-        return False
+@router.get("/jobs", response_model=List[IngestionJobSchema])
+def list_ingestion_jobs(
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    limit = max(1, min(limit, 50))
+    jobs = (
+        db.query(IngestionJob)
+        .order_by(desc(IngestionJob.created_at))
+        .limit(limit)
+        .all()
+    )
+    return jobs

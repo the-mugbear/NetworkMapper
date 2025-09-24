@@ -293,6 +293,7 @@ class FileUploadResponse(BaseModel):
     status: str
     message: str
     scan_id: Optional[int] = None
+    parse_error_id: Optional[int] = None
 
 
 class IngestionJobSchema(BaseModel):
@@ -305,6 +306,7 @@ class IngestionJobSchema(BaseModel):
     tool_name: Optional[str] = None
     file_size: Optional[int] = None
     scan_id: Optional[int] = None
+    parse_error_id: Optional[int] = None
     created_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None

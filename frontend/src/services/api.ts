@@ -282,6 +282,7 @@ export interface FileUploadResponse {
   status: string;
   message: string;
   scan_id: number | null;
+  parse_error_id?: number | null;
 }
 
 export interface IngestionJob {
@@ -294,6 +295,7 @@ export interface IngestionJob {
   tool_name?: string;
   file_size?: number;
   scan_id?: number | null;
+  parse_error_id?: number | null;
   created_at: string;
   started_at?: string | null;
   completed_at?: string | null;

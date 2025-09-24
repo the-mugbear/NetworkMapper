@@ -51,6 +51,8 @@ class User(Base):
     created_by = relationship("User", remote_side=[id])
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+    host_follows = relationship("HostFollow", back_populates="user", cascade="all, delete-orphan")
+    host_notes = relationship("HostNote", back_populates="author", cascade="all, delete-orphan")
 
 
 class UserSession(Base):

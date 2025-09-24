@@ -3,10 +3,24 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, case
 from app.db.session import get_db
 from app.db import models
-from app.schemas.schemas import DashboardStats, ScanSummary, SubnetStats
+from app.schemas.schemas import (
+    DashboardStats,
+    ScanSummary,
+    SubnetStats,
+    VulnerabilityStats,
+    RiskInsightResponse,
+    NoteActivitySummary,
+    NoteActivityEntry,
+)
 from app.services.subnet_calculator import SubnetCalculator
+from app.services.vulnerability_service import VulnerabilityService
+from app.services.risk_insight_service import RiskInsightService
+from app.services.host_follow_service import HostFollowService
 from app.api.v1.endpoints.auth import get_current_user
 from app.db.models_auth import User
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -121,7 +135,49 @@ def get_dashboard_stats(
     except Exception as e:
         logger.error(f"Error calculating subnet statistics: {e}")
         subnet_stats = []
-    
+
+    # Get vulnerability statistics
+    vulnerability_stats = None
+    try:
+        vulnerability_service = VulnerabilityService(db)
+        vuln_data = vulnerability_service.get_dashboard_statistics()
+        vulnerability_stats = VulnerabilityStats(
+            total_vulnerabilities=vuln_data['total_vulnerabilities'],
+            critical=vuln_data['severity_breakdown'].get('critical', 0),
+            high=vuln_data['severity_breakdown'].get('high', 0),
+            medium=vuln_data['severity_breakdown'].get('medium', 0),
+            low=vuln_data['severity_breakdown'].get('low', 0),
+            info=vuln_data['severity_breakdown'].get('info', 0),
+            hosts_with_vulnerabilities=vuln_data['hosts_with_vulnerabilities']
+        )
+    except Exception as e:
+        logger.error(f"Error getting vulnerability statistics: {e}")
+
+    note_activity = None
+    try:
+        follow_service = HostFollowService(db)
+        activity_data = follow_service.get_dashboard_activity(current_user.id, limit=6)
+        note_activity = NoteActivitySummary(
+            total_notes=activity_data["total_notes"],
+            active_host_count=activity_data["active_host_count"],
+            following_count=activity_data["following_count"],
+            recent_notes=[
+                NoteActivityEntry(
+                    note_id=item["note_id"],
+                    host_id=item["host_id"],
+                    ip_address=item["ip_address"],
+                    hostname=item["hostname"],
+                    status=item["status"],
+                    preview=item["preview"],
+                    created_at=item["created_at"],
+                    updated_at=item["updated_at"],
+                )
+                for item in activity_data["recent_notes"]
+            ],
+        )
+    except Exception as e:
+        logger.error(f"Error gathering note activity: {e}")
+
     return DashboardStats(
         total_scans=total_scans,
         total_hosts=total_hosts,
@@ -130,7 +186,9 @@ def get_dashboard_stats(
         open_ports=open_ports,
         total_subnets=total_subnets,
         recent_scans=recent_scans,
-        subnet_stats=subnet_stats
+        subnet_stats=subnet_stats,
+        vulnerability_stats=vulnerability_stats,
+        note_activity=note_activity,
     )
 
 @router.get("/port-stats")
@@ -180,3 +238,13 @@ def get_os_statistics(db: Session = Depends(get_db)):
         }
         for stat in os_stats
     ]
+
+
+@router.get("/risk-insights", response_model=RiskInsightResponse)
+def get_risk_insights(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    limit: int = 10,
+):
+    service = RiskInsightService(db)
+    return service.generate_insights(limit=limit)

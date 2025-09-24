@@ -15,6 +15,7 @@ from typing import Dict, Iterable, List, Optional, Tuple, Type
 from uuid import uuid4
 
 from fastapi import UploadFile
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -63,6 +64,58 @@ class IngestionService:
             )
             self._storage_root = fallback
         self._executor = ThreadPoolExecutor(max_workers=settings.INGESTION_WORKERS)
+        self._ensure_schema()
+
+    def _ensure_schema(self) -> None:
+        """Ensure ingestion_jobs schema supports parse-error linkage."""
+
+        # Add the nullable column first; commit immediately so the column persists even if
+        # follow-on DDL (like the FK) fails due to missing dependency tables.
+        try:
+            with SessionLocal() as db:
+                db.execute(
+                    text(
+                        "ALTER TABLE ingestion_jobs ADD COLUMN IF NOT EXISTS parse_error_id INTEGER"
+                    )
+                )
+                db.commit()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("Unable to add parse_error_id column to ingestion_jobs: %s", exc)
+
+        # Attempt to wire up the foreign-key constraint if the parse_errors table exists.
+        try:
+            with SessionLocal() as db:
+                dialect = db.bind.dialect.name if db.bind else ""
+                if dialect == "postgresql":
+                    table_exists = db.execute(
+                        text("SELECT to_regclass('parse_errors') IS NOT NULL")
+                    ).scalar()
+                elif dialect == "sqlite":
+                    table_exists = db.execute(
+                        text(
+                            "SELECT 1 FROM sqlite_master "
+                            "WHERE type = 'table' AND name = 'parse_errors'"
+                        )
+                    ).scalar()
+                else:
+                    table_exists = db.execute(
+                        text(
+                            "SELECT 1 FROM information_schema.tables "
+                            "WHERE table_name = 'parse_errors'"
+                        )
+                    ).scalar()
+
+                if table_exists:
+                    db.execute(
+                        text(
+                            "ALTER TABLE ingestion_jobs "
+                            "ADD CONSTRAINT IF NOT EXISTS ingestion_jobs_parse_error_id_fkey "
+                            "FOREIGN KEY (parse_error_id) REFERENCES parse_errors(id)"
+                        )
+                    )
+                    db.commit()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("Unable to add ingestion_jobs parse_error_id FK: %s", exc)
 
     async def create_job(
         self,
@@ -144,6 +197,7 @@ class IngestionService:
                 job.scan_id = result.get("scan_id")
                 job.tool_name = result.get("tool_name")
                 job.message = result.get("message")
+                job.parse_error_id = None
                 db.commit()
         except ParseFailure as exc:
             db.rollback()
@@ -154,6 +208,7 @@ class IngestionService:
                 job.message = job.error_message
                 if exc.error_id:
                     job.message = f"{job.message} (Error ID: {exc.error_id})"
+                job.parse_error_id = exc.error_id
                 job.completed_at = datetime.utcnow()
                 db.commit()
             logger.warning(
@@ -168,6 +223,7 @@ class IngestionService:
                 job.status = "failed"
                 job.error_message = str(exc)
                 job.completed_at = datetime.utcnow()
+                job.parse_error_id = None
                 db.commit()
             logger.exception("Failed ingestion job %s", job_id)
         finally:

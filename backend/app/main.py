@@ -1,5 +1,7 @@
 import logging
+import os
 import sys
+import time
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -8,6 +10,7 @@ from app.db.session import engine
 from app.db import models
 from app.db import models_risk
 from app.db import models_auth
+from sqlalchemy.exc import OperationalError
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -19,10 +22,33 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine, checkfirst=True)
-models_risk.Base.metadata.create_all(bind=engine, checkfirst=True)
-models_auth.Base.metadata.create_all(bind=engine, checkfirst=True)
+def _initialize_database() -> None:
+    """Create database schema with retry while the DB service boots."""
+
+    max_attempts = int(os.getenv("DB_INIT_MAX_RETRIES", "10"))
+    backoff_seconds = float(os.getenv("DB_INIT_RETRY_DELAY", "3"))
+    last_exc: OperationalError | None = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            models.Base.metadata.create_all(bind=engine, checkfirst=True)
+            models_risk.Base.metadata.create_all(bind=engine, checkfirst=True)
+            models_auth.Base.metadata.create_all(bind=engine, checkfirst=True)
+            return
+        except OperationalError as exc:
+            last_exc = exc
+            logger.warning(
+                "Database not ready (attempt %d/%d): %s",
+                attempt,
+                max_attempts,
+                exc,
+            )
+            time.sleep(backoff_seconds)
+
+    raise RuntimeError("Database initialization failed after retries") from last_exc
+
+
+_initialize_database()
 
 app = FastAPI(
     title="NetworkMapper API", 

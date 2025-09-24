@@ -27,7 +27,19 @@ class Settings:
     
     # File upload settings
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", os.path.join(os.getcwd(), "uploads"))
-    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", str(100 * 1024 * 1024)))  # 100MB default
+    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", str(1024 * 1024 * 1024)))  # 1GB default
+    UPLOAD_CHUNK_SIZE: int = int(os.getenv("UPLOAD_CHUNK_SIZE", str(5 * 1024 * 1024)))  # 5MB chunks
+    INGESTION_STORAGE_DIR: str = os.getenv(
+        "INGESTION_STORAGE_DIR",
+        os.path.join(os.getcwd(), "uploads", "ingestion_queue")
+    )
+    INGESTION_WORKERS: int = int(os.getenv("INGESTION_WORKERS", "2"))
+
+    # Nessus ingestion tuning
+    NESSUS_COMMIT_BATCH_SIZE: int = int(os.getenv("NESSUS_COMMIT_BATCH_SIZE", "50"))
+    NESSUS_PLUGIN_OUTPUT_MAX_CHARS: int = int(
+        os.getenv("NESSUS_PLUGIN_OUTPUT_MAX_CHARS", str(32 * 1024))
+    )
     
     # Supported file extensions for scan uploads
     ALLOWED_EXTENSIONS: List[str] = [

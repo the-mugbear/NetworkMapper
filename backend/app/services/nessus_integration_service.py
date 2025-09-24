@@ -5,12 +5,17 @@ Integrates Nessus vulnerability data with NetworkMapper without risk assessment 
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.parsers.nessus_parser import NessusParser, NessusHost, NessusVulnerability
-from app.db.models import Host, Port, Scan
+# Import from main models (hosts_v2 schema)
+from app.db.models import Host, Port, Scan, Script, HostScript
+from app.services.vulnerability_service import VulnerabilityService
+# Import risk models to ensure SQLAlchemy knows about relationships
+from app.db import models_risk
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +26,8 @@ class NessusIntegrationService:
     def __init__(self, db: Session):
         self.db = db
         self.parser = NessusParser()
+        self.vulnerability_service = VulnerabilityService(db)
+        self._commit_batch_size = max(1, settings.NESSUS_COMMIT_BATCH_SIZE)
 
     def process_nessus_file(self, file_path: str, scan_name: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -34,32 +41,47 @@ class NessusIntegrationService:
             Dictionary with processing results
         """
         try:
-            # Parse the Nessus file
-            nessus_data = self.parser.parse_file(file_path)
+            scan_info, hosts_iter = self.parser.iter_file(file_path)
 
             # Create scan record
-            scan = self._create_scan_record(nessus_data, scan_name, file_path)
+            scan = self._create_scan_record(scan_info, scan_name)
+            scan_id = scan.id
+            scan_label = scan.filename
 
             # Process hosts and vulnerabilities
             hosts_processed = 0
             vulnerabilities_found = 0
 
-            for nessus_host in nessus_data.get('hosts', []):
-                host = self._process_nessus_host(nessus_host, scan)
-                if host:
+            for nessus_host in hosts_iter:
+                result = self._process_nessus_host(nessus_host, scan)
+                if result:
+                    host, vuln_stats = result
                     hosts_processed += 1
-                    # Count vulnerabilities for this host
-                    vulnerabilities_found += len(nessus_host.vulnerabilities)
+                    vulnerabilities_found += vuln_stats.get("total", 0)
+
+                    if hosts_processed % self._commit_batch_size == 0:
+                        self.db.commit()
+                        self.db.expunge_all()
+                        scan = self.db.get(Scan, scan_id)
+                        if not scan:
+                            raise RuntimeError("Scan record disappeared during Nessus ingestion")
+                # Free memory regardless of success
+                if nessus_host.vulnerabilities:
+                    nessus_host.vulnerabilities.clear()
 
             self.db.commit()
+            self.db.expunge_all()
 
             return {
                 'success': True,
-                'scan_id': scan.id,
+                'scan_id': scan_id,
                 'hosts_processed': hosts_processed,
                 'vulnerabilities_found': vulnerabilities_found,
-                'scan_name': scan.filename,
-                'message': f'Successfully processed Nessus scan with {hosts_processed} hosts and {vulnerabilities_found} vulnerabilities'
+                'scan_name': scan_label,
+                'message': (
+                    f'Successfully processed Nessus scan with '
+                    f'{hosts_processed} hosts and {vulnerabilities_found} vulnerabilities'
+                )
             }
 
         except Exception as e:
@@ -71,10 +93,8 @@ class NessusIntegrationService:
                 'message': f'Failed to process Nessus file: {str(e)}'
             }
 
-    def _create_scan_record(self, nessus_data: Dict[str, Any], scan_name: Optional[str], file_path: str) -> Scan:
+    def _create_scan_record(self, scan_info: Dict[str, Any], scan_name: Optional[str]) -> Scan:
         """Create a scan record from Nessus data"""
-
-        scan_info = nessus_data.get('scan_info', {})
 
         # Use provided name or derive from metadata
         if scan_name:
@@ -97,35 +117,44 @@ class NessusIntegrationService:
 
         return scan
 
-    def _process_nessus_host(self, nessus_host: NessusHost, scan: Scan) -> Optional[Host]:
+    def _process_nessus_host(
+        self,
+        nessus_host: NessusHost,
+        scan: Scan,
+    ) -> Optional[Tuple[Host, Dict[str, int]]]:
         """Process a single Nessus host and create/update host record"""
 
         try:
             # Check if host already exists
-            existing_host = self.db.query(Host).filter(Host.ip_address == nessus_host.ip).first()
+            existing_host = self.db.query(Host).filter(Host.ip_address == nessus_host.ip_address).first()
 
             if existing_host:
                 # Update existing host
                 host = existing_host
-                self._update_host_from_nessus(host, nessus_host)
+                self._update_host_from_nessus(host, nessus_host, scan)
             else:
                 # Create new host
                 host = self._create_host_from_nessus(nessus_host, scan)
 
-            # Process vulnerabilities as port scripts or host scripts
-            self._process_nessus_vulnerabilities(host, nessus_host, scan)
+            # CRITICAL FIX: Ensure host gets updated with latest scan ID
+            host.last_updated_scan_id = scan.id
+            host.last_seen = datetime.utcnow()
 
-            return host
+            # Process vulnerabilities using new vulnerability service
+            vuln_stats = self.vulnerability_service.process_nessus_vulnerabilities(host, nessus_host, scan)
+            logger.info(f"Processed {vuln_stats['total']} vulnerabilities for host {host.ip_address}")
+
+            return host, vuln_stats
 
         except Exception as e:
-            logger.error(f"Error processing Nessus host {nessus_host.ip}: {str(e)}")
+            logger.error(f"Error processing Nessus host {nessus_host.ip_address}: {str(e)}")
             return None
 
     def _create_host_from_nessus(self, nessus_host: NessusHost, scan: Scan) -> Host:
         """Create a new host from Nessus data"""
 
         host = Host(
-            ip_address=nessus_host.ip,
+            ip_address=nessus_host.ip_address,
             hostname=nessus_host.hostname or nessus_host.netbios_name,
             state='up',  # Nessus only scans live hosts
             os_name=nessus_host.operating_system,
@@ -139,7 +168,7 @@ class NessusIntegrationService:
 
         return host
 
-    def _update_host_from_nessus(self, host: Host, nessus_host: NessusHost):
+    def _update_host_from_nessus(self, host: Host, nessus_host: NessusHost, scan: Scan):
         """Update existing host with Nessus data"""
 
         # Update hostname if we have one and current is empty
@@ -152,7 +181,8 @@ class NessusIntegrationService:
         if nessus_host.operating_system and not host.os_name:
             host.os_name = nessus_host.operating_system
 
-        # Update last seen
+        # Update scan tracking
+        host.last_updated_scan_id = scan.id
         host.last_seen = datetime.utcnow()
 
     def _process_nessus_vulnerabilities(self, host: Host, nessus_host: NessusHost, scan: Scan):
@@ -213,40 +243,60 @@ class NessusIntegrationService:
     def _attach_vulnerabilities_to_port(self, port: Port, vulnerabilities: List[NessusVulnerability], scan: Scan):
         """Attach vulnerabilities as script output to a port"""
 
-        from app.db.models import Script
-
         # Create a summary script with all vulnerabilities
         vuln_summary = self._format_vulnerabilities_summary(vulnerabilities)
 
-        script = Script(
-            port_id=port.id,
-            script_id='nessus-vulns',
-            output=vuln_summary,
-            scan_id=scan.id,
-            first_seen=datetime.utcnow(),
-            last_seen=datetime.utcnow()
-        )
+        # Check if script already exists for this port
+        existing_script = self.db.query(Script).filter(
+            Script.port_id == port.id,
+            Script.script_id == 'nessus-vulns'
+        ).first()
 
-        self.db.add(script)
+        if existing_script:
+            # Update existing script
+            existing_script.output = vuln_summary
+            existing_script.scan_id = scan.id
+            existing_script.last_seen = datetime.utcnow()
+        else:
+            # Create new script
+            script = Script(
+                port_id=port.id,
+                script_id='nessus-vulns',
+                output=vuln_summary,
+                scan_id=scan.id,
+                first_seen=datetime.utcnow(),
+                last_seen=datetime.utcnow()
+            )
+            self.db.add(script)
 
     def _attach_vulnerabilities_to_host(self, host: Host, vulnerabilities: List[NessusVulnerability], scan: Scan):
         """Attach vulnerabilities as script output to a host"""
 
-        from app.db.models import HostScript
-
         # Create a summary script with all vulnerabilities
         vuln_summary = self._format_vulnerabilities_summary(vulnerabilities)
 
-        script = HostScript(
-            host_id=host.id,
-            script_id='nessus-vulns',
-            output=vuln_summary,
-            scan_id=scan.id,
-            first_seen=datetime.utcnow(),
-            last_seen=datetime.utcnow()
-        )
+        # Check if script already exists for this host
+        existing_script = self.db.query(HostScript).filter(
+            HostScript.host_id == host.id,
+            HostScript.script_id == 'nessus-vulns'
+        ).first()
 
-        self.db.add(script)
+        if existing_script:
+            # Update existing script
+            existing_script.output = vuln_summary
+            existing_script.scan_id = scan.id
+            existing_script.last_seen = datetime.utcnow()
+        else:
+            # Create new script
+            script = HostScript(
+                host_id=host.id,
+                script_id='nessus-vulns',
+                output=vuln_summary,
+                scan_id=scan.id,
+                first_seen=datetime.utcnow(),
+                last_seen=datetime.utcnow()
+            )
+            self.db.add(script)
 
     def _format_vulnerabilities_summary(self, vulnerabilities: List[NessusVulnerability]) -> str:
         """Format vulnerabilities into a readable summary"""
@@ -258,9 +308,17 @@ class NessusIntegrationService:
         summary_lines.append("=" * 50)
 
         # Group by severity
+        severity_map = {
+            0: 'Info',
+            1: 'Low',
+            2: 'Medium',
+            3: 'High',
+            4: 'Critical'
+        }
+
         by_severity = {}
         for vuln in vulnerabilities:
-            severity = vuln.severity or 'Unknown'
+            severity = severity_map.get(vuln.severity, 'Unknown')
             if severity not in by_severity:
                 by_severity[severity] = []
             by_severity[severity].append(vuln)
@@ -274,7 +332,7 @@ class NessusIntegrationService:
                 summary_lines.append(f"\n{severity} ({len(vulns)}):")
 
                 for vuln in vulns[:5]:  # Limit to first 5 per severity
-                    cve_info = f" (CVE: {vuln.cve})" if vuln.cve else ""
+                    cve_info = f" (CVE: {', '.join(vuln.cve_list)})" if vuln.cve_list else ""
                     summary_lines.append(f"  • {vuln.plugin_name}{cve_info}")
 
                 if len(vulns) > 5:

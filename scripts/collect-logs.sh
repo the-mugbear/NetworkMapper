@@ -17,6 +17,14 @@ print_success() { echo -e "${GREEN}✅ $1${NC}"; }
 print_error() { echo -e "${RED}❌ $1${NC}"; }
 print_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 
+# Load optional environment configuration for database credential overrides
+if [[ -f ".env.network" ]]; then
+    # shellcheck disable=SC1091
+    source .env.network
+fi
+DB_NAME=${POSTGRES_DB:-networkMapper}
+DB_USER=${POSTGRES_USER:-nmapuser}
+
 # Create timestamp for the log collection
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LOG_DIR="troubleshooting_logs_$TIMESTAMP"
@@ -94,6 +102,23 @@ print_info "Collecting Docker container status..."
     docker volume ls 2>/dev/null || echo "Failed to get volumes"
     echo ""
 } > "$LOG_DIR/docker_status.txt"
+
+# Ingestion job metadata (for background parser debugging)
+print_info "Collecting ingestion job metadata..."
+if docker-compose ps db > /dev/null 2>&1; then
+    {
+        echo "=== INGESTION JOBS (LAST 25) ==="
+        docker-compose exec db psql -U "$DB_USER" -d "$DB_NAME" \
+            -c "SELECT id, original_filename, status, tool_name, file_size, message, parse_error_id, created_at, started_at, completed_at FROM ingestion_jobs ORDER BY created_at DESC LIMIT 25;" 2>/dev/null || echo "Failed to query ingestion_jobs"
+
+        echo ""
+        echo "=== RECENT PARSE ERRORS (LAST 25) ==="
+        docker-compose exec db psql -U "$DB_USER" -d "$DB_NAME" \
+            -c "SELECT id, filename, file_type, error_type, status, created_at FROM parse_errors ORDER BY created_at DESC LIMIT 25;" 2>/dev/null || echo "Failed to query parse_errors"
+    } > "$LOG_DIR/ingestion_jobs.txt"
+else
+    echo "Database container not running" > "$LOG_DIR/ingestion_jobs.txt"
+fi
 
 # Container Logs
 print_info "Collecting container logs..."

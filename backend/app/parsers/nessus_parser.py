@@ -8,10 +8,13 @@ for integration with the risk assessment system.
 import xml.etree.ElementTree as ET
 import logging
 import re
-from typing import List, Dict, Any, Optional, Tuple
+from pathlib import Path
+from typing import Iterable, List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from dataclasses import dataclass
 from decimal import Decimal
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -68,37 +71,84 @@ class NessusParser:
     def parse_file(self, file_path: str) -> Dict[str, Any]:
         """Parse Nessus XML file and return structured data"""
         try:
-            tree = ET.parse(file_path)
-            root = tree.getroot()
-
-            if root.tag != 'NessusClientData_v2':
-                raise ValueError("Not a valid Nessus XML file")
-
-            return self._parse_nessus_data(root)
-
+            scan_info, hosts_iter = self.iter_file(file_path)
+            hosts = list(hosts_iter)
         except ET.ParseError as e:
             logger.error(f"XML parsing error: {e}")
             raise ValueError(f"Invalid XML format: {e}")
+        except ValueError:
+            raise
         except Exception as e:
             logger.error(f"Error parsing Nessus file: {e}")
             raise
+
+        stats = self._generate_scan_stats(hosts)
+        scan_info = self._finalize_scan_info(scan_info, file_path)
+
+        return {
+            'scan_info': scan_info,
+            'hosts': hosts,
+            'statistics': stats,
+            'parser_type': 'nessus',
+            'parser_version': '1.0'
+        }
 
     def parse_content(self, content: str) -> Dict[str, Any]:
         """Parse Nessus XML content and return structured data"""
         try:
             root = ET.fromstring(content)
-
-            if root.tag != 'NessusClientData_v2':
-                raise ValueError("Not a valid Nessus XML file")
-
-            return self._parse_nessus_data(root)
-
         except ET.ParseError as e:
             logger.error(f"XML parsing error: {e}")
             raise ValueError(f"Invalid XML format: {e}")
         except Exception as e:
             logger.error(f"Error parsing Nessus content: {e}")
             raise
+
+        if root.tag != 'NessusClientData_v2':
+            raise ValueError("Not a valid Nessus XML file")
+        return self._parse_nessus_data(root)
+
+    def iter_file(self, file_path: str) -> Tuple[Dict[str, Any], Iterable[NessusHost]]:
+        """Stream hosts from a Nessus XML file without loading everything into memory."""
+
+        scan_info: Dict[str, Any] = {}
+        context = ET.iterparse(file_path, events=("start", "end"))
+
+        def host_generator() -> Iterable[NessusHost]:
+            root_seen = False
+            for event, elem in context:
+                tag = self._strip_namespace(elem.tag)
+
+                if event == "start":
+                    if not root_seen:
+                        if tag != "NessusClientData_v2":
+                            raise ValueError("Not a valid Nessus XML file")
+                        root_seen = True
+                    if tag == "policyName" and elem.text and 'policy_name' not in scan_info:
+                        scan_info['policy_name'] = elem.text
+                    elif tag == "Report":
+                        report_name = elem.get('name')
+                        if report_name:
+                            scan_info['report_name'] = report_name
+                            if 'scan_name' not in scan_info:
+                                scan_info['scan_name'] = report_name
+                    elif tag == "NessusClientData_v2":
+                        scanner_name = elem.get('pluginName') or elem.get('scannerName')
+                        if scanner_name:
+                            scan_info['scanner_name'] = scanner_name
+                        scanner_version = elem.get('scannerVersion')
+                        if scanner_version:
+                            scan_info['scanner_version'] = scanner_version
+
+                if event == "end" and tag == "ReportHost":
+                    try:
+                        host = self._parse_host(elem)
+                        if host:
+                            yield host
+                    finally:
+                        elem.clear()
+
+        return scan_info, host_generator()
 
     def _parse_nessus_data(self, root: ET.Element) -> Dict[str, Any]:
         """Parse the main Nessus data structure"""
@@ -135,6 +185,11 @@ class NessusParser:
             'parser_type': 'nessus',
             'parser_version': '1.0'
         }
+
+    def _finalize_scan_info(self, scan_info: Dict[str, Any], file_path: str) -> Dict[str, Any]:
+        if 'scan_name' not in scan_info:
+            scan_info['scan_name'] = Path(file_path).stem
+        return scan_info
 
     def _parse_host(self, report_host: ET.Element) -> Optional[NessusHost]:
         """Parse a single host from the report"""
@@ -200,6 +255,20 @@ class NessusParser:
         solution = self._get_text_or_none(report_item, 'solution', '')
         synopsis = self._get_text_or_none(report_item, 'synopsis', '')
         plugin_output = self._get_text_or_none(report_item, 'plugin_output')
+        if (
+            plugin_output
+            and settings.NESSUS_PLUGIN_OUTPUT_MAX_CHARS
+            and len(plugin_output) > settings.NESSUS_PLUGIN_OUTPUT_MAX_CHARS
+        ):
+            logger.debug(
+                "Truncating Nessus plugin output for plugin %s to %d characters",
+                plugin_id,
+                settings.NESSUS_PLUGIN_OUTPUT_MAX_CHARS,
+            )
+            plugin_output = (
+                plugin_output[: settings.NESSUS_PLUGIN_OUTPUT_MAX_CHARS]
+                + "... [truncated]"
+            )
 
         # Parse CVSS scores
         cvss_base_score = self._parse_float(self._get_text_or_none(report_item, 'cvss_base_score'))
@@ -246,6 +315,9 @@ class NessusParser:
             patch_publication_date=patch_publication_date,
             vuln_publication_date=vuln_publication_date
         )
+
+    def _strip_namespace(self, tag: str) -> str:
+        return tag.split('}', 1)[-1] if '}' in tag else tag
 
     def _extract_os_info(self, host_properties: Dict[str, str]) -> Optional[str]:
         """Extract operating system information from host properties"""

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -32,6 +32,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  Link,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import {
@@ -47,6 +48,7 @@ import {
   BookmarkBorder as BookmarkBorderIcon,
   NoteAdd as NoteAddIcon,
   DeleteOutline as DeleteIcon,
+  Launch as LaunchIcon,
 } from '@mui/icons-material';
 import {
   getHost,
@@ -63,10 +65,32 @@ import type {
   FollowStatus,
   HostNote,
   NoteStatus,
+  HostVulnerability,
 } from '../services/api';
 import HostRiskAnalysis from '../components/HostRiskAnalysis';
+import { getHostWebLinks, HostWebLink } from '../utils/webLinks';
 
 const FOLLOW_STATUS_ORDER: FollowStatus[] = ['watching', 'in_review', 'reviewed'];
+
+const VULNERABILITY_PREVIEW_LIMIT = 10;
+
+const VULNERABILITY_SEVERITY_ORDER: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+  info: 4,
+  unknown: 5,
+};
+
+const VULNERABILITY_CHIP_COLOR: Record<string, 'error' | 'warning' | 'info' | 'default' | 'success'> = {
+  critical: 'error',
+  high: 'warning',
+  medium: 'warning',
+  low: 'info',
+  info: 'default',
+  unknown: 'default',
+};
 
 const FOLLOW_STATUS_META: Record<FollowStatus, { label: string; description: string; chipColor: 'info' | 'warning' | 'success' }> = {
   watching: {
@@ -116,6 +140,7 @@ export default function HostDetail() {
   const [noteSubmitting, setNoteSubmitting] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
   const [noteActionId, setNoteActionId] = useState<number | null>(null);
+  const [showAllVulnerabilities, setShowAllVulnerabilities] = useState(false);
   const numericHostId = hostId ? parseInt(hostId, 10) : null;
 
   useEffect(() => {
@@ -301,6 +326,40 @@ export default function HostDetail() {
     : 'Select a review status to keep track of this host.';
   const followChipColor = followStatus ? FOLLOW_STATUS_META[followStatus].chipColor : 'default';
   const noteList = notes;
+  const webLinks = useMemo<HostWebLink[]>(() => (host ? getHostWebLinks(host) : []), [host]);
+  const primaryWebLink = webLinks[0] ?? null;
+  const sortedVulnerabilities = useMemo<HostVulnerability[]>(() => {
+    if (!host?.vulnerabilities) {
+      return [];
+    }
+
+    return [...host.vulnerabilities].sort((a, b) => {
+      const severityA = (a.severity ?? 'unknown').toLowerCase();
+      const severityB = (b.severity ?? 'unknown').toLowerCase();
+      const rankA = VULNERABILITY_SEVERITY_ORDER[severityA] ?? VULNERABILITY_SEVERITY_ORDER.unknown;
+      const rankB = VULNERABILITY_SEVERITY_ORDER[severityB] ?? VULNERABILITY_SEVERITY_ORDER.unknown;
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
+      const lastSeenA = a.last_seen ? new Date(a.last_seen).getTime() : 0;
+      const lastSeenB = b.last_seen ? new Date(b.last_seen).getTime() : 0;
+      if (lastSeenA !== lastSeenB) {
+        return lastSeenB - lastSeenA;
+      }
+
+      return (a.id ?? 0) - (b.id ?? 0);
+    });
+  }, [host?.vulnerabilities]);
+
+  const displayedVulnerabilities = useMemo<HostVulnerability[]>(() => {
+    if (showAllVulnerabilities) {
+      return sortedVulnerabilities;
+    }
+    return sortedVulnerabilities.slice(0, VULNERABILITY_PREVIEW_LIMIT);
+  }, [showAllVulnerabilities, sortedVulnerabilities]);
+
+  const totalVulnerabilities = sortedVulnerabilities.length;
 
   return (
     <Box>
@@ -315,7 +374,20 @@ export default function HostDetail() {
           </Button>
           <ComputerIcon sx={{ mr: 1, color: 'primary.main' }} />
           <Typography variant="h4">
-            {host.ip_address}
+            {primaryWebLink ? (
+              <Link
+                href={primaryWebLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                underline="hover"
+                sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+              >
+                {host.ip_address}
+                <LaunchIcon sx={{ fontSize: '1.5rem' }} />
+              </Link>
+            ) : (
+              host.ip_address
+            )}
           </Typography>
           {hasConflicts && (
             <Tooltip title={`${conflicts.length} data conflicts detected`}>
@@ -339,6 +411,24 @@ export default function HostDetail() {
           )}
         </Box>
       </Box>
+
+      {webLinks.length > 1 && (
+        <Stack direction="row" spacing={1} mb={3}>
+          {webLinks.map((link) => (
+            <Chip
+              key={link.url}
+              icon={<LaunchIcon sx={{ fontSize: '1rem' }} />}
+              component="a"
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              label={`${link.protocol.toUpperCase()} ${link.port}`}
+              clickable
+              variant="outlined"
+            />
+          ))}
+        </Stack>
+      )}
 
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} md={4}>
@@ -552,6 +642,86 @@ export default function HostDetail() {
           )}
         </CardContent>
       </Card>
+
+      {totalVulnerabilities > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" color="error">
+                Vulnerabilities
+              </Typography>
+              <Chip label={`${totalVulnerabilities}`} color="error" size="small" />
+            </Box>
+            <Stack spacing={2}>
+              {displayedVulnerabilities.map((vuln) => {
+                const severityKey = (vuln.severity ?? 'unknown').toLowerCase();
+                const chipColor = VULNERABILITY_CHIP_COLOR[severityKey] ?? 'default';
+                const title = vuln.title || vuln.plugin_id || 'Unnamed finding';
+                const cveLink = vuln.cve_id
+                  ? `https://cve.mitre.org/cgi-bin/cvename.cgi?name=${vuln.cve_id}`
+                  : null;
+
+                return (
+                  <Box
+                    key={`${vuln.id}-${vuln.plugin_id}-${vuln.port_number ?? 'host'}`}
+                    display="flex"
+                    alignItems="flex-start"
+                    gap={2}
+                    sx={{ borderBottom: '1px solid', borderColor: 'divider', pb: 1, '&:last-of-type': { borderBottom: 'none', pb: 0 } }}
+                  >
+                    <Box flex={1}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        {title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        {(vuln.source ? vuln.source.toUpperCase() : 'Unknown source')}
+                        {vuln.cvss_score !== null && vuln.cvss_score !== undefined && ` · CVSS ${vuln.cvss_score}`}
+                        {cveLink && (
+                          <>
+                            {' · '}
+                            <Link href={cveLink} target="_blank" rel="noopener noreferrer" underline="hover">
+                              {vuln.cve_id}
+                            </Link>
+                          </>
+                        )}
+                      </Typography>
+                      {vuln.port_number && (
+                        <Typography variant="body2" color="text.secondary">
+                          Port {vuln.port_number}/{(vuln.protocol ?? '').toUpperCase() || 'TCP'}
+                          {vuln.service_name && ` • ${vuln.service_name}`}
+                        </Typography>
+                      )}
+                      {vuln.solution && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                          {vuln.solution.length > 220 ? `${vuln.solution.slice(0, 220)}…` : vuln.solution}
+                        </Typography>
+                      )}
+                      {vuln.last_seen && (
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                          Last seen {new Date(vuln.last_seen).toLocaleString()}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Chip
+                      label={(vuln.severity ?? 'unknown').toUpperCase()}
+                      color={chipColor}
+                      size="small"
+                      icon={<SecurityIcon fontSize="small" />}
+                    />
+                  </Box>
+                );
+              })}
+            </Stack>
+            {totalVulnerabilities > VULNERABILITY_PREVIEW_LIMIT && (
+              <Box display="flex" justifyContent="flex-end" mt={2}>
+                <Button size="small" onClick={() => setShowAllVulnerabilities((prev) => !prev)}>
+                  {showAllVulnerabilities ? 'Show fewer findings' : `Show all findings (${totalVulnerabilities})`}
+                </Button>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Host Information */}
       <Grid container spacing={3} mb={3}>

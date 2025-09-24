@@ -136,12 +136,36 @@ class HostVulnerabilitySummary(BaseModel):
     low: int = 0
     info: int = 0
 
+
+class HostVulnerability(BaseModel):
+    id: int
+    plugin_id: Optional[str] = None
+    title: Optional[str] = None
+    severity: Optional[str] = None
+    source: Optional[str] = None
+    cvss_score: Optional[float] = None
+    cvss_vector: Optional[str] = None
+    cve_id: Optional[str] = None
+    scan_id: Optional[int] = None
+    port_id: Optional[int] = None
+    port_number: Optional[int] = None
+    protocol: Optional[str] = None
+    service_name: Optional[str] = None
+    exploitable: Optional[bool] = None
+    first_seen: Optional[datetime] = None
+    last_seen: Optional[datetime] = None
+    solution: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
 class Host(HostBase):
     id: int
     last_updated_scan_id: Optional[int] = None
     ports: List[Port] = []
     host_scripts: List[HostScript] = []
     vulnerability_summary: Optional[HostVulnerabilitySummary] = None
+    vulnerabilities: List[HostVulnerability] = []
     follow: Optional[HostFollowInfo] = None
     notes: List[HostNote] = []
     note_count: int = 0

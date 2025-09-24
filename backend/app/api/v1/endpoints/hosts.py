@@ -6,6 +6,7 @@ at the database level, making the API much simpler and more efficient.
 """
 
 from typing import List, Optional, Dict
+from datetime import datetime
 import ipaddress
 import json
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -16,7 +17,7 @@ from app.api.v1.endpoints.auth import get_current_user
 from app.db.models_auth import User
 from app.db import models
 from app.db.models_confidence import HostConfidence, PortConfidence, ConflictHistory
-from app.db.models_vulnerability import Vulnerability
+from app.db.models_vulnerability import Vulnerability, VulnerabilitySeverity
 from app.schemas.schemas import (
     Host as HostSchema,
     HostVulnerabilitySummary,
@@ -93,6 +94,16 @@ SERVICE_PORT_MAPPINGS = {
 }
 
 router = APIRouter()
+
+
+SEVERITY_ORDER = {
+    'critical': 0,
+    'high': 1,
+    'medium': 2,
+    'low': 3,
+    'info': 4,
+    'unknown': 5,
+}
 
 
 @router.get("/", response_model=List[HostSchema])
@@ -279,7 +290,8 @@ def get_host_v2(
     """Get a specific host by ID with vulnerability information"""
     host = db.query(models.Host).options(
         selectinload(models.Host.ports).selectinload(models.Port.scripts),
-        selectinload(models.Host.host_scripts)
+        selectinload(models.Host.host_scripts),
+        selectinload(models.Host.vulnerabilities).selectinload(Vulnerability.port)
     ).filter(models.Host.id == host_id).first()
 
     if not host:
@@ -689,6 +701,7 @@ def _serialize_host_base(host: models.Host, vuln_data: Optional[dict]) -> dict:
         "ports": host.ports,
         "host_scripts": host.host_scripts,
         "vulnerability_summary": _build_vuln_summary(vuln_data),
+        "vulnerabilities": [],
         "note_count": note_count,
     }
 
@@ -703,7 +716,74 @@ def _serialize_host_detail(
     serialized["follow"] = _serialize_follow(follow) if follow else None
     serialized["notes"] = [_serialize_note(note) for note in notes]
     serialized["note_count"] = len(notes)
+
+    vulnerabilities = sorted(
+        getattr(host, "vulnerabilities", []) or [],
+        key=_vulnerability_sort_key,
+    )
+    serialized["vulnerabilities"] = [
+        _serialize_vulnerability(vuln) for vuln in vulnerabilities
+    ]
     return serialized
+
+
+def _serialize_vulnerability(vuln: Vulnerability) -> dict:
+    severity = None
+    if vuln.severity:
+        try:
+            severity = vuln.severity.value  # type: ignore[assignment]
+        except AttributeError:
+            severity = str(vuln.severity).lower()
+
+    source = None
+    if getattr(vuln, "source", None):
+        try:
+            source = vuln.source.value  # type: ignore[attr-defined]
+        except AttributeError:
+            source = str(vuln.source).lower()
+
+    port_number = None
+    protocol = None
+    service_name = None
+    if vuln.port:
+        port_number = vuln.port.port_number
+        protocol = vuln.port.protocol
+        service_name = vuln.port.service_name
+
+    return {
+        "id": vuln.id,
+        "plugin_id": vuln.plugin_id,
+        "title": vuln.title,
+        "severity": severity,
+        "source": source,
+        "cvss_score": vuln.cvss_score,
+        "cvss_vector": vuln.cvss_vector,
+        "cve_id": vuln.cve_id,
+        "scan_id": vuln.scan_id,
+        "port_id": vuln.port_id,
+        "port_number": port_number,
+        "protocol": protocol,
+        "service_name": service_name,
+        "exploitable": vuln.exploitable,
+        "first_seen": vuln.first_seen,
+        "last_seen": vuln.last_seen,
+        "solution": vuln.solution,
+    }
+
+
+def _vulnerability_sort_key(vuln: Vulnerability) -> tuple:
+    severity_value = None
+    if vuln.severity:
+        try:
+            severity_value = vuln.severity.value  # type: ignore[assignment]
+        except AttributeError:
+            severity_value = str(vuln.severity).lower()
+
+    severity_rank = SEVERITY_ORDER.get(severity_value or 'unknown', SEVERITY_ORDER['unknown'])
+    last_seen_dt = vuln.last_seen or vuln.first_seen
+    if last_seen_dt is None:
+        last_seen_dt = datetime.utcfromtimestamp(0)
+    return (severity_rank, -last_seen_dt.timestamp(), vuln.id)
 
 
 def _parse_subnets(subnet_str: str):

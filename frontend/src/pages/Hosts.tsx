@@ -26,6 +26,7 @@ import {
   BookmarkAdded as BookmarkIcon,
   BookmarkBorder as BookmarkBorderIcon,
   Note as NoteIcon,
+  Launch as LaunchIcon,
 } from '@mui/icons-material';
 import { getHosts, getHostFilterData, followHost, unfollowHost } from '../services/api';
 import type { Host, FollowStatus, HostFollowInfo } from '../services/api';
@@ -35,6 +36,8 @@ import ToolReadyOutput from '../components/ToolReadyOutput';
 import { PORTS_OF_INTEREST_SET, PORTS_OF_INTEREST } from '../utils/portsOfInterest';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import Link from '@mui/material/Link';
+import { getHostWebLinks, HostWebLink } from '../utils/webLinks';
 
 interface HostPort {
   state: string;
@@ -361,6 +364,8 @@ export default function Hosts() {
               : null;
             const followLabel = followOption?.label ?? 'Follow';
             const followChipColor = followOption?.color ?? 'default';
+            const webLinks = getHostWebLinks(host);
+            const primaryWebLink = webLinks[0];
             
             return (
               <Grid item xs={12} sm={6} md={4} key={host.id}>
@@ -370,7 +375,23 @@ export default function Hosts() {
                       <Box display="flex" alignItems="center">
                         <ComputerIcon sx={{ mr: 1, color: 'primary.main' }} />
                         <Typography variant="h6" component="div" noWrap>
-                          {host.ip_address}
+                          {primaryWebLink ? (
+                            <Tooltip title={`Open ${primaryWebLink.protocol.toUpperCase()} (${primaryWebLink.port})`}>
+                              <Link
+                                href={primaryWebLink.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="hover"
+                                sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                {host.ip_address}
+                                <LaunchIcon sx={{ fontSize: '0.95rem' }} />
+                              </Link>
+                            </Tooltip>
+                          ) : (
+                            host.ip_address
+                          )}
                         </Typography>
                       </Box>
                       <Stack direction="row" gap={1} alignItems="center">

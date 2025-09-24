@@ -83,6 +83,26 @@ export interface HostVulnerabilitySummary {
   info: number;
 }
 
+export interface HostVulnerability {
+  id: number;
+  plugin_id: string | null;
+  title: string | null;
+  severity: string | null;
+  source: string | null;
+  cvss_score: number | null;
+  cvss_vector: string | null;
+  cve_id: string | null;
+  scan_id: number | null;
+  port_id: number | null;
+  port_number: number | null;
+  protocol: string | null;
+  service_name: string | null;
+  exploitable: boolean | null;
+  first_seen: string | null;
+  last_seen: string | null;
+  solution: string | null;
+}
+
 export interface Host {
   id: number;
   ip_address: string;
@@ -91,6 +111,7 @@ export interface Host {
   os_name: string | null;
   ports: Port[];
   vulnerability_summary?: HostVulnerabilitySummary;
+  vulnerabilities?: HostVulnerability[];
   follow?: HostFollowInfo | null;
   notes?: HostNote[];
   note_count?: number;

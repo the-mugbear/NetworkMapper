@@ -1,158 +1,230 @@
-backend-1   | 2025-09-24T20:21:04.769303813Z 2025-09-24 20:21:04,769 - app.services.nessus_integration_service - INFO - Processed 24 vulnerabilities for host 10.12.17.199
-backend-1   | 2025-09-24T20:21:04.830174300Z 2025-09-24 20:21:04,830 - app.services.nessus_integration_service - INFO - Processed 24 vulnerabilities for host 10.12.17.198
-backend-1   | 2025-09-24T20:21:04.890267509Z 2025-09-24 20:21:04,890 - app.services.nessus_integration_service - INFO - Processed 24 vulnerabilities for host 10.12.17.197
-backend-1   | 2025-09-24T20:21:04.923971521Z 2025-09-24 20:21:04,923 - app.services.nessus_integration_service - INFO - Processed 14 vulnerabilities for host 10.12.17.133
-backend-1   | 2025-09-24T20:21:04.996800071Z 2025-09-24 20:21:04,996 - app.services.nessus_integration_service - INFO - Processed 30 vulnerabilities for host 10.12.16.5
-backend-1   | 2025-09-24T20:21:05.008688088Z 2025-09-24 20:21:05,006 - app.services.ingestion_service - ERROR - Failed ingestion job 1
-backend-1   | 2025-09-24T20:21:05.008707177Z Traceback (most recent call last):
-backend-1   | 2025-09-24T20:21:05.008709626Z   File "/app/app/services/ingestion_service.py", line 270, in _process_job
-backend-1   | 2025-09-24T20:21:05.008711732Z     job.id,
-backend-1   | 2025-09-24T20:21:05.008713405Z     ^^^^^^
-backend-1   | 2025-09-24T20:21:05.008715114Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 569, in __get__
-backend-1   | 2025-09-24T20:21:05.008717040Z     return self.impl.get(state, dict_)  # type: ignore[no-any-return]
-backend-1   | 2025-09-24T20:21:05.008718860Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T20:21:05.008720656Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1096, in get
-backend-1   | 2025-09-24T20:21:05.008722587Z     value = self._fire_loader_callables(state, key, passive)
-backend-1   | 2025-09-24T20:21:05.008724227Z             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T20:21:05.008726031Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1126, in _fire_loader_callables
-backend-1   | 2025-09-24T20:21:05.008741543Z     return state._load_expired(state, passive)
-backend-1   | 2025-09-24T20:21:05.008743380Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T20:21:05.008745151Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/state.py", line 803, in _load_expired
-backend-1   | 2025-09-24T20:21:05.008747004Z     self.manager.expired_attribute_loader(self, toload, passive)
-backend-1   | 2025-09-24T20:21:05.008748691Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/loading.py", line 1607, in load_scalar_attributes
-backend-1   | 2025-09-24T20:21:05.008750506Z     raise orm_exc.DetachedInstanceError(
-backend-1   | 2025-09-24T20:21:05.008752290Z sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7f0066bd9a90> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
-backend-1   | 2025-09-24T20:21:05.008754759Z 
-backend-1   | 2025-09-24T20:21:05.008756382Z During handling of the above exception, another exception occurred:
-backend-1   | 2025-09-24T20:21:05.008758107Z 
-backend-1   | 2025-09-24T20:21:05.008759739Z Traceback (most recent call last):
-backend-1   | 2025-09-24T20:21:05.008761341Z   File "/app/app/services/ingestion_service.py", line 192, in _run_job
-backend-1   | 2025-09-24T20:21:05.008763079Z     result = self._process_job(db, job)
-backend-1   | 2025-09-24T20:21:05.008764703Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T20:21:05.008766387Z   File "/app/app/services/ingestion_service.py", line 280, in _process_job
-backend-1   | 2025-09-24T20:21:05.008768264Z     job.id,
-backend-1   | 2025-09-24T20:21:05.008769858Z     ^^^^^^
-backend-1   | 2025-09-24T20:21:05.008771482Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 569, in __get__
-backend-1   | 2025-09-24T20:21:05.008773387Z     return self.impl.get(state, dict_)  # type: ignore[no-any-return]
-backend-1   | 2025-09-24T20:21:05.008775079Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T20:21:05.008780660Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1096, in get
-backend-1   | 2025-09-24T20:21:05.008782615Z     value = self._fire_loader_callables(state, key, passive)
-backend-1   | 2025-09-24T20:21:05.008784377Z             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T20:21:05.008786096Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1126, in _fire_loader_callables
-backend-1   | 2025-09-24T20:21:05.008788138Z     return state._load_expired(state, passive)
-backend-1   | 2025-09-24T20:21:05.008789797Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T20:21:05.008791547Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/state.py", line 803, in _load_expired
-backend-1   | 2025-09-24T20:21:05.008793391Z     self.manager.expired_attribute_loader(self, toload, passive)
-backend-1   | 2025-09-24T20:21:05.008795160Z   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/loading.py", line 1607, in load_scalar_attributes
-backend-1   | 2025-09-24T20:21:05.008796981Z     raise orm_exc.DetachedInstanceError(
-backend-1   | 2025-09-24T20:21:05.008801610Z sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7f0066bd9a90> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
-backend-1   | 2025-09-24T20:21:07.956480866Z INFO:     192.168.80.4:38386 - "GET /api/v1/upload/jobs/1 HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:21:14.295957395Z INFO:     127.0.0.1:52260 - "GET /health HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:21:44.393712360Z INFO:     127.0.0.1:42582 - "GET /health HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:22:14.459858096Z INFO:     127.0.0.1:50884 - "GET /health HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:22:44.530077925Z INFO:     127.0.0.1:43874 - "GET /health HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:22:45.335637927Z INFO:     192.168.80.4:42904 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:23:02.439259304Z 2025-09-24 20:23:02,439 - app.services.ingestion_service - INFO - Queued ingestion job 2 for Solstice - Basic Network Scan_7979q7.nessus (397642558 bytes)
-backend-1   | 2025-09-24T20:23:02.455869002Z INFO:     192.168.80.4:45068 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:23:02.458265274Z INFO:     192.168.80.4:45080 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:23:02.471512644Z INFO:     192.168.80.4:45056 - "POST /api/v1/upload/ HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:23:02.473205433Z 2025-09-24 20:23:02,473 - app.services.ingestion_service - INFO - Job 2: attempting parser NessusIntegrationService for Solstice - Basic Network Scan_7979q7.nessus
-backend-1   | 2025-09-24T20:23:02.585166779Z 2025-09-24 20:23:02,584 - app.services.nessus_integration_service - INFO - Processed 19 vulnerabilities for host 199.64.220.249
-backend-1   | 2025-09-24T20:23:02.652005543Z INFO:     192.168.80.4:45084 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
-backend-1   | 2025-09-24T20:23:02.667451331Z 2025-09-24 20:23:02,667 - app.services.nessus_integration_service - INFO - Processed 19 vulnerabilities for host 199.64.220.241
-backend-1   | 2025-09-24T20:23:02.784268911Z 2025-09-24 20:23:02,784 - app.services.nessus_integration_service - INFO - Processed 73 vulnerabilities for host 199.64.220.133
-backend-1   | 2025-09-24T20:23:02.893019142Z 2025-09-24 20:23:02,892 - app.services.nessus_integration_service - INFO - Processed 72 vulnerabilities for host 199.64.220.132
-backend-1   | 2025-09-24T20:23:03.014714936Z 2025-09-24 20:23:03,012 - app.services.nessus_integration_service - INFO - Processed 70 vulnerabilities for host 199.64.220.131
+backend-1   | 2025-09-24T20:48:47.293800032Z 2025-09-24 20:48:47,293 - app.services.nessus_integration_service - INFO - Processed 42 vulnerabilities for host 10.12.17.133
+backend-1   | 2025-09-24T20:48:47.328363937Z 2025-09-24 20:48:47,328 - app.services.nessus_integration_service - INFO - Processed 15 vulnerabilities for host 10.12.17.129
+backend-1   | 2025-09-24T20:48:47.360877214Z 2025-09-24 20:48:47,360 - app.services.nessus_integration_service - INFO - Processed 15 vulnerabilities for host 10.12.17.1
+backend-1   | 2025-09-24T20:48:47.459243895Z 2025-09-24 20:48:47,459 - app.services.nessus_integration_service - INFO - Processed 51 vulnerabilities for host 10.12.16.5
+backend-1   | 2025-09-24T20:48:47.491367147Z 2025-09-24 20:48:47,491 - app.services.nessus_integration_service - INFO - Processed 15 vulnerabilities for host 10.12.16.1
+backend-1   | 2025-09-24T20:48:47.495642366Z 2025-09-24 20:48:47,495 - app.services.ingestion_service - INFO - Job 1: parser NessusIntegrationService succeeded in 416.74s
+backend-1   | 2025-09-24T20:48:49.156009916Z INFO:     192.168.96.4:40698 - "GET /api/v1/upload/jobs/1 HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:48:49.213309090Z INFO:     192.168.96.4:40714 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:49:13.708606446Z INFO:     127.0.0.1:40572 - "GET /health HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:49:43.783571006Z INFO:     127.0.0.1:42908 - "GET /health HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:50:13.850602768Z INFO:     127.0.0.1:59684 - "GET /health HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:50:43.934945402Z INFO:     127.0.0.1:53944 - "GET /health HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:51:14.002724949Z INFO:     127.0.0.1:33358 - "GET /health HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:51:44.078717101Z INFO:     127.0.0.1:35582 - "GET /health HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:52:14.147945969Z INFO:     127.0.0.1:38374 - "GET /health HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:52:21.596665130Z INFO:     192.168.96.4:35336 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:52:21.602108774Z INFO:     192.168.96.4:35322 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:52:21.749652509Z INFO:     192.168.96.4:35350 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:52:22.981198811Z INFO:     192.168.96.4:35368 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:52:23.135276907Z INFO:     192.168.96.4:35364 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:52:26.297766647Z /app/app/api/v1/endpoints/hosts.py:589: SAWarning: Coercing Subquery object into a select() for use in IN(); please pass a select() construct explicitly
+backend-1   | 2025-09-24T20:52:26.297822718Z   ConflictHistory.object_id.in_(port_ids)
+backend-1   | 2025-09-24T20:52:26.302123440Z INFO:     192.168.96.4:54454 - "GET /api/v1/hosts/1/conflicts HTTP/1.1" 200 OK
+backend-1   | 2025-09-24T20:52:26.302563610Z INFO:     192.168.96.4:54440 - "GET /api/v1/hosts/1 HTTP/1.1" 200 OK
 
-
-
-2025-09-24 20:29:21,753 - app.services.nessus_integration_service - INFO - Processed 15 vulnerabilities for host 10.12.17.1
-2025-09-24 20:29:21,830 - app.services.nessus_integration_service - INFO - Processed 51 vulnerabilities for host 10.12.16.5
-2025-09-24 20:29:21,875 - app.services.nessus_integration_service - INFO - Processed 15 vulnerabilities for host 10.12.16.1
-2025-09-24 20:29:21,881 - app.services.ingestion_service - ERROR - Failed ingestion job 2
-Traceback (most recent call last):
-  File "/app/app/services/ingestion_service.py", line 270, in _process_job
-    job.id,
-    ^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 569, in __get__
-    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1096, in get
-    value = self._fire_loader_callables(state, key, passive)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1126, in _fire_loader_callables
-    return state._load_expired(state, passive)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/state.py", line 803, in _load_expired
-    self.manager.expired_attribute_loader(self, toload, passive)
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/loading.py", line 1607, in load_scalar_attributes
-    raise orm_exc.DetachedInstanceError(
-sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7f0066544490> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/app/app/services/ingestion_service.py", line 192, in _run_job
-    result = self._process_job(db, job)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/app/app/services/ingestion_service.py", line 280, in _process_job
-    job.id,
-    ^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 569, in __get__
-    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1096, in get
-    value = self._fire_loader_callables(state, key, passive)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1126, in _fire_loader_callables
-    return state._load_expired(state, passive)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/state.py", line 803, in _load_expired
-    self.manager.expired_attribute_loader(self, toload, passive)
-  File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/loading.py", line 1607, in load_scalar_attributes
-    raise orm_exc.DetachedInstanceError(
-sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7f0066544490> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
+db-1  | 
+db-1  | PostgreSQL init process complete; ready for start up.
+db-1  | 
+db-1  | 2025-09-24 20:41:13.470 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+db-1  | 2025-09-24 20:41:13.470 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+db-1  | 2025-09-24 20:41:13.470 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+db-1  | 2025-09-24 20:41:13.473 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1  | 2025-09-24 20:41:13.480 UTC [64] LOG:  database system was shut down at 2025-09-24 20:41:13 UTC
+db-1  | 2025-09-24 20:41:13.484 UTC [1] LOG:  database system is ready to accept connections
+db-1  | 2025-09-24 20:41:14.222 UTC [68] ERROR:  relation "ingestion_jobs" does not exist
+db-1  | 2025-09-24 20:41:14.222 UTC [68] STATEMENT:  ALTER TABLE ingestion_jobs ADD COLUMN IF NOT EXISTS parse_error_id INTEGER
+db-1  | 2025-09-24 20:46:13.171 UTC [62] LOG:  checkpoint starting: time
+db-1  | 2025-09-24 20:50:43.005 UTC [62] LOG:  checkpoint complete: wrote 9804 buffers (59.8%); 0 WAL file(s) added, 0 removed, 9 recycled; write=269.827 s, sync=0.003 s, total=269.835 s; sync files=335, longest=0.002 s, average=0.001 s; distance=149061 kB, estimate=149061 kB
+db-1  | 2025-09-24 20:52:38.766 UTC [106] ERROR:  syntax error at or near "NOT" at character 46
+db-1  | 2025-09-24 20:52:38.766 UTC [106] STATEMENT:  ALTER TABLE ingestion_jobs ADD CONSTRAINT IF NOT EXISTS ingestion_jobs_parse_error_id_fkey FOREIGN KEY (parse_error_id) REFERENCES parse_errors(id)
 
 === ERROR PATTERN ANALYSIS ===
 Recent errors in backend logs:
 backend-1  | Unable to add parse_error_id column to ingestion_jobs: (psycopg2.errors.UndefinedTable) relation "ingestion_jobs" does not exist
 backend-1  | [SQL: ALTER TABLE ingestion_jobs ADD COLUMN IF NOT EXISTS parse_error_id INTEGER]
 backend-1  | (Background on this error at: https://sqlalche.me/e/20/f405)
-backend-1  | 2025-09-24 20:21:05,006 - app.services.ingestion_service - ERROR - Failed ingestion job 1
-backend-1  | Traceback (most recent call last):
-backend-1  |     raise orm_exc.DetachedInstanceError(
-backend-1  | sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7f0066bd9a90> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
-backend-1  | During handling of the above exception, another exception occurred:
-backend-1  | Traceback (most recent call last):
-backend-1  |     raise orm_exc.DetachedInstanceError(
-backend-1  | sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7f0066bd9a90> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
-backend-1  | 2025-09-24 20:29:21,881 - app.services.ingestion_service - ERROR - Failed ingestion job 2
-backend-1  | Traceback (most recent call last):
-backend-1  |     raise orm_exc.DetachedInstanceError(
-backend-1  | sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7f0066544490> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
-backend-1  | During handling of the above exception, another exception occurred:
-backend-1  | Traceback (most recent call last):
-backend-1  |     raise orm_exc.DetachedInstanceError(
-backend-1  | sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7f0066544490> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
 
 Recent CORS-related issues:
-backend-1   | 2025-09-24T20:18:16.115370839Z 2025-09-24 20:18:16,115 - app.main - INFO - CORS origins: ['https://8.8.8.8']
+backend-1   | 2025-09-24T20:41:14.723003014Z 2025-09-24 20:41:14,722 - app.main - INFO - CORS origins: ['https://10.32.56.174']
 
 Database connection issues:
 
 
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:48 +0000] "GET /api/v1/dashboard/os-stats HTTP/2.0" 200 359 "https://8.8.8.8/dashboard" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:48 +0000] "GET /api/v1/upload/jobs?limit=5 HTTP/2.0" 200 452 "https://8.8.8.8/dashboard" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:49 +0000] "GET /api/v1/dashboard/risk-insights HTTP/2.0" 200 1982 "https://8.8.8.8/dashboard" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:49 +0000] "GET /api/v1/dashboard/stats HTTP/2.0" 200 903 "https://8.8.8.8/dashboard" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:49 +0000] "GET /api/v1/risk/hosts/risk-summary HTTP/2.0" 200 474 "https://8.8.8.8/dashboard" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:49 +0000] "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/2.0" 200 275 "https://8.8.8.8/dashboard" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:51 +0000] "GET /api/v1/scans/?skip=0&limit=100 HTTP/2.0" 200 767 "https://8.8.8.8/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:52 +0000] "GET /api/v1/hosts/filters/data HTTP/2.0" 200 3696 "https://8.8.8.8/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:52 +0000] "GET /api/v1/hosts/filters/data HTTP/2.0" 200 3696 "https://8.8.8.8/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:53 +0000] "GET /api/v1/hosts/? HTTP/2.0" 200 10323 "https://8.8.8.8/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:54 +0000] "GET /api/v1/hosts/filters/data HTTP/2.0" 200 3700 "https://8.8.8.8/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:54 +0000] "GET /api/v1/hosts/? HTTP/2.0" 200 10322 "https://8.8.8.8/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:57 +0000] "GET /api/v1/hosts/33/conflicts HTTP/2.0" 200 2 "https://8.8.8.8/hosts/33" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 8.8.8.8 - - [24/Sep/2025:20:29:57 +0000] "GET /api/v1/hosts/33 HTTP/2.0" 200 1703 "https://8.8.8.8/hosts/33" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
 
+=== FRONTEND CONTAINER LOGS ===
+frontend-1  | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+frontend-1  | /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+frontend-1  | 10-listen-on-ipv6-by-default.sh: info: can not modify /etc/nginx/conf.d/default.conf (read-only file system?)
+frontend-1  | 2025/09/24 20:41:12 [warn] 1#1: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
+frontend-1  | nginx: [warn] the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
+frontend-1  | /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
+frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+frontend-1  | /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+frontend-1  | /docker-entrypoint.sh: Configuration complete; ready for start up
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: using the "epoll" event method
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: nginx/1.29.1
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: built by gcc 14.2.0 (Alpine 14.2.0) 
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: OS: Linux 6.10.11-amd64
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1073741816:1073741816
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: start worker processes
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: start worker process 21
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: start worker process 22
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: start worker process 23
+frontend-1  | 2025/09/24 20:41:12 [notice] 1#1: start worker process 24
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:33 +0000] "GET /api/v1/health HTTP/2.0" 404 22 "-" "curl/8.15.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:33 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.15.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:39 +0000] "GET / HTTP/2.0" 200 599 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:39 +0000] "GET /api/v1/dashboard/stats HTTP/2.0" 401 39 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:39 +0000] "GET /api/v1/dashboard/os-stats HTTP/2.0" 499 0 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:39 +0000] "GET /api/v1/dashboard/risk-insights HTTP/2.0" 499 0 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:39 +0000] "GET /api/v1/upload/jobs?limit=5 HTTP/2.0" 499 0 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:39 +0000] "GET /login HTTP/2.0" 200 599 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:39 +0000] "GET /api/v1/risk/hosts/risk-summary HTTP/2.0" 401 39 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:39 +0000] "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/2.0" 401 39 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:41 +0000] "POST /api/v1/auth/login HTTP/2.0" 200 394 "https://10.32.56.174/login" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:41 +0000] "GET /api/v1/dashboard/os-stats HTTP/2.0" 200 2 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:41 +0000] "GET /api/v1/dashboard/risk-insights HTTP/2.0" 200 79 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:41 +0000] "GET /api/v1/upload/jobs?limit=5 HTTP/2.0" 200 2 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:41 +0000] "GET /api/v1/dashboard/stats HTTP/2.0" 200 356 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:41 +0000] "GET /api/v1/risk/hosts/risk-summary HTTP/2.0" 200 441 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:41 +0000] "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/2.0" 200 276 "https://10.32.56.174/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:41:43 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:43 +0000] "GET /api/v1/scans/?skip=0&limit=100 HTTP/2.0" 200 2 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 2025/09/24 20:41:47 [warn] 23#23: *5 a client request body is buffered to a temporary file /var/cache/nginx/client_temp/0000000001, client: 10.32.56.174, server: _, request: "POST /api/v1/upload/ HTTP/2.0", host: "10.32.56.174", referrer: "https://10.32.56.174/scans"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:50 +0000] "POST /api/v1/upload/ HTTP/2.0" 200 174 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:50 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:55 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:41:59 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:03 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:07 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:11 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:42:13 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:15 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:19 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:23 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:27 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:31 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:35 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:39 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:42:43 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:43 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:47 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:51 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:55 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:42:59 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:03 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:07 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:11 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:43:13 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:15 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:19 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:23 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:27 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:31 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:35 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:39 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:43:43 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:43 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:47 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:51 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:55 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:43:59 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:03 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:07 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:11 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:44:13 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:15 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:19 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:23 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:27 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:31 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:35 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:39 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:44:43 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:43 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:48 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:52 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:44:56 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:00 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:04 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:08 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:12 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:45:13 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:16 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:20 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:24 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:28 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:32 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:36 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:40 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:45:43 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:44 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:48 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:52 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:45:56 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:00 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:04 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:08 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:12 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:46:13 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:16 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:20 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:24 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:28 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:32 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:36 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:40 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:46:43 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:44 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:48 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:52 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:46:56 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:00 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:04 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:08 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:13 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:47:13 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:17 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:21 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:25 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:29 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:33 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:37 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:41 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:47:44 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:45 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:49 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:53 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:47:57 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:01 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:05 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:09 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:13 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:48:14 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:17 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:21 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:25 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:29 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:33 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:37 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:41 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:48:44 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:45 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 391 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:49 +0000] "GET /api/v1/upload/jobs/1 HTTP/2.0" 200 471 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:48:49 +0000] "GET /api/v1/scans/?skip=0&limit=100 HTTP/2.0" 200 392 "https://10.32.56.174/scans" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:49:14 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:49:44 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:50:14 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:50:44 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:51:14 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:51:44 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 127.0.0.1 - - [24/Sep/2025:20:52:14 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:52:21 +0000] "GET /api/v1/hosts/filters/data HTTP/2.0" 200 3712 "https://10.32.56.174/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:52:21 +0000] "GET /api/v1/hosts/filters/data HTTP/2.0" 200 3712 "https://10.32.56.174/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:52:21 +0000] "GET /api/v1/hosts/? HTTP/2.0" 200 8346 "https://10.32.56.174/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:52:22 +0000] "GET /api/v1/hosts/filters/data HTTP/2.0" 200 3713 "https://10.32.56.174/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:52:23 +0000] "GET /api/v1/hosts/? HTTP/2.0" 200 8330 "https://10.32.56.174/hosts" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:52:26 +0000] "GET /api/v1/hosts/1/conflicts HTTP/2.0" 200 2 "https://10.32.56.174/hosts/1" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
+frontend-1  | 10.32.56.174 - - [24/Sep/2025:20:52:26 +0000] "GET /api/v1/hosts/1 HTTP/2.0" 200 1280 "https://10.32.56.174/hosts/1" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -303,7 +303,7 @@ export default function HostDetail() {
     );
   }
 
-  const webLinks = useMemo<HostWebLink[]>(() => (host ? getHostWebLinks(host) : []), [host]);
+  const webLinks: HostWebLink[] = host ? getHostWebLinks(host) : [];
   if (!host) {
     return (
       <Box textAlign="center" py={8}>

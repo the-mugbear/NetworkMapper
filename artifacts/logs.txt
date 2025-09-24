@@ -1,43 +1,8 @@
- => [frontend builder  9/10] COPY . .                                                                                       0.1s
- => ERROR [frontend builder 10/10] RUN node generate-build-info.js     && npm run build     && npm prune --production       4.1s
-------
- > [frontend builder 10/10] RUN node generate-build-info.js     && npm run build     && npm prune --production:
-0.231 fatal: not a git repository (or any of the parent directories): .git
-0.233 Could not get git commit hash: Command failed: git rev-parse HEAD
-0.233 fatal: not a git repository (or any of the parent directories): .git
-0.233 
-0.235 Build info generated:
-0.235 REACT_APP_BUILD_TIME=2025-09-24T06:07:20.608Z
-0.235 REACT_APP_VERSION=1.4.1
-0.235 REACT_APP_GIT_COMMIT=unknown
-0.444 
-0.444 > networkMapper-frontend@1.4.1 prebuild
-0.444 > node generate-build-info.js
-0.444 
-0.501 fatal: not a git repository (or any of the parent directories): .git
-0.503 Could not get git commit hash: Command failed: git rev-parse HEAD
-0.503 fatal: not a git repository (or any of the parent directories): .git
-0.503 
-0.504 Build info generated:
-0.504 REACT_APP_BUILD_TIME=2025-09-24T06:07:20.879Z
-0.504 REACT_APP_VERSION=1.4.1
-0.504 REACT_APP_GIT_COMMIT=unknown
-0.513 
-0.513 > networkMapper-frontend@1.4.1 build
-0.513 > vite build
-0.513 
-0.753 The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
-0.770 The `define` option contains an object with "PATH" for "process.env" key. It looks like you may have passed the entire `process.env` object to `define`, which can unintentionally expose all environment variables. This poses a security risk and is discouraged.
-0.811 vite v6.3.6 building for production...
-0.950 transforming...
-3.944 ✓ 353 modules transformed.
-3.947 ✗ Build failed in 3.06s
-3.947 error during build:
-3.947 Could not resolve "../utils/portsOfInterest" from "src/pages/Hosts.tsx"
-3.947 file: /app/src/pages/Hosts.tsx
-3.947     at getRollupError (file:///app/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
-3.947     at error (file:///app/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
-3.947     at ModuleLoader.handleInvalidResolvedId (file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21584:24)
-3.947     at file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21544:26
-------
-failed to solve: process "/bin/sh -c node generate-build-info.js     && npm run build     && npm prune --production" did not complete successfully: exit code: 1
+[2025-09-24T06:15:40.042Z] [ERROR] [AUTH] Login process failed 
+Object { error: "JSON.parse: unexpected character at line 1 column 1 of the JSON data", username: "admin" }
+ getStackTrace@https://<redactedIP>/assets/index-DWg2Oqx2.js:275:27042
+createLogEntry@https://<redactedIP>/assets/index-DWg2Oqx2.js:275:27314
+error@https://<redactedIP>/assets/index-DWg2Oqx2.js:275:28390
+authError@https://<redactedIP>/assets/index-DWg2Oqx2.js:275:28579
+error@https://<redactedIP>/assets/index-DWg2Oqx2.js:275:29574
+h@https://<redactedIP>/assets/index-DWg2Oqx2.js:275:32608

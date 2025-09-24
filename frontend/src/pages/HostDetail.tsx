@@ -304,39 +304,6 @@ export default function HostDetail() {
   }
 
   const webLinks = useMemo<HostWebLink[]>(() => (host ? getHostWebLinks(host) : []), [host]);
-  const sortedVulnerabilities = useMemo<HostVulnerability[]>(() => {
-    if (!host?.vulnerabilities) {
-      return [];
-    }
-
-    return [...host.vulnerabilities].sort((a, b) => {
-      const severityA = (a.severity ?? 'unknown').toLowerCase();
-      const severityB = (b.severity ?? 'unknown').toLowerCase();
-      const rankA = VULNERABILITY_SEVERITY_ORDER[severityA] ?? VULNERABILITY_SEVERITY_ORDER.unknown;
-      const rankB = VULNERABILITY_SEVERITY_ORDER[severityB] ?? VULNERABILITY_SEVERITY_ORDER.unknown;
-      if (rankA !== rankB) {
-        return rankA - rankB;
-      }
-
-      const lastSeenA = a.last_seen ? new Date(a.last_seen).getTime() : 0;
-      const lastSeenB = b.last_seen ? new Date(b.last_seen).getTime() : 0;
-      if (lastSeenA !== lastSeenB) {
-        return lastSeenB - lastSeenA;
-      }
-
-      return (a.id ?? 0) - (b.id ?? 0);
-    });
-  }, [host?.vulnerabilities]);
-
-  const displayedVulnerabilities = useMemo<HostVulnerability[]>(() => {
-    if (showAllVulnerabilities) {
-      return sortedVulnerabilities;
-    }
-    return sortedVulnerabilities.slice(0, VULNERABILITY_PREVIEW_LIMIT);
-  }, [showAllVulnerabilities, sortedVulnerabilities]);
-
-  const totalVulnerabilities = sortedVulnerabilities.length;
-
   if (!host) {
     return (
       <Box textAlign="center" py={8}>

@@ -1,113 +1,631 @@
-=== ALL CONTAINER LOGS COMBINED ===
-db-1  | 2025-09-24T06:35:39.579431888Z 
-db-1  | 2025-09-24T06:35:39.579471388Z PostgreSQL Database directory appears to contain a database; Skipping initialization
-db-1  | 2025-09-24T06:35:39.579474837Z 
-db-1  | 2025-09-24T06:35:39.601790686Z 2025-09-24 06:35:39.601 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-db-1  | 2025-09-24T06:35:39.601941904Z 2025-09-24 06:35:39.601 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-db-1  | 2025-09-24T06:35:39.601960536Z 2025-09-24 06:35:39.601 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-db-1  | 2025-09-24T06:35:39.605352363Z 2025-09-24 06:35:39.603 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-db-1  | 2025-09-24T06:35:39.608182520Z 2025-09-24 06:35:39.608 UTC [31] LOG:  database system was shut down at 2025-09-24 06:35:14 UTC
-db-1  | 2025-09-24T06:35:39.613594982Z 2025-09-24 06:35:39.613 UTC [1] LOG:  database system is ready to accept connections
-db-1  | 2025-09-24T06:36:17.294405638Z 2025-09-24 06:36:17.294 UTC [42] ERROR:  relation "ingestion_jobs" does not exist at character 128
-db-1  | 2025-09-24T06:36:17.294432453Z 2025-09-24 06:36:17.294 UTC [42] STATEMENT:  SELECT id, original_filename, status, tool_name, file_size, message, parse_error_id, created_at, started_at, completed_at FROM ingestion_jobs ORDER BY created_at DESC LIMIT 25;
-db-1  | 2025-09-24T06:36:17.440388933Z 2025-09-24 06:36:17.440 UTC [49] ERROR:  relation "parse_errors" does not exist at character 69
-db-1  | 2025-09-24T06:36:17.440410504Z 2025-09-24 06:36:17.440 UTC [49] STATEMENT:  SELECT id, filename, file_type, error_type, status, created_at FROM parse_errors ORDER BY created_at DESC LIMIT 25;
-backend-1  | 2025-09-24T06:35:41.363319760Z Traceback (most recent call last):
-backend-1  | 2025-09-24T06:35:41.363363510Z   File "/opt/venv/bin/uvicorn", line 7, in <module>
-backend-1  | 2025-09-24T06:35:41.363367377Z     sys.exit(main())
-backend-1  | 2025-09-24T06:35:41.363369408Z              ^^^^^^
-backend-1  | 2025-09-24T06:35:41.363371159Z   File "/opt/venv/lib/python3.11/site-packages/click/core.py", line 1462, in __call__
-backend-1  | 2025-09-24T06:35:41.363373006Z     return self.main(*args, **kwargs)
-backend-1  | 2025-09-24T06:35:41.363374712Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363376294Z   File "/opt/venv/lib/python3.11/site-packages/click/core.py", line 1383, in main
-backend-1  | 2025-09-24T06:35:41.363378224Z     rv = self.invoke(ctx)
-backend-1  | 2025-09-24T06:35:41.363379794Z          ^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363381521Z   File "/opt/venv/lib/python3.11/site-packages/click/core.py", line 1246, in invoke
-backend-1  | 2025-09-24T06:35:41.363383300Z     return ctx.invoke(self.callback, **ctx.params)
-backend-1  | 2025-09-24T06:35:41.363384977Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363386594Z   File "/opt/venv/lib/python3.11/site-packages/click/core.py", line 814, in invoke
-backend-1  | 2025-09-24T06:35:41.363388312Z     return callback(*args, **kwargs)
-backend-1  | 2025-09-24T06:35:41.363389872Z            ^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363391511Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/main.py", line 415, in main
-backend-1  | 2025-09-24T06:35:41.363393261Z     run(
-backend-1  | 2025-09-24T06:35:41.363394925Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/main.py", line 582, in run
-backend-1  | 2025-09-24T06:35:41.363396705Z     server.run()
-backend-1  | 2025-09-24T06:35:41.363400601Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/server.py", line 67, in run
-backend-1  | 2025-09-24T06:35:41.363402448Z     return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
-backend-1  | 2025-09-24T06:35:41.363404307Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363406118Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/_compat.py", line 23, in asyncio_run
-backend-1  | 2025-09-24T06:35:41.363407888Z     return runner.run(main)
-backend-1  | 2025-09-24T06:35:41.363409523Z            ^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363411163Z   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
-backend-1  | 2025-09-24T06:35:41.363412980Z     return self._loop.run_until_complete(task)
-backend-1  | 2025-09-24T06:35:41.363414666Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363416330Z   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
-backend-1  | 2025-09-24T06:35:41.363418132Z     return future.result()
-backend-1  | 2025-09-24T06:35:41.363419698Z            ^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363421272Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/server.py", line 71, in serve
-backend-1  | 2025-09-24T06:35:41.363427559Z     await self._serve(sockets)
-backend-1  | 2025-09-24T06:35:41.363429483Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/server.py", line 78, in _serve
-backend-1  | 2025-09-24T06:35:41.363431263Z     config.load()
-backend-1  | 2025-09-24T06:35:41.363432867Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/config.py", line 436, in load
-backend-1  | 2025-09-24T06:35:41.363435369Z     self.loaded_app = import_from_string(self.app)
-backend-1  | 2025-09-24T06:35:41.363437035Z                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363438646Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/importer.py", line 19, in import_from_string
-backend-1  | 2025-09-24T06:35:41.363440441Z     module = importlib.import_module(module_str)
-backend-1  | 2025-09-24T06:35:41.363442072Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363443772Z   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
-backend-1  | 2025-09-24T06:35:41.363445532Z     return _bootstrap._gcd_import(name[level:], package, level)
-backend-1  | 2025-09-24T06:35:41.363447200Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1  | 2025-09-24T06:35:41.363448882Z   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
-backend-1  | 2025-09-24T06:35:41.363450799Z   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
-backend-1  | 2025-09-24T06:35:41.363452560Z   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
-backend-1  | 2025-09-24T06:35:41.363454359Z   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
-backend-1  | 2025-09-24T06:35:41.363456090Z   File "<frozen importlib._bootstrap_external>", line 940, in exec_module
-backend-1  | 2025-09-24T06:35:41.363457942Z   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
-backend-1  | 2025-09-24T06:35:41.363459735Z   File "/app/app/main.py", line 8, in <module>
-backend-1  | 2025-09-24T06:35:41.363461649Z     from app.api.v1.api import api_router
-backend-1  | 2025-09-24T06:35:41.363463292Z   File "/app/app/api/v1/api.py", line 2, in <module>
-backend-1   | 2025-09-24T06:35:41.363465140Z     from app.api.v1.endpoints import scans, hosts, dashboard, upload, scopes, export, dns, parse_errors, reports, auth, risk, audit, users
-frontend-1  | 2025-09-24T06:35:40.182357495Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
-frontend-1  | 2025-09-24T06:35:40.182389359Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
-frontend-1  | 2025-09-24T06:35:40.183274089Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
-frontend-1  | 2025-09-24T06:35:40.184773519Z 10-listen-on-ipv6-by-default.sh: info: can not modify /etc/nginx/conf.d/default.conf (read-only file system?)
-frontend-1  | 2025-09-24T06:35:40.184883288Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
-frontend-1  | 2025-09-24T06:35:40.185016355Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
-frontend-1  | 2025-09-24T06:35:40.187077803Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
-frontend-1  | 2025-09-24T06:35:40.188081843Z /docker-entrypoint.sh: Configuration complete; ready for start up
-frontend-1  | 2025-09-24T06:35:40.191436242Z 2025/09/24 06:35:40 [warn] 1#1: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
-frontend-1  | 2025-09-24T06:35:40.191453365Z nginx: [warn] the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
-frontend-1  | 2025-09-24T06:35:40.197019391Z 2025/09/24 06:35:40 [notice] 1#1: using the "epoll" event method
-frontend-1  | 2025-09-24T06:35:40.197032294Z 2025/09/24 06:35:40 [notice] 1#1: nginx/1.29.1
-frontend-1  | 2025-09-24T06:35:40.197034960Z 2025/09/24 06:35:40 [notice] 1#1: built by gcc 14.2.0 (Alpine 14.2.0) 
-frontend-1  | 2025-09-24T06:35:40.197036934Z 2025/09/24 06:35:40 [notice] 1#1: OS: Linux 6.10.11-amd64
-frontend-1  | 2025-09-24T06:35:40.197038789Z 2025/09/24 06:35:40 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1073741816:1073741816
-backend-1   | 2025-09-24T06:35:41.363466969Z   File "/app/app/api/v1/endpoints/hosts.py", line 30, in <module>
-backend-1   | 2025-09-24T06:35:41.363468747Z     from app.services.host_follow_service import HostFollowService
-backend-1   | 2025-09-24T06:35:41.363470415Z   File "/app/app/services/host_follow_service.py", line 10, in <module>
-backend-1   | 2025-09-24T06:35:41.363472188Z     from app.db.models import HostFollow, FollowStatus, HostNote, NoteStatus
-backend-1   | 2025-09-24T06:35:41.363473905Z ImportError: cannot import name 'HostFollow' from 'app.db.models' (/app/app/db/models.py)
-frontend-1  | 2025-09-24T06:35:40.197125132Z 2025/09/24 06:35:40 [notice] 1#1: start worker processes
-frontend-1  | 2025-09-24T06:35:40.197291934Z 2025/09/24 06:35:40 [notice] 1#1: start worker process 22
-frontend-1  | 2025-09-24T06:35:40.197412437Z 2025/09/24 06:35:40 [notice] 1#1: start worker process 23
-frontend-1  | 2025-09-24T06:35:40.197976716Z 2025/09/24 06:35:40 [notice] 1#1: start worker process 24
-frontend-1  | 2025-09-24T06:35:40.197983798Z 2025/09/24 06:35:40 [notice] 1#1: start worker process 25
-frontend-1  | 2025-09-24T06:36:03.271413640Z 2025/09/24 06:36:03 [error] 25#25: *1 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "GET /api/v1/health HTTP/2.0", upstream: "http://192.168.32.3:8000/api/v1/health", host: "<redactedIP>"
-frontend-1  | 2025-09-24T06:36:03.271996191Z <redactedIP> - - [24/Sep/2025:06:36:03 +0000] "GET /api/v1/health HTTP/2.0" 502 497 "-" "curl/8.15.0" "-"
-frontend-1  | 2025-09-24T06:36:03.290774383Z <redactedIP> - - [24/Sep/2025:06:36:03 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.15.0" "-"
-frontend-1  | 2025-09-24T06:36:10.279353314Z 127.0.0.1 - - [24/Sep/2025:06:36:10 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+=== BACKEND CONTAINER LOGS ===
+backend-1  | Ingestion storage /app/uploads/ingestion_queue not writable, falling back to /tmp/networkmapper_ingestion/d58adcf3a3fc439e89a746016fabf4c0
+backend-1  | Unable to add parse_error_id column to ingestion_jobs: (psycopg2.errors.UndefinedTable) relation "ingestion_jobs" does not exist
+backend-1  | 
+backend-1  | [SQL: ALTER TABLE ingestion_jobs ADD COLUMN IF NOT EXISTS parse_error_id INTEGER]
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/f405)
+backend-1  | INFO:     Started server process [1]
+backend-1  | INFO:     Waiting for application startup.
+backend-1  | 2025-09-24 06:53:49,804 - app.main - INFO - NetworkMapper API starting up...
+backend-1  | 2025-09-24 06:53:49,804 - app.main - INFO - CORS origins: ['https://10.32.56.174']
+backend-1  | 2025-09-24 06:53:49,901 - app.main - INFO - Creating default admin user...
+backend-1  | 2025-09-24 06:53:50,228 - app.main - INFO - Default admin user created successfully
+backend-1  | INFO:     Application startup complete.
+backend-1  | INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+backend-1  | INFO:     192.168.48.4:36846 - "GET /api/v1/health HTTP/1.1" 404 Not Found
+backend-1  | INFO:     127.0.0.1:38052 - "GET /health HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:50656 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:40868 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:40880 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:40854 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:40872 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:40884 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:40888 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:40896 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:54:43,710 - app.services.ingestion_service - INFO - Queued ingestion job 1 for masscan_tcp_scan.xml (2049797 bytes)
+backend-1  | INFO:     192.168.48.4:45408 - "POST /api/v1/upload/ HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:54:43,762 - app.services.ingestion_service - INFO - Job 1: attempting parser NmapXMLParser for masscan_tcp_scan.xml
+backend-1  | 2025-09-24 06:54:43,762 - app.parsers.nmap_parser - INFO - Starting streamed parse of masscan_tcp_scan.xml
+backend-1  | INFO:     192.168.48.4:45424 - "GET /api/v1/upload/jobs/1 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:54:44,319 - app.parsers.nmap_parser - INFO - Processed 100 hosts so far
+backend-1  | 2025-09-24 06:54:44,837 - app.parsers.nmap_parser - INFO - Processed 200 hosts so far
+backend-1  | 2025-09-24 06:54:45,340 - app.parsers.nmap_parser - INFO - Processed 300 hosts so far
+backend-1  | 2025-09-24 06:54:45,864 - app.parsers.nmap_parser - INFO - Processed 400 hosts so far
+backend-1  | 2025-09-24 06:54:46,382 - app.parsers.nmap_parser - INFO - Processed 500 hosts so far
+backend-1  | 2025-09-24 06:54:46,898 - app.parsers.nmap_parser - INFO - Processed 600 hosts so far
+backend-1  | 2025-09-24 06:54:47,425 - app.parsers.nmap_parser - INFO - Processed 700 hosts so far
+backend-1  | INFO:     127.0.0.1:37344 - "GET /health HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:40326 - "GET /api/v1/upload/jobs/1 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:54:47,962 - app.parsers.nmap_parser - INFO - Processed 800 hosts so far
+backend-1  | 2025-09-24 06:54:48,535 - app.parsers.nmap_parser - INFO - Processed 900 hosts so far
+backend-1  | 2025-09-24 06:54:49,059 - app.parsers.nmap_parser - INFO - Processed 1000 hosts so far
+backend-1  | 2025-09-24 06:54:49,576 - app.parsers.nmap_parser - INFO - Processed 1100 hosts so far
+backend-1  | 2025-09-24 06:54:50,095 - app.parsers.nmap_parser - INFO - Processed 1200 hosts so far
+backend-1  | 2025-09-24 06:54:50,294 - app.services.ingestion_service - INFO - Queued ingestion job 2 for massscan_udp.xml (4072248 bytes)
+backend-1  | INFO:     192.168.48.4:40336 - "POST /api/v1/upload/ HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:54:50,310 - app.services.ingestion_service - INFO - Job 2: attempting parser NmapXMLParser for massscan_udp.xml
+backend-1  | 2025-09-24 06:54:50,310 - app.parsers.nmap_parser - INFO - Starting streamed parse of massscan_udp.xml
+backend-1  | INFO:     192.168.48.4:40342 - "GET /api/v1/upload/jobs/2 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:54:50,741 - app.parsers.nmap_parser - INFO - Processed 1300 hosts so far
+backend-1  | 2025-09-24 06:54:51,265 - app.parsers.nmap_parser - INFO - Processed 1400 hosts so far
+backend-1  | 2025-09-24 06:54:51,782 - app.parsers.nmap_parser - INFO - Processed 1500 hosts so far
+backend-1  | 2025-09-24 06:54:52,307 - app.parsers.nmap_parser - INFO - Processed 1600 hosts so far
+backend-1  | 2025-09-24 06:54:52,826 - app.parsers.nmap_parser - INFO - Processed 1700 hosts so far
+backend-1  | 2025-09-24 06:54:53,337 - app.parsers.nmap_parser - INFO - Processed 1800 hosts so far
+backend-1  | 2025-09-24 06:54:53,865 - app.parsers.nmap_parser - INFO - Processed 1900 hosts so far
+backend-1  | 2025-09-24 06:54:54,413 - app.parsers.nmap_parser - INFO - Processed 2000 hosts so far
+backend-1  | INFO:     192.168.48.4:40356 - "GET /api/v1/upload/jobs/2 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:54:55,012 - app.parsers.nmap_parser - INFO - Processed 2100 hosts so far
+backend-1  | 2025-09-24 06:54:55,544 - app.parsers.nmap_parser - INFO - Processed 2200 hosts so far
+backend-1  | 2025-09-24 06:54:56,055 - app.parsers.nmap_parser - INFO - Processed 2300 hosts so far
+backend-1  | 2025-09-24 06:54:56,657 - app.parsers.nmap_parser - INFO - Processed 2400 hosts so far
+backend-1  | 2025-09-24 06:54:57,177 - app.parsers.nmap_parser - INFO - Processed 2500 hosts so far
+backend-1  | 2025-09-24 06:54:57,689 - app.parsers.nmap_parser - INFO - Processed 2600 hosts so far
+backend-1  | 2025-09-24 06:54:58,194 - app.parsers.nmap_parser - INFO - Processed 2700 hosts so far
+backend-1  | INFO:     192.168.48.4:38210 - "GET /api/v1/upload/jobs/2 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:54:58,744 - app.parsers.nmap_parser - INFO - Processed 2800 hosts so far
+backend-1  | 2025-09-24 06:54:59,556 - app.services.ingestion_service - INFO - Queued ingestion job 3 for nmap_OS_enumeration.xml (55063296 bytes)
+backend-1  | INFO:     192.168.48.4:38214 - "POST /api/v1/upload/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:38228 - "GET /api/v1/upload/jobs/3 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:00,079 - app.parsers.nmap_parser - ERROR - Error parsing XML file masscan_tcp_scan.xml after 16.32 seconds: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | DETAIL:  Process 36 waits for ShareLock on transaction 764; blocked by process 33.
+backend-1  | Process 33 waits for ShareLock on transaction 758; blocked by process 36.
+backend-1  | HINT:  See server log for query details.
+backend-1  | CONTEXT:  while inserting index tuple (29,4) in relation "ix_hosts_v2_ip_address"
+backend-1  | 
+backend-1  | [SQL: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES (%(ip_address)s, %(hostname)s, %(state)s, %(state_reason)s, %(os_name)s, %(os_family)s, %(os_generation)s, %(os_type)s, %(os_vendor)s, %(os_accuracy)s, %(last_updated_scan_id)s) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen]
+backend-1  | [parameters: {'ip_address': '10.159.37.182', 'hostname': None, 'state': None, 'state_reason': None, 'os_name': None, 'os_family': None, 'os_generation': None, 'os_type': None, 'os_vendor': None, 'os_accuracy': None, 'last_updated_scan_id': 1}]
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 06:55:00,080 - app.services.ingestion_service - WARNING - Job 1: parser NmapXMLParser failed after 16.32s: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | DETAIL:  Process 36 waits for ShareLock on transaction 764; blocked by process 33.
+backend-1  | Process 33 waits for ShareLock on transaction 758; blocked by process 36.
+backend-1  | HINT:  See server log for query details.
+backend-1  | CONTEXT:  while inserting index tuple (29,4) in relation "ix_hosts_v2_ip_address"
+backend-1  | 
+backend-1  | [SQL: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES (%(ip_address)s, %(hostname)s, %(state)s, %(state_reason)s, %(os_name)s, %(os_family)s, %(os_generation)s, %(os_type)s, %(os_vendor)s, %(os_accuracy)s, %(last_updated_scan_id)s) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen]
+backend-1  | [parameters: {'ip_address': '10.159.37.182', 'hostname': None, 'state': None, 'state_reason': None, 'os_name': None, 'os_family': None, 'os_generation': None, 'os_type': None, 'os_vendor': None, 'os_accuracy': None, 'last_updated_scan_id': 1}]
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 06:55:00,081 - app.services.ingestion_service - INFO - Job 1: attempting parser MasscanParser for masscan_tcp_scan.xml
+backend-1  | 2025-09-24 06:55:01,226 - app.parsers.masscan_parser - INFO - Masscan scan 3 correlated 0 hosts to subnets
+backend-1  | 2025-09-24 06:55:01,228 - app.parsers.masscan_parser - INFO - Masscan parser processed 0 hosts (filename=masscan_tcp_scan.xml)
+backend-1  | 2025-09-24 06:55:01,231 - app.services.ingestion_service - INFO - Job 1: parser MasscanParser succeeded in 1.15s
+backend-1  | 2025-09-24 06:55:01,238 - app.services.ingestion_service - INFO - Job 3: attempting parser NmapXMLParser for nmap_OS_enumeration.xml
+backend-1  | 2025-09-24 06:55:01,238 - app.parsers.nmap_parser - INFO - Starting streamed parse of nmap_OS_enumeration.xml
+backend-1  | 2025-09-24 06:55:01,331 - app.parsers.nmap_parser - INFO - Processed 100 hosts so far
+backend-1  | 2025-09-24 06:55:02,115 - app.parsers.nmap_parser - INFO - Processed 200 hosts so far
+backend-1  | 2025-09-24 06:55:02,868 - app.parsers.nmap_parser - INFO - Processed 300 hosts so far
+backend-1  | 2025-09-24 06:55:03,626 - app.parsers.nmap_parser - INFO - Processed 400 hosts so far
+backend-1  | INFO:     192.168.48.4:38232 - "GET /api/v1/upload/jobs/3 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:04,412 - app.parsers.nmap_parser - INFO - Processed 500 hosts so far
+backend-1  | 2025-09-24 06:55:05,134 - app.parsers.nmap_parser - INFO - Processed 100 hosts so far
+backend-1  | 2025-09-24 06:55:05,182 - app.parsers.nmap_parser - INFO - Processed 600 hosts so far
+backend-1  | 2025-09-24 06:55:05,951 - app.parsers.nmap_parser - INFO - Processed 700 hosts so far
+backend-1  | 2025-09-24 06:55:06,707 - app.parsers.nmap_parser - INFO - Processed 800 hosts so far
+backend-1  | 2025-09-24 06:55:07,466 - app.parsers.nmap_parser - INFO - Processed 900 hosts so far
+backend-1  | INFO:     192.168.48.4:39492 - "GET /api/v1/upload/jobs/3 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:08,244 - app.parsers.nmap_parser - INFO - Processed 1000 hosts so far
+backend-1  | 2025-09-24 06:55:08,994 - app.parsers.nmap_parser - INFO - Processed 1100 hosts so far
+backend-1  | 2025-09-24 06:55:09,090 - app.parsers.nmap_parser - INFO - Processed 200 hosts so far
+backend-1  | 2025-09-24 06:55:09,748 - app.parsers.nmap_parser - INFO - Processed 1200 hosts so far
+backend-1  | 2025-09-24 06:55:10,502 - app.parsers.nmap_parser - INFO - Processed 1300 hosts so far
+backend-1  | 2025-09-24 06:55:11,575 - app.parsers.nmap_parser - ERROR - Error parsing XML file massscan_udp.xml after 21.26 seconds: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | DETAIL:  Process 33 waits for ShareLock on transaction 774; blocked by process 37.
+backend-1  | Process 37 waits for ShareLock on transaction 764; blocked by process 33.
+backend-1  | HINT:  See server log for query details.
+backend-1  | CONTEXT:  while inserting index tuple (44,83) in relation "ix_hosts_v2_ip_address"
+backend-1  | 
+backend-1  | [SQL: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES (%(ip_address)s, %(hostname)s, %(state)s, %(state_reason)s, %(os_name)s, %(os_family)s, %(os_generation)s, %(os_type)s, %(os_vendor)s, %(os_accuracy)s, %(last_updated_scan_id)s) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen]
+backend-1  | [parameters: {'ip_address': '10.88.35.11', 'hostname': None, 'state': None, 'state_reason': None, 'os_name': None, 'os_family': None, 'os_generation': None, 'os_type': None, 'os_vendor': None, 'os_accuracy': None, 'last_updated_scan_id': 2}]
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 06:55:11,577 - app.services.ingestion_service - WARNING - Job 2: parser NmapXMLParser failed after 21.27s: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | DETAIL:  Process 33 waits for ShareLock on transaction 774; blocked by process 37.
+backend-1  | Process 37 waits for ShareLock on transaction 764; blocked by process 33.
+backend-1  | HINT:  See server log for query details.
+backend-1  | CONTEXT:  while inserting index tuple (44,83) in relation "ix_hosts_v2_ip_address"
+backend-1  | 
+backend-1  | [SQL: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES (%(ip_address)s, %(hostname)s, %(state)s, %(state_reason)s, %(os_name)s, %(os_family)s, %(os_generation)s, %(os_type)s, %(os_vendor)s, %(os_accuracy)s, %(last_updated_scan_id)s) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen]
+backend-1  | [parameters: {'ip_address': '10.88.35.11', 'hostname': None, 'state': None, 'state_reason': None, 'os_name': None, 'os_family': None, 'os_generation': None, 'os_type': None, 'os_vendor': None, 'os_accuracy': None, 'last_updated_scan_id': 2}]
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 06:55:11,577 - app.services.ingestion_service - INFO - Job 2: attempting parser MasscanParser for massscan_udp.xml
+backend-1  | INFO:     192.168.48.4:39502 - "GET /api/v1/upload/jobs/3 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:12,930 - app.parsers.masscan_parser - INFO - Masscan scan 5 correlated 0 hosts to subnets
+backend-1  | 2025-09-24 06:55:12,934 - app.parsers.masscan_parser - INFO - Masscan parser processed 0 hosts (filename=massscan_udp.xml)
+backend-1  | 2025-09-24 06:55:12,936 - app.services.ingestion_service - INFO - Job 2: parser MasscanParser succeeded in 1.36s
+backend-1  | 2025-09-24 06:55:13,522 - app.parsers.nmap_parser - INFO - Processed 300 hosts so far
+backend-1  | INFO:     192.168.48.4:39518 - "GET /api/v1/upload/jobs/3 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:16,083 - app.parsers.nmap_parser - INFO - Processed 400 hosts so far
+backend-1  | 2025-09-24 06:55:17,149 - app.parsers.nmap_parser - INFO - Processed 500 hosts so far
+backend-1  | INFO:     192.168.48.4:55100 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | INFO:     127.0.0.1:44288 - "GET /health HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:18,423 - app.parsers.nmap_parser - INFO - Processed 600 hosts so far
+backend-1  | 2025-09-24 06:55:19,454 - app.parsers.nmap_parser - INFO - Processed 700 hosts so far
+backend-1  | INFO:     192.168.48.4:55112 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55126 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55128 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55110 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55142 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55154 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:21,167 - app.parsers.nmap_parser - INFO - Processed 800 hosts so far
+backend-1  | INFO:     192.168.48.4:55182 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55166 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55186 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55196 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55206 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55222 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55224 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:24,404 - app.parsers.nmap_parser - INFO - Processed 900 hosts so far
+backend-1  | INFO:     192.168.48.4:55232 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55244 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55260 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55268 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55280 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55282 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55288 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55300 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55306 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55308 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:34990 - "GET /api/v1/hosts/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:35002 - "GET /api/v1/hosts/filters/data HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:35018 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:27,541 - app.parsers.nmap_parser - INFO - Processed 1000 hosts so far
+backend-1  | 2025-09-24 06:55:29,938 - app.parsers.nmap_parser - INFO - Processed 1100 hosts so far
+backend-1  | 2025-09-24 06:55:31,348 - app.parsers.nmap_parser - INFO - Processed 1200 hosts so far
+backend-1  | 2025-09-24 06:55:32,483 - app.parsers.nmap_parser - INFO - Processed 1300 hosts so far
+backend-1  | 2025-09-24 06:55:34,591 - app.parsers.nmap_parser - INFO - Processed 1400 hosts so far
+backend-1  | 2025-09-24 06:55:37,016 - app.services.ingestion_service - INFO - Queued ingestion job 4 for nmap_tcp_scan.xml (514521 bytes)
+backend-1  | INFO:     192.168.48.4:32824 - "POST /api/v1/upload/ HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:37,025 - app.services.ingestion_service - INFO - Job 4: attempting parser NmapXMLParser for nmap_tcp_scan.xml
+backend-1  | 2025-09-24 06:55:37,027 - app.parsers.nmap_parser - INFO - Starting streamed parse of nmap_tcp_scan.xml
+backend-1  | INFO:     192.168.48.4:32830 - "GET /api/v1/upload/jobs/4 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:37,790 - app.parsers.nmap_parser - INFO - Processed 1500 hosts so far
+backend-1  | 2025-09-24 06:55:40,164 - app.parsers.nmap_parser - INFO - Starting subnet correlation for scan 6
+backend-1  | 2025-09-24 06:55:40,173 - app.parsers.nmap_parser - INFO - Correlated 0 hosts to subnets
+backend-1  | 2025-09-24 06:55:40,173 - app.parsers.nmap_parser - INFO - Parsed 87 host records from nmap_tcp_scan.xml
+backend-1  | 2025-09-24 06:55:40,173 - app.parsers.nmap_parser - INFO - Successfully parsed nmap_tcp_scan.xml in 3.15 seconds
+backend-1  | 2025-09-24 06:55:40,179 - app.services.ingestion_service - INFO - Job 4: parser NmapXMLParser succeeded in 3.15s
+backend-1  | 2025-09-24 06:55:40,609 - app.parsers.nmap_parser - INFO - Processed 1600 hosts so far
+backend-1  | INFO:     192.168.48.4:32838 - "GET /api/v1/upload/jobs/4 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:32846 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:42,927 - app.parsers.nmap_parser - INFO - Processed 1700 hosts so far
+backend-1  | 2025-09-24 06:55:44,988 - app.parsers.nmap_parser - INFO - Processed 1800 hosts so far
+backend-1  | 2025-09-24 06:55:45,838 - app.services.ingestion_service - INFO - Queued ingestion job 5 for nmap_udp_scan.xml (132255 bytes)
+backend-1  | INFO:     192.168.48.4:32858 - "POST /api/v1/upload/ HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:45,846 - app.services.ingestion_service - INFO - Job 5: attempting parser NmapXMLParser for nmap_udp_scan.xml
+backend-1  | 2025-09-24 06:55:45,846 - app.parsers.nmap_parser - INFO - Starting streamed parse of nmap_udp_scan.xml
+backend-1  | INFO:     192.168.48.4:32868 - "GET /api/v1/upload/jobs/5 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:47,034 - app.parsers.nmap_parser - INFO - Starting subnet correlation for scan 7
+backend-1  | 2025-09-24 06:55:47,041 - app.parsers.nmap_parser - INFO - Correlated 0 hosts to subnets
+backend-1  | 2025-09-24 06:55:47,041 - app.parsers.nmap_parser - INFO - Parsed 87 host records from nmap_udp_scan.xml
+backend-1  | 2025-09-24 06:55:47,041 - app.parsers.nmap_parser - INFO - Successfully parsed nmap_udp_scan.xml in 1.19 seconds
+backend-1  | 2025-09-24 06:55:47,045 - app.services.ingestion_service - INFO - Job 5: parser NmapXMLParser succeeded in 1.20s
+backend-1  | 2025-09-24 06:55:47,624 - app.parsers.nmap_parser - INFO - Processed 1900 hosts so far
+backend-1  | INFO:     127.0.0.1:45822 - "GET /health HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:33110 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:49,390 - app.parsers.nmap_parser - INFO - Processed 2000 hosts so far
+backend-1  | 2025-09-24 06:55:50,116 - app.parsers.nmap_parser - INFO - Processed 2100 hosts so far
+backend-1  | 2025-09-24 06:55:50,992 - app.parsers.nmap_parser - INFO - Processed 2200 hosts so far
+backend-1  | 2025-09-24 06:55:51,739 - app.parsers.nmap_parser - INFO - Processed 2300 hosts so far
+backend-1  | 2025-09-24 06:55:52,757 - app.parsers.nmap_parser - INFO - Processed 2400 hosts so far
+backend-1  | 2025-09-24 06:55:54,180 - app.parsers.nmap_parser - INFO - Processed 2500 hosts so far
+backend-1  | INFO:     192.168.48.4:33132 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:33146 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:33140 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:33122 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:58820 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:58814 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:57,082 - app.parsers.nmap_parser - INFO - Processed 2600 hosts so far
+backend-1  | INFO:     192.168.48.4:58826 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:58852 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:58870 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:58862 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:55:58,820 - app.parsers.nmap_parser - INFO - Processed 2700 hosts so far
+backend-1  | 2025-09-24 06:55:59,118 - app.parsers.nmap_parser - INFO - Processed 2800 hosts so far
+backend-1  | 2025-09-24 06:55:59,779 - app.parsers.nmap_parser - INFO - Processed 2900 hosts so far
+backend-1  | INFO:     192.168.48.4:58842 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:58884 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:58900 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:00,674 - app.parsers.nmap_parser - INFO - Processed 3000 hosts so far
+backend-1  | 2025-09-24 06:56:01,577 - app.parsers.nmap_parser - INFO - Processed 3100 hosts so far
+backend-1  | 2025-09-24 06:56:02,820 - app.parsers.nmap_parser - INFO - Processed 3200 hosts so far
+backend-1  | 2025-09-24 06:56:04,286 - app.parsers.nmap_parser - INFO - Processed 3300 hosts so far
+backend-1  | INFO:     192.168.48.4:58902 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:05,727 - app.parsers.nmap_parser - INFO - Processed 3400 hosts so far
+backend-1  | 2025-09-24 06:56:08,628 - app.parsers.nmap_parser - INFO - Processed 3500 hosts so far
+backend-1  | 2025-09-24 06:56:09,344 - app.parsers.nmap_parser - INFO - Processed 3600 hosts so far
+backend-1  | 2025-09-24 06:56:09,888 - app.parsers.nmap_parser - INFO - Processed 3700 hosts so far
+backend-1  | 2025-09-24 06:56:11,621 - app.parsers.nmap_parser - INFO - Processed 3800 hosts so far
+backend-1  | 2025-09-24 06:56:13,045 - app.parsers.nmap_parser - INFO - Processed 3900 hosts so far
+backend-1  | 2025-09-24 06:56:16,119 - app.parsers.nmap_parser - INFO - Processed 4000 hosts so far
+backend-1  | 2025-09-24 06:56:17,479 - app.services.ingestion_service - INFO - Queued ingestion job 6 for masscan_tcp_scan.xml (2049797 bytes)
+backend-1  | INFO:     192.168.48.4:38852 - "POST /api/v1/upload/ HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:17,491 - app.services.ingestion_service - INFO - Job 6: attempting parser NmapXMLParser for masscan_tcp_scan.xml
+backend-1  | 2025-09-24 06:56:17,491 - app.parsers.nmap_parser - INFO - Starting streamed parse of masscan_tcp_scan.xml
+backend-1  | INFO:     192.168.48.4:38862 - "GET /api/v1/upload/jobs/6 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:17,925 - app.parsers.nmap_parser - INFO - Processed 4100 hosts so far
+backend-1  | INFO:     127.0.0.1:55178 - "GET /health HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:19,632 - app.parsers.nmap_parser - INFO - Processed 4200 hosts so far
+backend-1  | 2025-09-24 06:56:20,560 - app.parsers.nmap_parser - INFO - Processed 4300 hosts so far
+backend-1  | INFO:     192.168.48.4:38870 - "GET /api/v1/scans/3 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:38872 - "GET /api/v1/hosts/scan/3 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:21,893 - app.parsers.nmap_parser - INFO - Processed 4400 hosts so far
+backend-1  | 2025-09-24 06:56:23,936 - app.parsers.nmap_parser - INFO - Processed 4500 hosts so far
+backend-1  | INFO:     192.168.48.4:38884 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:38894 - "GET /api/v1/parse-errors/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:38900 - "GET /api/v1/parse-errors/stats/summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:54170 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:54180 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:54194 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:54154 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:54204 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:54212 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:29,474 - app.parsers.nmap_parser - INFO - Processed 4600 hosts so far
+backend-1  | 2025-09-24 06:56:33,077 - app.parsers.nmap_parser - INFO - Processed 4700 hosts so far
+backend-1  | 2025-09-24 06:56:33,931 - app.parsers.nmap_parser - INFO - Processed 4800 hosts so far
+backend-1  | 2025-09-24 06:56:35,531 - app.parsers.nmap_parser - INFO - Processed 4900 hosts so far
+backend-1  | 2025-09-24 06:56:37,275 - app.parsers.nmap_parser - INFO - Processed 5000 hosts so far
+backend-1  | 2025-09-24 06:56:40,667 - app.parsers.nmap_parser - INFO - Processed 5100 hosts so far
+backend-1  | INFO:     192.168.48.4:56884 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:44,975 - app.parsers.nmap_parser - INFO - Processed 5200 hosts so far
+backend-1  | 2025-09-24 06:56:46,055 - app.parsers.nmap_parser - INFO - Processed 5300 hosts so far
+backend-1  | 2025-09-24 06:56:46,526 - app.parsers.nmap_parser - INFO - Processed 5400 hosts so far
+backend-1  | 2025-09-24 06:56:47,703 - app.parsers.nmap_parser - INFO - Processed 5500 hosts so far
+backend-1  | INFO:     127.0.0.1:43114 - "GET /health HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:48,128 - app.parsers.nmap_parser - INFO - Processed 5600 hosts so far
+backend-1  | 2025-09-24 06:56:48,802 - app.parsers.nmap_parser - INFO - Processed 5700 hosts so far
+backend-1  | 2025-09-24 06:56:49,799 - app.parsers.nmap_parser - INFO - Processed 5800 hosts so far
+backend-1  | 2025-09-24 06:56:51,591 - app.parsers.nmap_parser - INFO - Processed 5900 hosts so far
+backend-1  | 2025-09-24 06:56:52,616 - app.parsers.nmap_parser - INFO - Processed 6000 hosts so far
+backend-1  | INFO:     192.168.48.4:32926 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:32944 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:32932 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:32918 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:32958 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:32968 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:56:53,987 - app.parsers.nmap_parser - INFO - Processed 6100 hosts so far
+backend-1  | 2025-09-24 06:56:56,190 - app.parsers.nmap_parser - INFO - Processed 6200 hosts so far
+backend-1  | 2025-09-24 06:56:58,409 - app.parsers.nmap_parser - INFO - Processed 6300 hosts so far
+backend-1  | 2025-09-24 06:57:00,333 - app.parsers.nmap_parser - INFO - Processed 6400 hosts so far
+backend-1  | INFO:     192.168.48.4:55640 - "GET /api/v1/scans/7 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:55648 - "GET /api/v1/hosts/scan/7 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:57:02,457 - app.parsers.nmap_parser - INFO - Processed 6500 hosts so far
+backend-1  | INFO:     192.168.48.4:55660 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:57:04,101 - app.parsers.nmap_parser - INFO - Processed 6600 hosts so far
+backend-1  | 2025-09-24 06:57:06,434 - app.parsers.nmap_parser - ERROR - Error parsing XML file nmap_OS_enumeration.xml after 125.20 seconds: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | DETAIL:  Process 37 waits for ShareLock on transaction 822; blocked by process 33.
+backend-1  | Process 33 waits for ShareLock on transaction 774; blocked by process 37.
+backend-1  | HINT:  See server log for query details.
+backend-1  | CONTEXT:  while inserting index tuple (122,53) in relation "ix_hosts_v2_ip_address"
+backend-1  | 
+backend-1  | [SQL: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES (%(ip_address)s, %(hostname)s, %(state)s, %(state_reason)s, %(os_name)s, %(os_family)s, %(os_generation)s, %(os_type)s, %(os_vendor)s, %(os_accuracy)s, %(last_updated_scan_id)s) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen]
+backend-1  | [parameters: {'ip_address': '199.64.61.79', 'hostname': None, 'state': 'up', 'state_reason': 'reset', 'os_name': 'FreeBSD 9', 'os_family': 'FreeBSD', 'os_generation': '9.X', 'os_type': 'general purpose', 'os_vendor': 'FreeBSD', 'os_accuracy': 89, 'last_updated_scan_id': 4}]
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 06:57:06,436 - app.services.ingestion_service - WARNING - Job 3: parser NmapXMLParser failed after 125.20s: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | DETAIL:  Process 37 waits for ShareLock on transaction 822; blocked by process 33.
+backend-1  | Process 33 waits for ShareLock on transaction 774; blocked by process 37.
+backend-1  | HINT:  See server log for query details.
+backend-1  | CONTEXT:  while inserting index tuple (122,53) in relation "ix_hosts_v2_ip_address"
+backend-1  | 
+backend-1  | [SQL: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES (%(ip_address)s, %(hostname)s, %(state)s, %(state_reason)s, %(os_name)s, %(os_family)s, %(os_generation)s, %(os_type)s, %(os_vendor)s, %(os_accuracy)s, %(last_updated_scan_id)s) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen]
+backend-1  | [parameters: {'ip_address': '199.64.61.79', 'hostname': None, 'state': 'up', 'state_reason': 'reset', 'os_name': 'FreeBSD 9', 'os_family': 'FreeBSD', 'os_generation': '9.X', 'os_type': 'general purpose', 'os_vendor': 'FreeBSD', 'os_accuracy': 89, 'last_updated_scan_id': 4}]
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 06:57:06,437 - app.services.ingestion_service - INFO - Job 3: attempting parser MasscanParser for nmap_OS_enumeration.xml
+backend-1  | 2025-09-24 06:57:07,114 - app.parsers.nmap_parser - INFO - Processed 100 hosts so far
+backend-1  | 2025-09-24 06:57:07,806 - app.parsers.nmap_parser - INFO - Processed 200 hosts so far
+backend-1  | 2025-09-24 06:57:08,508 - app.parsers.nmap_parser - INFO - Processed 300 hosts so far
+backend-1  | 2025-09-24 06:57:09,354 - app.parsers.nmap_parser - INFO - Processed 400 hosts so far
+backend-1  | 2025-09-24 06:57:10,143 - app.parsers.nmap_parser - INFO - Processed 500 hosts so far
+backend-1  | 2025-09-24 06:57:10,975 - app.parsers.nmap_parser - INFO - Processed 600 hosts so far
+backend-1  | 2025-09-24 06:57:11,111 - app.parsers.masscan_parser - INFO - Masscan scan 9 correlated 0 hosts to subnets
+backend-1  | 2025-09-24 06:57:11,112 - app.parsers.masscan_parser - INFO - Masscan parser processed 0 hosts (filename=nmap_OS_enumeration.xml)
+backend-1  | 2025-09-24 06:57:11,117 - app.services.ingestion_service - INFO - Job 3: parser MasscanParser succeeded in 4.68s
+backend-1  | 2025-09-24 06:57:11,656 - app.parsers.nmap_parser - INFO - Processed 700 hosts so far
+backend-1  | 2025-09-24 06:57:12,243 - app.parsers.nmap_parser - INFO - Processed 800 hosts so far
+backend-1  | INFO:     192.168.48.4:43448 - "GET /api/v1/scans/3 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:43454 - "GET /api/v1/hosts/scan/3 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:57:12,887 - app.parsers.nmap_parser - INFO - Processed 900 hosts so far
+backend-1  | 2025-09-24 06:57:13,413 - app.parsers.nmap_parser - INFO - Processed 1000 hosts so far
+backend-1  | 2025-09-24 06:57:13,991 - app.parsers.nmap_parser - INFO - Processed 1100 hosts so far
+backend-1  | 2025-09-24 06:57:14,530 - app.parsers.nmap_parser - INFO - Processed 1200 hosts so far
+backend-1  | INFO:     192.168.48.4:43462 - "GET /api/v1/hosts/scan/3 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:43458 - "GET /api/v1/scans/3 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:57:15,199 - app.parsers.nmap_parser - INFO - Processed 1300 hosts so far
+backend-1  | 2025-09-24 06:57:15,758 - app.parsers.nmap_parser - INFO - Processed 1400 hosts so far
+backend-1  | 2025-09-24 06:57:16,283 - app.parsers.nmap_parser - INFO - Processed 1500 hosts so far
+backend-1  | 2025-09-24 06:57:16,886 - app.parsers.nmap_parser - INFO - Processed 1600 hosts so far
+backend-1  | INFO:     192.168.48.4:34886 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:34906 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:34902 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:34880 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:34912 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:34920 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:57:17,598 - app.parsers.nmap_parser - INFO - Processed 1700 hosts so far
+backend-1  | INFO:     127.0.0.1:47144 - "GET /health HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:57:18,156 - app.parsers.nmap_parser - INFO - Processed 1800 hosts so far
+backend-1  | 2025-09-24 06:57:18,726 - app.parsers.nmap_parser - INFO - Processed 1900 hosts so far
+backend-1  | 2025-09-24 06:57:19,311 - app.parsers.nmap_parser - INFO - Processed 2000 hosts so far
+backend-1  | 2025-09-24 06:57:19,857 - app.parsers.nmap_parser - INFO - Processed 2100 hosts so far
+backend-1  | 2025-09-24 06:57:20,444 - app.parsers.nmap_parser - INFO - Processed 2200 hosts so far
+backend-1  | 2025-09-24 06:57:21,018 - app.parsers.nmap_parser - INFO - Processed 2300 hosts so far
+backend-1  | 2025-09-24 06:57:21,624 - app.parsers.nmap_parser - INFO - Processed 2400 hosts so far
+backend-1  | 2025-09-24 06:57:22,174 - app.parsers.nmap_parser - INFO - Processed 2500 hosts so far
+backend-1  | 2025-09-24 06:57:22,717 - app.parsers.nmap_parser - INFO - Processed 2600 hosts so far
+backend-1  | 2025-09-24 06:57:23,240 - app.parsers.nmap_parser - INFO - Processed 2700 hosts so far
+backend-1  | 2025-09-24 06:57:23,757 - app.parsers.nmap_parser - INFO - Processed 2800 hosts so far
+backend-1  | 2025-09-24 06:57:24,291 - app.parsers.nmap_parser - INFO - Processed 2900 hosts so far
+backend-1  | 2025-09-24 06:57:24,806 - app.parsers.nmap_parser - INFO - Processed 3000 hosts so far
+backend-1  | 2025-09-24 06:57:25,350 - app.parsers.nmap_parser - INFO - Processed 3100 hosts so far
+backend-1  | 2025-09-24 06:57:25,867 - app.parsers.nmap_parser - INFO - Processed 3200 hosts so far
+backend-1  | 2025-09-24 06:57:26,405 - app.parsers.nmap_parser - INFO - Processed 3300 hosts so far
+backend-1  | 2025-09-24 06:57:26,935 - app.parsers.nmap_parser - INFO - Processed 3400 hosts so far
+backend-1  | 2025-09-24 06:57:27,453 - app.parsers.nmap_parser - INFO - Processed 3500 hosts so far
+backend-1  | 2025-09-24 06:57:27,992 - app.parsers.nmap_parser - INFO - Processed 3600 hosts so far
+backend-1  | 2025-09-24 06:57:28,534 - app.parsers.nmap_parser - INFO - Processed 3700 hosts so far
+backend-1  | 2025-09-24 06:57:29,058 - app.parsers.nmap_parser - INFO - Processed 3800 hosts so far
+backend-1  | 2025-09-24 06:57:29,573 - app.parsers.nmap_parser - INFO - Processed 3900 hosts so far
+backend-1  | 2025-09-24 06:57:30,089 - app.parsers.nmap_parser - INFO - Processed 4000 hosts so far
+backend-1  | 2025-09-24 06:57:30,606 - app.parsers.nmap_parser - INFO - Processed 4100 hosts so far
+backend-1  | 2025-09-24 06:57:31,116 - app.parsers.nmap_parser - INFO - Processed 4200 hosts so far
+backend-1  | 2025-09-24 06:57:31,638 - app.parsers.nmap_parser - INFO - Processed 4300 hosts so far
+backend-1  | 2025-09-24 06:57:32,217 - app.parsers.nmap_parser - INFO - Processed 4400 hosts so far
+backend-1  | 2025-09-24 06:57:32,737 - app.parsers.nmap_parser - INFO - Processed 4500 hosts so far
+backend-1  | 2025-09-24 06:57:33,275 - app.parsers.nmap_parser - INFO - Processed 4600 hosts so far
+backend-1  | 2025-09-24 06:57:33,848 - app.parsers.nmap_parser - INFO - Processed 4700 hosts so far
+backend-1  | 2025-09-24 06:57:34,377 - app.parsers.nmap_parser - INFO - Processed 4800 hosts so far
+backend-1  | 2025-09-24 06:57:34,895 - app.parsers.nmap_parser - INFO - Processed 4900 hosts so far
+backend-1  | 2025-09-24 06:57:35,417 - app.parsers.nmap_parser - INFO - Processed 5000 hosts so far
+backend-1  | 2025-09-24 06:57:35,930 - app.parsers.nmap_parser - INFO - Processed 5100 hosts so far
+backend-1  | 2025-09-24 06:57:36,455 - app.parsers.nmap_parser - INFO - Processed 5200 hosts so far
+backend-1  | 2025-09-24 06:57:36,982 - app.parsers.nmap_parser - INFO - Processed 5300 hosts so far
+backend-1  | 2025-09-24 06:57:37,517 - app.parsers.nmap_parser - INFO - Processed 5400 hosts so far
+backend-1  | 2025-09-24 06:57:38,031 - app.parsers.nmap_parser - INFO - Processed 5500 hosts so far
+backend-1  | 2025-09-24 06:57:38,550 - app.parsers.nmap_parser - INFO - Processed 5600 hosts so far
+backend-1  | 2025-09-24 06:57:39,066 - app.parsers.nmap_parser - INFO - Processed 5700 hosts so far
+backend-1  | 2025-09-24 06:57:39,589 - app.parsers.nmap_parser - INFO - Processed 5800 hosts so far
+backend-1  | 2025-09-24 06:57:40,110 - app.parsers.nmap_parser - INFO - Processed 5900 hosts so far
+backend-1  | 2025-09-24 06:57:40,626 - app.parsers.nmap_parser - INFO - Processed 6000 hosts so far
+backend-1  | 2025-09-24 06:57:41,127 - app.parsers.nmap_parser - INFO - Processed 6100 hosts so far
+backend-1  | 2025-09-24 06:57:41,641 - app.parsers.nmap_parser - INFO - Processed 6200 hosts so far
+backend-1  | 2025-09-24 06:57:42,151 - app.parsers.nmap_parser - INFO - Processed 6300 hosts so far
+backend-1  | 2025-09-24 06:57:42,663 - app.parsers.nmap_parser - INFO - Processed 6400 hosts so far
+backend-1  | 2025-09-24 06:57:43,181 - app.parsers.nmap_parser - INFO - Processed 6500 hosts so far
+backend-1  | 2025-09-24 06:57:43,716 - app.parsers.nmap_parser - INFO - Processed 6600 hosts so far
+backend-1  | 2025-09-24 06:57:44,243 - app.parsers.nmap_parser - INFO - Processed 6700 hosts so far
+backend-1  | 2025-09-24 06:57:44,775 - app.parsers.nmap_parser - INFO - Processed 6800 hosts so far
+backend-1  | 2025-09-24 06:57:45,294 - app.parsers.nmap_parser - INFO - Processed 6900 hosts so far
+backend-1  | 2025-09-24 06:57:45,834 - app.parsers.nmap_parser - INFO - Processed 7000 hosts so far
+backend-1  | 2025-09-24 06:57:46,349 - app.parsers.nmap_parser - INFO - Processed 7100 hosts so far
+backend-1  | 2025-09-24 06:57:46,880 - app.parsers.nmap_parser - INFO - Processed 7200 hosts so far
+backend-1  | 2025-09-24 06:57:47,394 - app.parsers.nmap_parser - INFO - Processed 7300 hosts so far
+backend-1  | 2025-09-24 06:57:47,912 - app.parsers.nmap_parser - INFO - Processed 7400 hosts so far
+backend-1  | INFO:     127.0.0.1:33292 - "GET /health HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:57:48,435 - app.parsers.nmap_parser - INFO - Processed 7500 hosts so far
+backend-1  | 2025-09-24 06:57:48,964 - app.parsers.nmap_parser - INFO - Processed 7600 hosts so far
+backend-1  | 2025-09-24 06:57:49,471 - app.parsers.nmap_parser - INFO - Processed 7700 hosts so far
+backend-1  | 2025-09-24 06:57:49,980 - app.parsers.nmap_parser - INFO - Processed 7800 hosts so far
+backend-1  | 2025-09-24 06:57:50,499 - app.parsers.nmap_parser - INFO - Processed 7900 hosts so far
+backend-1  | 2025-09-24 06:57:51,014 - app.parsers.nmap_parser - INFO - Processed 8000 hosts so far
+backend-1  | 2025-09-24 06:57:51,532 - app.parsers.nmap_parser - INFO - Processed 8100 hosts so far
+backend-1  | 2025-09-24 06:57:52,065 - app.parsers.nmap_parser - INFO - Processed 8200 hosts so far
+backend-1  | 2025-09-24 06:57:52,571 - app.parsers.nmap_parser - INFO - Processed 8300 hosts so far
+backend-1  | 2025-09-24 06:57:53,081 - app.parsers.nmap_parser - INFO - Processed 8400 hosts so far
+backend-1  | 2025-09-24 06:57:53,602 - app.parsers.nmap_parser - INFO - Processed 8500 hosts so far
+backend-1  | 2025-09-24 06:57:54,112 - app.parsers.nmap_parser - INFO - Processed 8600 hosts so far
+backend-1  | 2025-09-24 06:57:54,637 - app.parsers.nmap_parser - INFO - Processed 8700 hosts so far
+backend-1  | 2025-09-24 06:57:55,150 - app.parsers.nmap_parser - INFO - Processed 8800 hosts so far
+backend-1  | 2025-09-24 06:57:55,665 - app.parsers.nmap_parser - INFO - Processed 8900 hosts so far
+backend-1  | 2025-09-24 06:57:56,200 - app.parsers.nmap_parser - INFO - Processed 9000 hosts so far
+backend-1  | 2025-09-24 06:57:56,712 - app.parsers.nmap_parser - INFO - Processed 9100 hosts so far
+backend-1  | 2025-09-24 06:57:57,234 - app.parsers.nmap_parser - INFO - Processed 9200 hosts so far
+backend-1  | 2025-09-24 06:57:57,761 - app.parsers.nmap_parser - INFO - Processed 9300 hosts so far
+backend-1  | 2025-09-24 06:57:58,282 - app.parsers.nmap_parser - INFO - Processed 9400 hosts so far
+backend-1  | 2025-09-24 06:57:58,810 - app.parsers.nmap_parser - INFO - Processed 9500 hosts so far
+backend-1  | 2025-09-24 06:57:59,328 - app.parsers.nmap_parser - INFO - Processed 9600 hosts so far
+backend-1  | 2025-09-24 06:57:59,871 - app.parsers.nmap_parser - INFO - Processed 9700 hosts so far
+backend-1  | 2025-09-24 06:58:00,395 - app.parsers.nmap_parser - INFO - Processed 9800 hosts so far
+backend-1  | 2025-09-24 06:58:00,924 - app.parsers.nmap_parser - INFO - Processed 9900 hosts so far
+backend-1  | 2025-09-24 06:58:01,457 - app.parsers.nmap_parser - INFO - Processed 10000 hosts so far
+backend-1  | 2025-09-24 06:58:02,013 - app.parsers.nmap_parser - INFO - Processed 10100 hosts so far
+backend-1  | 2025-09-24 06:58:02,605 - app.parsers.nmap_parser - INFO - Processed 10200 hosts so far
+backend-1  | 2025-09-24 06:58:03,161 - app.parsers.nmap_parser - INFO - Processed 10300 hosts so far
+backend-1  | INFO:     192.168.48.4:50090 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:50118 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:50102 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:58:03,817 - app.parsers.nmap_parser - INFO - Processed 10400 hosts so far
+backend-1  | INFO:     192.168.48.4:50086 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:50132 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:50144 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:58:04,530 - app.parsers.nmap_parser - INFO - Processed 10500 hosts so far
+backend-1  | 2025-09-24 06:58:04,973 - app.parsers.nmap_parser - WARNING - Could not parse end time: 2025-09-09 01:01:22
+backend-1  | 2025-09-24 06:58:04,974 - app.parsers.nmap_parser - INFO - Starting subnet correlation for scan 8
+backend-1  | 2025-09-24 06:58:05,147 - app.parsers.nmap_parser - INFO - Correlated 0 hosts to subnets
+backend-1  | 2025-09-24 06:58:05,147 - app.parsers.nmap_parser - INFO - Parsed 10583 host records from masscan_tcp_scan.xml
+backend-1  | 2025-09-24 06:58:05,147 - app.parsers.nmap_parser - INFO - Successfully parsed masscan_tcp_scan.xml in 107.66 seconds
+backend-1  | 2025-09-24 06:58:05,156 - app.services.ingestion_service - INFO - Job 6: parser NmapXMLParser succeeded in 107.66s
+backend-1  | INFO:     192.168.48.4:57156 - "GET /api/v1/dashboard/os-stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:57188 - "GET /api/v1/upload/jobs?limit=5 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:57172 - "GET /api/v1/dashboard/risk-insights HTTP/1.1" 200 OK
+backend-1  | INFO:     127.0.0.1:35800 - "GET /health HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:57142 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:57204 - "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:57196 - "GET /api/v1/risk/hosts/risk-summary HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:60032 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | INFO:     127.0.0.1:51208 - "GET /health HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:54872 - "GET /api/v1/scans/?skip=0&limit=100 HTTP/1.1" 200 OK
+backend-1  | INFO:     127.0.0.1:50042 - "GET /health HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:59:31,375 - app.services.ingestion_service - INFO - Queued ingestion job 7 for Solstice - Basic Network Scan_7979q7.nessus (397642558 bytes)
+backend-1  | INFO:     192.168.48.4:51832 - "POST /api/v1/upload/ HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:59:31,384 - app.services.ingestion_service - INFO - Job 7: attempting parser NessusIntegrationService for Solstice - Basic Network Scan_7979q7.nessus
+backend-1  | 2025-09-24 06:59:31,457 - app.services.nessus_integration_service - INFO - Processed 19 vulnerabilities for host 199.64.220.249
+backend-1  | INFO:     192.168.48.4:51838 - "GET /api/v1/upload/jobs/7 HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:59:31,505 - app.services.nessus_integration_service - INFO - Processed 19 vulnerabilities for host 199.64.220.241
+backend-1  | 2025-09-24 06:59:31,656 - app.services.nessus_integration_service - INFO - Processed 73 vulnerabilities for host 199.64.220.133
+backend-1  | 2025-09-24 06:59:31,802 - app.services.nessus_integration_service - INFO - Processed 72 vulnerabilities for host 199.64.220.132
+backend-1  | 2025-09-24 06:59:31,936 - app.services.nessus_integration_service - INFO - Processed 70 vulnerabilities for host 199.64.220.131
+backend-1  | 2025-09-24 06:59:31,971 - app.services.nessus_integration_service - INFO - Processed 19 vulnerabilities for host 199.64.220.129
+backend-1  | 2025-09-24 06:59:32,001 - app.services.nessus_integration_service - INFO - Processed 22 vulnerabilities for host 199.64.189.44
+backend-1  | 2025-09-24 06:59:32,031 - app.services.nessus_integration_service - INFO - Processed 22 vulnerabilities for host 199.64.189.43
+backend-1  | 2025-09-24 06:59:32,061 - app.services.nessus_integration_service - INFO - Processed 22 vulnerabilities for host 199.64.189.34
+backend-1  | 2025-09-24 06:59:32,091 - app.services.nessus_integration_service - INFO - Processed 22 vulnerabilities for host 199.64.189.33
+backend-1  | 2025-09-24 06:59:32,195 - app.services.nessus_integration_service - INFO - Processed 53 vulnerabilities for host 199.64.189.28
+backend-1  | 2025-09-24 06:59:32,401 - app.services.nessus_integration_service - INFO - Processed 105 vulnerabilities for host 199.64.189.27
+backend-1  | 2025-09-24 06:59:32,428 - app.services.nessus_integration_service - INFO - Processed 15 vulnerabilities for host 199.64.189.1
+backend-1  | 2025-09-24 06:59:32,462 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.161.119
+backend-1  | 2025-09-24 06:59:32,494 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.161.118
+backend-1  | 2025-09-24 06:59:32,526 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.161.117
+backend-1  | 2025-09-24 06:59:32,570 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.161.116
+backend-1  | 2025-09-24 06:59:32,610 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.161.115
+backend-1  | 2025-09-24 06:59:32,649 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.161.114
+backend-1  | 2025-09-24 06:59:32,683 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.161.113
+backend-1  | 2025-09-24 06:59:32,719 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.161.112
+backend-1  | 2025-09-24 06:59:32,870 - app.services.nessus_integration_service - INFO - Processed 72 vulnerabilities for host 199.64.161.9
+backend-1  | 2025-09-24 06:59:33,015 - app.services.nessus_integration_service - INFO - Processed 72 vulnerabilities for host 199.64.161.8
+backend-1  | 2025-09-24 06:59:33,079 - app.services.nessus_integration_service - INFO - Processed 31 vulnerabilities for host 199.64.161.1
+backend-1  | 2025-09-24 06:59:33,111 - app.services.nessus_integration_service - INFO - Processed 22 vulnerabilities for host 199.64.152.148
+backend-1  | 2025-09-24 06:59:33,144 - app.services.nessus_integration_service - INFO - Processed 22 vulnerabilities for host 199.64.152.147
+backend-1  | 2025-09-24 06:59:33,180 - app.services.nessus_integration_service - INFO - Processed 8 vulnerabilities for host 199.64.152.137
+backend-1  | 2025-09-24 06:59:33,329 - app.services.nessus_integration_service - INFO - Processed 66 vulnerabilities for host 199.64.152.132
+backend-1  | 2025-09-24 06:59:33,376 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.152.125
+backend-1  | 2025-09-24 06:59:33,433 - app.services.nessus_integration_service - INFO - Processed 23 vulnerabilities for host 199.64.152.124
+backend-1  | 2025-09-24 06:59:33,454 - app.services.nessus_integration_service - INFO - Processed 10 vulnerabilities for host 199.64.152.106
+backend-1  | 2025-09-24 06:59:33,569 - app.services.nessus_integration_service - INFO - Processed 57 vulnerabilities for host 199.64.152.101
+backend-1  | 2025-09-24 06:59:33,622 - app.services.nessus_integration_service - INFO - Processed 31 vulnerabilities for host 199.64.152.100
+backend-1  | 2025-09-24 06:59:33,629 - app.services.nessus_integration_service - INFO - Processed 3 vulnerabilities for host 199.64.152.87
+backend-1  | 2025-09-24 06:59:33,726 - app.services.nessus_integration_service - INFO - Processed 49 vulnerabilities for host 199.64.152.85
+backend-1  | 2025-09-24 06:59:33,769 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.152.72
+backend-1  | 2025-09-24 06:59:33,885 - app.services.nessus_integration_service - INFO - Processed 56 vulnerabilities for host 199.64.152.70
+backend-1  | 2025-09-24 06:59:33,934 - app.services.nessus_integration_service - INFO - Processed 23 vulnerabilities for host 199.64.152.57
+backend-1  | 2025-09-24 06:59:33,959 - app.services.nessus_integration_service - INFO - Processed 8 vulnerabilities for host 199.64.152.55
+backend-1  | 2025-09-24 06:59:34,052 - app.services.nessus_integration_service - INFO - Processed 37 vulnerabilities for host 199.64.152.52
+backend-1  | 2025-09-24 06:59:34,103 - app.services.nessus_integration_service - INFO - Processed 17 vulnerabilities for host 199.64.152.25
+backend-1  | 2025-09-24 06:59:34,128 - app.services.nessus_integration_service - INFO - Processed 8 vulnerabilities for host 199.64.152.23
+backend-1  | 2025-09-24 06:59:34,191 - app.services.nessus_integration_service - INFO - Processed 31 vulnerabilities for host 199.64.152.9
+backend-1  | 2025-09-24 06:59:34,244 - app.services.nessus_integration_service - INFO - Processed 31 vulnerabilities for host 199.64.152.4
+backend-1  | 2025-09-24 06:59:34,251 - app.services.nessus_integration_service - INFO - Processed 3 vulnerabilities for host 199.64.152.2
+backend-1  | 2025-09-24 06:59:34,276 - app.services.nessus_integration_service - INFO - Processed 15 vulnerabilities for host 199.64.152.1
+backend-1  | 2025-09-24 06:59:34,284 - app.services.nessus_integration_service - INFO - Processed 3 vulnerabilities for host 199.64.151.202
+backend-1  | 2025-09-24 06:59:34,291 - app.services.nessus_integration_service - INFO - Processed 3 vulnerabilities for host 199.64.151.201
+backend-1  | 2025-09-24 06:59:34,370 - app.services.nessus_integration_service - INFO - Processed 37 vulnerabilities for host 199.64.151.178
+backend-1  | 2025-09-24 06:59:34,449 - app.services.nessus_integration_service - INFO - Processed 42 vulnerabilities for host 199.64.151.177
+backend-1  | 2025-09-24 06:59:34,465 - app.services.nessus_integration_service - INFO - Processed 3 vulnerabilities for host 199.64.151.168
+backend-1  | 2025-09-24 06:59:34,582 - app.services.nessus_integration_service - INFO - Processed 37 vulnerabilities for host 199.64.151.157
+backend-1  | 2025-09-24 06:59:34,696 - app.services.nessus_integration_service - INFO - Processed 32 vulnerabilities for host 199.64.151.153
+backend-1  | 2025-09-24 06:59:34,745 - app.services.nessus_integration_service - INFO - Processed 16 vulnerabilities for host 199.64.151.145
+
+backend-1  | 2025-09-24 07:05:45,997 - app.services.nessus_integration_service - INFO - Processed 51 vulnerabilities for host 10.12.16.5
+backend-1  | 2025-09-24 07:05:46,025 - app.services.nessus_integration_service - INFO - Processed 15 vulnerabilities for host 10.12.16.1
+backend-1  | 2025-09-24 07:05:46,033 - app.services.ingestion_service - ERROR - Failed ingestion job 7
+backend-1  | Traceback (most recent call last):
+backend-1  |   File "/app/app/services/ingestion_service.py", line 270, in _process_job
+backend-1  |     job.id,
+backend-1  |     ^^^^^^
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 569, in __get__
+backend-1  |     return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+backend-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1096, in get
+backend-1  |     value = self._fire_loader_callables(state, key, passive)
+backend-1  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1126, in _fire_loader_callables
+backend-1  |     return state._load_expired(state, passive)
+backend-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/state.py", line 803, in _load_expired
+backend-1  |     self.manager.expired_attribute_loader(self, toload, passive)
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/loading.py", line 1607, in load_scalar_attributes
+backend-1  |     raise orm_exc.DetachedInstanceError(
+backend-1  | sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7fc275cd8750> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
+backend-1  | 
+backend-1  | During handling of the above exception, another exception occurred:
+backend-1  | 
+backend-1  | Traceback (most recent call last):
+backend-1  |   File "/app/app/services/ingestion_service.py", line 192, in _run_job
+backend-1  |     result = self._process_job(db, job)
+backend-1  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend-1  |   File "/app/app/services/ingestion_service.py", line 280, in _process_job
+backend-1  |     job.id,
+backend-1  |     ^^^^^^
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 569, in __get__
+backend-1  |     return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+backend-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1096, in get
+backend-1  |     value = self._fire_loader_callables(state, key, passive)
+backend-1  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/attributes.py", line 1126, in _fire_loader_callables
+backend-1  |     return state._load_expired(state, passive)
+backend-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/state.py", line 803, in _load_expired
+backend-1  |     self.manager.expired_attribute_loader(self, toload, passive)
+backend-1  |   File "/opt/venv/lib/python3.11/site-packages/sqlalchemy/orm/loading.py", line 1607, in load_scalar_attributes
+backend-1  |     raise orm_exc.DetachedInstanceError(
+backend-1  | sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7fc275cd8750> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
+backend-1  | INFO:     192.168.48.4:49522 - "GET /api/v1/upload/jobs/7 HTTP/1.1" 200 OK
+
 
 === DATABASE CONTAINER LOGS ===
 db-1  | 
 db-1  | PostgreSQL Database directory appears to contain a database; Skipping initialization
 db-1  | 
-db-1  | 2025-09-24 06:35:39.601 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-db-1  | 2025-09-24 06:35:39.601 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-db-1  | 2025-09-24 06:35:39.601 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-db-1  | 2025-09-24 06:35:39.603 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-db-1  | 2025-09-24 06:35:39.608 UTC [31] LOG:  database system was shut down at 2025-09-24 06:35:14 UTC
-db-1  | 2025-09-24 06:35:39.613 UTC [1] LOG:  database system is ready to accept connections
-db-1  | 2025-09-24 06:36:17.294 UTC [42] ERROR:  relation "ingestion_jobs" does not exist at character 128
-db-1  | 2025-09-24 06:36:17.294 UTC [42] STATEMENT:  SELECT id, original_filename, status, tool_name, file_size, message, parse_error_id, created_at, started_at, completed_at FROM ingestion_jobs ORDER BY created_at DESC LIMIT 25;
-db-1  | 2025-09-24 06:36:17.440 UTC [49] ERROR:  relation "parse_errors" does not exist at character 69
-db-1  | 2025-09-24 06:36:17.440 UTC [49] STATEMENT:  SELECT id, filename, file_type, error_type, status, created_at FROM parse_errors ORDER BY created_at DESC LIMIT 25;
+db-1  | 2025-09-24 06:53:47.385 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+db-1  | 2025-09-24 06:53:47.385 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+db-1  | 2025-09-24 06:53:47.385 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+db-1  | 2025-09-24 06:53:47.386 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1  | 2025-09-24 06:53:47.390 UTC [29] LOG:  database system was shut down at 2025-09-24 06:48:55 UTC
+db-1  | 2025-09-24 06:53:47.399 UTC [1] LOG:  database system is ready to accept connections
+db-1  | 2025-09-24 06:53:49.306 UTC [33] ERROR:  relation "ingestion_jobs" does not exist
+db-1  | 2025-09-24 06:53:49.306 UTC [33] STATEMENT:  ALTER TABLE ingestion_jobs ADD COLUMN IF NOT EXISTS parse_error_id INTEGER
+db-1  | 2025-09-24 06:55:00.077 UTC [36] ERROR:  deadlock detected
+db-1  | 2025-09-24 06:55:00.077 UTC [36] DETAIL:  Process 36 waits for ShareLock on transaction 764; blocked by process 33.
+db-1  | 	Process 33 waits for ShareLock on transaction 758; blocked by process 36.
+db-1  | 	Process 36: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('10.159.37.182', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 	Process 33: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('10.161.14.66', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 2025-09-24 06:55:00.077 UTC [36] HINT:  See server log for query details.
+db-1  | 2025-09-24 06:55:00.077 UTC [36] CONTEXT:  while inserting index tuple (29,4) in relation "ix_hosts_v2_ip_address"
+db-1  | 2025-09-24 06:55:00.077 UTC [36] STATEMENT:  INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('10.159.37.182', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 2025-09-24 06:55:11.573 UTC [33] ERROR:  deadlock detected
+db-1  | 2025-09-24 06:55:11.573 UTC [33] DETAIL:  Process 33 waits for ShareLock on transaction 774; blocked by process 37.
+db-1  | 	Process 37 waits for ShareLock on transaction 764; blocked by process 33.
+db-1  | 	Process 33: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('10.88.35.11', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 	Process 37: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('10.88.57.12', NULL, 'up', 'echo-reply', 'Nintendo Wii game console', 'embedded', NULL, 'game console', 'Nintendo', 93, 4) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 2025-09-24 06:55:11.573 UTC [33] HINT:  See server log for query details.
+db-1  | 2025-09-24 06:55:11.573 UTC [33] CONTEXT:  while inserting index tuple (44,83) in relation "ix_hosts_v2_ip_address"
+db-1  | 2025-09-24 06:55:11.573 UTC [33] STATEMENT:  INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('10.88.35.11', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 2025-09-24 06:57:06.433 UTC [37] ERROR:  deadlock detected
+db-1  | 2025-09-24 06:57:06.433 UTC [37] DETAIL:  Process 37 waits for ShareLock on transaction 822; blocked by process 33.
+db-1  | 	Process 33 waits for ShareLock on transaction 774; blocked by process 37.
+db-1  | 	Process 37: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('199.64.61.79', NULL, 'up', 'reset', 'FreeBSD 9', 'FreeBSD', '9.X', 'general purpose', 'FreeBSD', 89, 4) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 	Process 33: INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('10.88.102.132', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 8) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 2025-09-24 06:57:06.433 UTC [37] HINT:  See server log for query details.
+db-1  | 2025-09-24 06:57:06.433 UTC [37] CONTEXT:  while inserting index tuple (122,53) in relation "ix_hosts_v2_ip_address"
+db-1  | 2025-09-24 06:57:06.433 UTC [37] STATEMENT:  INSERT INTO hosts_v2 (ip_address, hostname, state, state_reason, os_name, os_family, os_generation, os_type, os_vendor, os_accuracy, last_updated_scan_id) VALUES ('199.64.61.79', NULL, 'up', 'reset', 'FreeBSD 9', 'FreeBSD', '9.X', 'general purpose', 'FreeBSD', 89, 4) RETURNING hosts_v2.id, hosts_v2.first_seen, hosts_v2.last_seen
+db-1  | 2025-09-24 06:58:47.489 UTC [27] LOG:  checkpoint starting: time
+db-1  | 2025-09-24 07:03:17.110 UTC [27] LOG:  checkpoint complete: wrote 4258 buffers (26.0%); 0 WAL file(s) added, 3 removed, 2 recycled; write=269.597 s, sync=0.013 s, total=269.621 s; sync files=350, longest=0.004 s, average=0.001 s; distance=80247 kB, estimate=80247 kB
+db-1  | 2025-09-24 07:03:47.139 UTC [27] LOG:  checkpoint starting: time
+db-1  | 2025-09-24 07:08:17.063 UTC [27] LOG:  checkpoint complete: wrote 9252 buffers (56.5%); 0 WAL file(s) added, 0 removed, 10 recycled; write=269.919 s, sync=0.001 s, total=269.925 s; sync files=69, longest=0.001 s, average=0.001 s; distance=163500 kB, estimate=163500 kB
+db-1  | 2025-09-24 07:47:33.968 UTC [200] ERROR:  syntax error at or near "NOT" at character 46
+db-1  | 2025-09-24 07:47:33.968 UTC [200] STATEMENT:  ALTER TABLE ingestion_jobs ADD CONSTRAINT IF NOT EXISTS ingestion_jobs_parse_error_id_fkey FOREIGN KEY (parse_error_id) REFERENCES parse_errors(id)
+
+=== ERROR PATTERN ANALYSIS ===
+Recent errors in backend logs:
+backend-1  | 2025-09-24 06:55:11,575 - app.parsers.nmap_parser - ERROR - Error parsing XML file massscan_udp.xml after 21.26 seconds: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 06:55:11,577 - app.services.ingestion_service - WARNING - Job 2: parser NmapXMLParser failed after 21.27s: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | INFO:     192.168.48.4:38894 - "GET /api/v1/parse-errors/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:38900 - "GET /api/v1/parse-errors/stats/summary HTTP/1.1" 200 OK
+backend-1  | 2025-09-24 06:57:06,434 - app.parsers.nmap_parser - ERROR - Error parsing XML file nmap_OS_enumeration.xml after 125.20 seconds: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 06:57:06,436 - app.services.ingestion_service - WARNING - Job 3: parser NmapXMLParser failed after 125.20s: (psycopg2.errors.DeadlockDetected) deadlock detected
+backend-1  | (Background on this error at: https://sqlalche.me/e/20/e3q8)
+backend-1  | 2025-09-24 07:05:46,033 - app.services.ingestion_service - ERROR - Failed ingestion job 7
+backend-1  | Traceback (most recent call last):
+backend-1  |     raise orm_exc.DetachedInstanceError(
+backend-1  | sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7fc275cd8750> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
+backend-1  | During handling of the above exception, another exception occurred:
+backend-1  | Traceback (most recent call last):
+backend-1  |     raise orm_exc.DetachedInstanceError(
+backend-1  | sqlalchemy.orm.exc.DetachedInstanceError: Instance <IngestionJob at 0x7fc275cd8750> is not bound to a Session; attribute refresh operation cannot proceed (Background on this error at: https://sqlalche.me/e/20/bhk3)
+backend-1  | INFO:     192.168.48.4:56592 - "GET /api/v1/parse-errors/ HTTP/1.1" 200 OK
+backend-1  | INFO:     192.168.48.4:56604 - "GET /api/v1/parse-errors/stats/summary HTTP/1.1" 200 OK
+
+Recent CORS-related issues:
+backend-1   | 2025-09-24T06:53:49.804320521Z 2025-09-24 06:53:49,804 - app.main - INFO - CORS origins: ['https://10.32.56.174']
+
+Database connection issues:

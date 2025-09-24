@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -34,8 +34,8 @@ import {
   Visibility as ViewIcon,
   CloudUpload as UploadIcon,
 } from '@mui/icons-material';
-import { getScans, deleteScan, uploadFile } from '../services/api';
-import type { Scan } from '../services/api';
+import { getScans, deleteScan, uploadFile, getIngestionJob } from '../services/api';
+import type { Scan, IngestionJob } from '../services/api';
 
 export default function Scans() {
   const navigate = useNavigate();
@@ -51,8 +51,10 @@ export default function Scans() {
   const [enrichDns, setEnrichDns] = useState(false);
   const [dnsServerType, setDnsServerType] = useState<'default' | 'custom'>('default');
   const [customDnsServer, setCustomDnsServer] = useState('');
+  const [activeJobId, setActiveJobId] = useState<number | null>(null);
+  const [activeJob, setActiveJob] = useState<IngestionJob | null>(null);
 
-  const fetchScans = async () => {
+  const fetchScans = useCallback(async () => {
     try {
       const data = await getScans();
       setScans(data);
@@ -61,11 +63,11 @@ export default function Scans() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchScans();
-  }, []);
+  }, [fetchScans]);
 
   // Upload functionality
   const onDrop = async (acceptedFiles: File[]) => {
@@ -89,15 +91,10 @@ export default function Scans() {
       } : { enabled: false };
       
       const result = await uploadFile(file, dnsConfig);
-      setUploadSuccess(`File "${result.filename}" uploaded successfully!`);
-      
-      // Refresh the scans list to show the new upload
-      await fetchScans();
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setUploadSuccess(null);
-      }, 3000);
+      setUploadSuccess(`File "${result.filename}" queued for processing…`);
+      setActiveJobId(result.job_id);
+      setActiveJob(null);
+      setUploadError(null);
     } catch (err: any) {
       setUploadError(err.response?.data?.detail || 'Upload failed. Please try again.');
     } finally {
@@ -108,14 +105,83 @@ export default function Scans() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'text/xml': ['.xml'],
+      'text/xml': ['.xml', '.nessus'],
       'application/json': ['.json'],
       'text/csv': ['.csv'],
-      'text/plain': ['.txt', '.gnmap'],
-      'application/xml': ['.nessus']
+      'text/plain': ['.txt', '.gnmap']
     },
     multiple: false,
   });
+
+  useEffect(() => {
+    if (activeJobId === null) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const pollJob = async () => {
+      try {
+        const job = await getIngestionJob(activeJobId);
+        if (cancelled) return true;
+        setActiveJob(job);
+
+        if (job.status === 'completed') {
+          setUploadSuccess(job.message || 'Scan processed successfully.');
+          setUploadError(null);
+          setActiveJobId(null);
+          setTimeout(() => setUploadSuccess(null), 4000);
+          fetchScans();
+          return false;
+        }
+
+        if (job.status === 'failed') {
+          setUploadError(job.error_message || 'Scan processing failed.');
+          setUploadSuccess(null);
+          setActiveJobId(null);
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to fetch ingestion job status:', error);
+        }
+        return true;
+      }
+    };
+
+    pollJob().then((shouldContinue) => {
+      if (cancelled || !shouldContinue) {
+        return;
+      }
+      interval = setInterval(async () => {
+        const keepGoing = await pollJob();
+        if (!keepGoing && interval) {
+          clearInterval(interval);
+        }
+      }, 4000);
+    });
+
+    return () => {
+      cancelled = true;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [activeJobId, fetchScans]);
+
+  const groupedScans = scans.reduce<Record<string, Scan[]>>((acc, scan) => {
+    const key = (scan.tool_name || scan.scan_type || 'Other').toUpperCase();
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(scan);
+    return acc;
+  }, {});
+
+  const orderedToolGroups = Object.keys(groupedScans).sort((a, b) => a.localeCompare(b));
 
   const handleViewScan = (scanId: number) => {
     navigate(`/scans/${scanId}`);
@@ -187,7 +253,7 @@ export default function Scans() {
           Drag and drop your scan files here, or click to select files
         </Typography>
         <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-          Supported formats: Nmap XML, Eyewitness JSON/CSV, Masscan XML/JSON/List
+          Supported formats: Nmap XML, Eyewitness JSON/CSV, Masscan XML/JSON/List, Nessus (.nessus)
         </Typography>
         
         <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1, border: 1, borderColor: 'divider' }}>
@@ -325,8 +391,16 @@ export default function Scans() {
         </Alert>
       )}
       {uploadSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }}>
+        <Alert severity={activeJobId ? 'info' : 'success'} sx={{ mb: 2 }}>
           {uploadSuccess}
+        </Alert>
+      )}
+      {activeJob && activeJob.status !== 'completed' && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <strong>Processing:</strong> {activeJob.original_filename}{' '}
+          <Typography component="span" variant="body2" color="text.secondary">
+            {activeJob.message || 'Working through the file in the background…'}
+          </Typography>
         </Alert>
       )}
 
@@ -337,37 +411,45 @@ export default function Scans() {
         Your Scans
       </Typography>
 
-      {scans.length === 0 ? (
+      {orderedToolGroups.length === 0 ? (
         <Box textAlign="center" py={4}>
           <Typography variant="body1" color="text.secondary">
             No scans uploaded yet. Use the upload area above to get started.
           </Typography>
         </Box>
       ) : (
-        <Grid container spacing={2}>
-          {scans.map((scan) => (
-            <Grid item xs={12} key={scan.id}>
-              <Card 
-                sx={{ 
-                  '&:hover': { 
-                    boxShadow: 4, 
-                    cursor: 'pointer' 
-                  } 
-                }}
-                onClick={() => handleViewScan(scan.id)}
-              >
-                <CardContent sx={{ py: 2 }}>
+        orderedToolGroups.map((group) => (
+          <Box key={group} sx={{ mb: 4 }}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+              <Typography variant="h6" sx={{ textTransform: 'uppercase' }}>
+                {group}
+              </Typography>
+              <Chip label={`${groupedScans[group].length} scans`} size="small" variant="outlined" />
+            </Box>
+            <Grid container spacing={2}>
+              {groupedScans[group].map((scan) => (
+                <Grid item xs={12} key={scan.id}>
+                  <Card 
+                    sx={{ 
+                      '&:hover': { 
+                        boxShadow: 4, 
+                        cursor: 'pointer' 
+                      } 
+                    }}
+                    onClick={() => handleViewScan(scan.id)}
+                  >
+                    <CardContent sx={{ py: 2 }}>
                   <Box>
                     {/* Top section - Main scan info and actions */}
                     <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                       <Box flex={1} mr={2}>
                         <Box display="flex" alignItems="center" gap={2} mb={1} flexWrap="wrap">
                           <Typography variant="h6" component="div" sx={{ wordBreak: 'break-all', minWidth: 0, flex: 1 }}>
-                            {scan.filename}
+                          {scan.filename}
                           </Typography>
-                          {scan.scan_type && (
+                          {(scan.tool_name || scan.scan_type) && (
                             <Chip
-                              label={scan.scan_type}
+                              label={scan.tool_name || scan.scan_type || 'Unknown'}
                               size="small"
                               color="primary"
                               variant="outlined"
@@ -449,10 +531,12 @@ export default function Scans() {
                     </Box>
                   </Box>
                 </CardContent>
-              </Card>
+                </Card>
+              </Grid>
+              ))}
             </Grid>
-          ))}
-        </Grid>
+          </Box>
+        ))
       )}
 
       {/* Delete Confirmation Dialog */}

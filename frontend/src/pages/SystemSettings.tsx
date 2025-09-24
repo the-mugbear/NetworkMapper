@@ -78,6 +78,47 @@ interface EditUserForm {
   is_active: boolean;
 }
 
+const formatApiError = (error: any): string => {
+  const detail = error?.response?.data?.detail;
+
+  if (!detail) {
+    return error?.message || 'An unexpected error occurred. Please try again.';
+  }
+
+  if (typeof detail === 'string') {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item;
+        }
+        const location = Array.isArray(item?.loc) ? item.loc.join('.') : item?.loc;
+        if (item?.msg && location) {
+          return `${location}: ${item.msg}`;
+        }
+        return item?.msg || JSON.stringify(item);
+      })
+      .join('; ');
+  }
+
+  if (typeof detail === 'object') {
+    const message = detail?.msg || detail?.message;
+    if (message) {
+      return message;
+    }
+    try {
+      return JSON.stringify(detail);
+    } catch (err) {
+      return 'Request failed validation. Please check your input.';
+    }
+  }
+
+  return String(detail);
+};
+
 const SystemSettings: React.FC = () => {
   const { user: currentUser, hasPermission } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -128,7 +169,7 @@ const SystemSettings: React.FC = () => {
     } catch (error: any) {
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to load users'
+        text: formatApiError(error)
       });
     } finally {
       setLoading(false);
@@ -148,7 +189,7 @@ const SystemSettings: React.FC = () => {
     } catch (error: any) {
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to create user'
+        text: formatApiError(error)
       });
     } finally {
       setSaving(false);
@@ -169,7 +210,7 @@ const SystemSettings: React.FC = () => {
     } catch (error: any) {
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to update user'
+        text: formatApiError(error)
       });
     } finally {
       setSaving(false);
@@ -192,7 +233,7 @@ const SystemSettings: React.FC = () => {
     } catch (error: any) {
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to reset password'
+        text: formatApiError(error)
       });
     } finally {
       setSaving(false);
@@ -213,7 +254,7 @@ const SystemSettings: React.FC = () => {
     } catch (error: any) {
       setMessage({
         type: 'error',
-        text: error.response?.data?.detail || 'Failed to delete user'
+        text: formatApiError(error)
       });
     } finally {
       setSaving(false);

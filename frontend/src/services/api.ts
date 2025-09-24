@@ -49,11 +49,21 @@ export interface Scan {
   id: number;
   filename: string;
   scan_type: string | null;
+  tool_name: string | null;
   created_at: string;
   total_hosts: number;
   up_hosts: number;
   total_ports: number;
   open_ports: number;
+}
+
+export interface HostVulnerabilitySummary {
+  total_vulnerabilities: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  info: number;
 }
 
 export interface Host {
@@ -63,6 +73,29 @@ export interface Host {
   state: string | null;
   os_name: string | null;
   ports: Port[];
+  vulnerability_summary?: HostVulnerabilitySummary;
+  follow?: HostFollowInfo | null;
+  notes?: HostNote[];
+  note_count?: number;
+}
+
+export type FollowStatus = 'watching' | 'in_review' | 'reviewed';
+export type NoteStatus = 'open' | 'in_progress' | 'resolved';
+
+export interface HostFollowInfo {
+  status: FollowStatus;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface HostNote {
+  id: number;
+  body: string;
+  status: NoteStatus;
+  author_id: number;
+  author_name: string | null;
+  created_at: string;
+  updated_at?: string | null;
 }
 
 export interface Port {
@@ -126,6 +159,16 @@ export interface HostConflict {
   additional_factors?: any;
 }
 
+export interface VulnerabilityStats {
+  total_vulnerabilities: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  info: number;
+  hosts_with_vulnerabilities: number;
+}
+
 export interface DashboardStats {
   total_scans: number;
   total_hosts: number;
@@ -135,6 +178,25 @@ export interface DashboardStats {
   total_subnets: number;
   recent_scans: Scan[];
   subnet_stats: SubnetStats[];
+  vulnerability_stats?: VulnerabilityStats;
+  note_activity?: NoteActivitySummary;
+}
+export interface NoteActivityEntry {
+  note_id: number;
+  host_id: number;
+  ip_address: string;
+  hostname: string | null;
+  status: NoteStatus;
+  preview: string;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface NoteActivitySummary {
+  total_notes: number;
+  active_host_count: number;
+  following_count: number;
+  recent_notes: NoteActivityEntry[];
 }
 
 export interface Scope {
@@ -214,13 +276,92 @@ export interface OutOfScopeHost {
   created_at: string;
 }
 
+export interface FileUploadResponse {
+  job_id: number;
+  filename: string;
+  status: string;
+  message: string;
+  scan_id: number | null;
+}
+
+export interface IngestionJob {
+  id: number;
+  filename: string;
+  original_filename: string;
+  status: string;
+  message?: string;
+  error_message?: string;
+  tool_name?: string;
+  file_size?: number;
+  scan_id?: number | null;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+}
+
+export interface PortOfInterestSummary {
+  port: number;
+  protocol: string;
+  label: string;
+  category: string;
+  weight: number;
+  open_host_count: number;
+  rationale: string;
+  recommended_action: string;
+}
+
+export interface PortOfInterestHostEntry {
+  port: number;
+  protocol: string;
+  label: string;
+  service: string;
+  weight: number;
+  category: string;
+}
+
+export interface HostRiskExposure {
+  host_id: number;
+  ip_address: string;
+  hostname: string | null;
+  ports_of_interest: PortOfInterestHostEntry[];
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  risk_score: number;
+  port_score: number;
+  vulnerability_score: number;
+}
+
+export interface VulnerabilityHotspot {
+  host_id: number;
+  ip_address: string;
+  hostname: string | null;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  risk_score: number;
+}
+
+export interface RiskInsightResponse {
+  ports_of_interest: {
+    summary: PortOfInterestSummary[];
+    top_hosts: HostRiskExposure[];
+  };
+  vulnerability_hotspots: VulnerabilityHotspot[];
+}
+
 // Upload API
 interface DnsConfig {
   enabled: boolean;
   server?: string;
 }
 
-export const uploadFile = async (file: File, dnsConfig: DnsConfig = { enabled: false }) => {
+export const uploadFile = async (
+  file: File,
+  dnsConfig: DnsConfig = { enabled: false }
+): Promise<FileUploadResponse> => {
   const formData = new FormData();
   formData.append('file', file);
   if (dnsConfig.enabled) {
@@ -230,13 +371,63 @@ export const uploadFile = async (file: File, dnsConfig: DnsConfig = { enabled: f
     }
   }
   
-  const response = await api.post('/upload/', formData, {
+  const response = await api.post<FileUploadResponse>('/upload/', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
   
   return response.data;
+};
+
+export const getIngestionJob = async (jobId: number): Promise<IngestionJob> => {
+  const response = await api.get(`/upload/jobs/${jobId}`);
+  return response.data;
+};
+
+export const getRiskInsights = async (): Promise<RiskInsightResponse> => {
+  const response = await api.get('/dashboard/risk-insights');
+  return response.data;
+};
+
+export const getRecentIngestionJobs = async (limit = 5): Promise<IngestionJob[]> => {
+  const response = await api.get(`/upload/jobs?limit=${limit}`);
+  return response.data;
+};
+
+export const followHost = async (hostId: number, status: FollowStatus): Promise<HostFollowInfo> => {
+  const response = await api.post(`/hosts/${hostId}/follow`, { status });
+  return response.data;
+};
+
+export const unfollowHost = async (hostId: number): Promise<void> => {
+  await api.delete(`/hosts/${hostId}/follow`);
+};
+
+export const getHostNotes = async (hostId: number): Promise<HostNote[]> => {
+  const response = await api.get(`/hosts/${hostId}/notes`);
+  return response.data;
+};
+
+export const createHostNote = async (
+  hostId: number,
+  payload: { body: string; status?: NoteStatus },
+): Promise<HostNote> => {
+  const response = await api.post(`/hosts/${hostId}/notes`, payload);
+  return response.data;
+};
+
+export const updateHostNote = async (
+  hostId: number,
+  noteId: number,
+  payload: { body?: string; status?: NoteStatus },
+): Promise<HostNote> => {
+  const response = await api.patch(`/hosts/${hostId}/notes/${noteId}`, payload);
+  return response.data;
+};
+
+export const deleteHostNote = async (hostId: number, noteId: number): Promise<void> => {
+  await api.delete(`/hosts/${hostId}/notes/${noteId}`);
 };
 
 // Scans API

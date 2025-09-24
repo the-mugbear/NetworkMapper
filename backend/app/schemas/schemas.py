@@ -1,6 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
+from enum import Enum
 
 class ScriptBase(BaseModel):
     script_id: str
@@ -59,12 +60,92 @@ class HostBase(BaseModel):
     os_vendor: Optional[str] = None
     os_accuracy: Optional[int] = None
 
+
+class FollowStatus(str, Enum):
+    watching = "watching"
+    in_review = "in_review"
+    reviewed = "reviewed"
+
+
+class NoteStatus(str, Enum):
+    open = "open"
+    in_progress = "in_progress"
+    resolved = "resolved"
+
+
+class HostFollowInfo(BaseModel):
+    status: FollowStatus
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class HostNoteBase(BaseModel):
+    body: str
+    status: NoteStatus = NoteStatus.open
+
+
+class HostNote(HostNoteBase):
+    id: int
+    author_id: int
+    author_name: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class NoteActivityEntry(BaseModel):
+    note_id: int
+    host_id: int
+    ip_address: str
+    hostname: Optional[str] = None
+    status: NoteStatus
+    preview: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+class NoteActivitySummary(BaseModel):
+    total_notes: int
+    active_host_count: int
+    following_count: int
+    recent_notes: List[NoteActivityEntry] = []
+
+
+class HostFollowUpdate(BaseModel):
+    status: FollowStatus
+
+
+class HostNoteCreate(HostNoteBase):
+    status: NoteStatus = NoteStatus.open
+
+
+class HostNoteUpdate(BaseModel):
+    body: Optional[str] = None
+    status: Optional[NoteStatus] = None
+
+class HostVulnerabilitySummary(BaseModel):
+    total_vulnerabilities: int = 0
+    critical: int = 0
+    high: int = 0
+    medium: int = 0
+    low: int = 0
+    info: int = 0
+
 class Host(HostBase):
     id: int
     last_updated_scan_id: Optional[int] = None
     ports: List[Port] = []
     host_scripts: List[HostScript] = []
-    
+    vulnerability_summary: Optional[HostVulnerabilitySummary] = None
+    follow: Optional[HostFollowInfo] = None
+    notes: List[HostNote] = []
+    note_count: int = 0
+
     class Config:
         from_attributes = True
 
@@ -104,6 +185,7 @@ class ScanSummary(BaseModel):
     id: int
     filename: str
     scan_type: Optional[str] = None
+    tool_name: Optional[str] = None
     created_at: datetime
     total_hosts: int
     up_hosts: int
@@ -129,6 +211,15 @@ class SubnetStats(BaseModel):
     class Config:
         from_attributes = True
 
+class VulnerabilityStats(BaseModel):
+    total_vulnerabilities: int
+    critical: int
+    high: int
+    medium: int
+    low: int
+    info: int
+    hosts_with_vulnerabilities: int
+
 class DashboardStats(BaseModel):
     total_scans: int
     total_hosts: int
@@ -138,11 +229,88 @@ class DashboardStats(BaseModel):
     total_subnets: int
     recent_scans: List[ScanSummary]
     subnet_stats: List[SubnetStats]
+    vulnerability_stats: Optional[VulnerabilityStats] = None
+    note_activity: Optional[NoteActivitySummary] = None
+
+
+class PortOfInterestSummary(BaseModel):
+    port: int
+    protocol: str
+    label: str
+    category: str
+    weight: int
+    open_host_count: int
+    rationale: str
+    recommended_action: str
+
+
+class PortOfInterestHostEntry(BaseModel):
+    port: int
+    protocol: str
+    label: str
+    service: str
+    weight: int
+    category: str
+
+
+class HostRiskExposure(BaseModel):
+    host_id: int
+    ip_address: str
+    hostname: Optional[str] = None
+    ports_of_interest: List[PortOfInterestHostEntry]
+    critical: int
+    high: int
+    medium: int
+    low: int
+    risk_score: int
+    port_score: int
+    vulnerability_score: int
+
+
+class VulnerabilityHotspot(BaseModel):
+    host_id: int
+    ip_address: str
+    hostname: Optional[str] = None
+    critical: int
+    high: int
+    medium: int
+    low: int
+    risk_score: int
+
+
+class PortsOfInterestInsights(BaseModel):
+    summary: List[PortOfInterestSummary]
+    top_hosts: List[HostRiskExposure]
+
+
+class RiskInsightResponse(BaseModel):
+    ports_of_interest: PortsOfInterestInsights
+    vulnerability_hotspots: List[VulnerabilityHotspot]
 
 class FileUploadResponse(BaseModel):
-    message: str
-    scan_id: int
+    job_id: int
     filename: str
+    status: str
+    message: str
+    scan_id: Optional[int] = None
+
+
+class IngestionJobSchema(BaseModel):
+    id: int
+    filename: str
+    original_filename: str
+    status: str
+    message: Optional[str] = None
+    error_message: Optional[str] = None
+    tool_name: Optional[str] = None
+    file_size: Optional[int] = None
+    scan_id: Optional[int] = None
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 class SubnetBase(BaseModel):
     cidr: str

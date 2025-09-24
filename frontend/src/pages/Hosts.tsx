@@ -11,6 +11,10 @@ import {
   CircularProgress,
   Alert,
   Badge,
+  Tooltip,
+  Menu,
+  MenuItem,
+  Stack,
 } from '@mui/material';
 import {
   Computer as ComputerIcon,
@@ -19,12 +23,18 @@ import {
   Storage as StorageIcon,
   FileDownload as FileDownloadIcon,
   Code as CodeIcon,
+  BookmarkAdded as BookmarkIcon,
+  BookmarkBorder as BookmarkBorderIcon,
+  Note as NoteIcon,
 } from '@mui/icons-material';
-import { getHosts, getHostFilterData } from '../services/api';
-import type { Host } from '../services/api';
+import { getHosts, getHostFilterData, followHost, unfollowHost } from '../services/api';
+import type { Host, FollowStatus, HostFollowInfo } from '../services/api';
 import HostFilters, { HostFilterOptions } from '../components/HostFilters';
 import ReportsDialog from '../components/ReportsDialog';
 import ToolReadyOutput from '../components/ToolReadyOutput';
+import { PORTS_OF_INTEREST_SET, PORTS_OF_INTEREST } from '../utils/portsOfInterest';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 
 interface HostPort {
   state: string;
@@ -32,6 +42,16 @@ interface HostPort {
   port: number;
   protocol: string;
 }
+
+const FOLLOW_STATUS_OPTIONS: Array<{
+  value: FollowStatus;
+  label: string;
+  color: 'info' | 'warning' | 'success';
+}> = [
+  { value: 'watching', label: 'Watching', color: 'info' },
+  { value: 'in_review', label: 'In Review', color: 'warning' },
+  { value: 'reviewed', label: 'Reviewed', color: 'success' },
+];
 
 export default function Hosts() {
   const navigate = useNavigate();
@@ -43,6 +63,10 @@ export default function Hosts() {
   const [filterData, setFilterData] = useState<any>(null);
   const [reportsDialogOpen, setReportsDialogOpen] = useState(false);
   const [toolReadyDialogOpen, setToolReadyDialogOpen] = useState(false);
+  const [followMenu, setFollowMenu] = useState<{ hostId: number; anchorEl: HTMLElement } | null>(null);
+  const [updatingHostId, setUpdatingHostId] = useState<number | null>(null);
+  const [followFilter, setFollowFilter] = useState<'all' | FollowStatus>('all');
+  const [onlyWithNotes, setOnlyWithNotes] = useState(false);
 
   const fetchHosts = async () => {
     try {
@@ -60,6 +84,9 @@ export default function Hosts() {
       if (filters.hasOpenPorts !== undefined) params.has_open_ports = filters.hasOpenPorts;
       if (filters.osFilter) params.os_filter = filters.osFilter;
       if (filters.subnets?.length) params.subnets = filters.subnets.join(',');
+      if (filters.hasCriticalVulns !== undefined) params.has_critical_vulns = filters.hasCriticalVulns;
+      if (filters.hasHighVulns !== undefined) params.has_high_vulns = filters.hasHighVulns;
+      if (filters.minRiskScore !== undefined) params.min_risk_score = filters.minRiskScore;
       
       const data = await getHosts(params);
       setHosts(data);
@@ -156,6 +183,58 @@ export default function Hosts() {
       .map(port => port.service_name);
   };
 
+  const handleFollowMenuOpen = (event: React.MouseEvent<HTMLElement>, hostId: number) => {
+    setFollowMenu({ hostId, anchorEl: event.currentTarget });
+  };
+
+  const handleFollowMenuClose = () => {
+    setFollowMenu(null);
+  };
+
+  const applyFollowUpdate = (hostId: number, followInfo: HostFollowInfo | null) => {
+    setHosts(previous =>
+      previous.map((host) =>
+        host.id === hostId
+          ? { ...host, follow: followInfo }
+          : host
+      )
+    );
+  };
+
+  const handleFollowChange = async (hostId: number, status: FollowStatus | 'none') => {
+    setUpdatingHostId(hostId);
+    try {
+      if (status === 'none') {
+        await unfollowHost(hostId);
+        applyFollowUpdate(hostId, null);
+      } else {
+        const response = await followHost(hostId, status);
+        applyFollowUpdate(hostId, response);
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Error updating follow status:', err);
+      setError('Unable to update follow status. Please try again.');
+    } finally {
+      setUpdatingHostId(null);
+      handleFollowMenuClose();
+    }
+  };
+
+  const filteredHosts = hosts.filter((host) => {
+    const noteCount = host.note_count ?? host.notes?.length ?? 0;
+
+    if (followFilter !== 'all' && host.follow?.status !== followFilter) {
+      return false;
+    }
+
+    if (onlyWithNotes && noteCount === 0) {
+      return false;
+    }
+
+    return true;
+  });
+
   if (loading && !hosts.length) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -175,7 +254,7 @@ export default function Hosts() {
             variant="contained"
             startIcon={<CodeIcon />}
             onClick={() => setToolReadyDialogOpen(true)}
-            disabled={loading || hosts.length === 0}
+            disabled={loading || filteredHosts.length === 0}
           >
             Tool Ready Output
           </Button>
@@ -183,11 +262,11 @@ export default function Hosts() {
             variant="outlined"
             startIcon={<FileDownloadIcon />}
             onClick={() => setReportsDialogOpen(true)}
-            disabled={loading || hosts.length === 0}
+            disabled={loading || filteredHosts.length === 0}
           >
             Export Report
           </Button>
-          <Badge badgeContent={hosts.length} color="primary" showZero>
+          <Badge badgeContent={filteredHosts.length} color="primary" showZero>
             <ComputerIcon />
           </Badge>
         </Box>
@@ -199,6 +278,40 @@ export default function Hosts() {
         onFiltersChange={handleFiltersChange}
         availableData={filterData}
       />
+
+      <Box display="flex" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={2} mb={3}>
+        <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+          <Typography variant="body2" color="text.secondary">
+            Follow status:
+          </Typography>
+          <Chip
+            label="All"
+            size="small"
+            color={followFilter === 'all' ? 'primary' : 'default'}
+            variant={followFilter === 'all' ? 'filled' : 'outlined'}
+            onClick={() => setFollowFilter('all')}
+          />
+          {FOLLOW_STATUS_OPTIONS.map((option) => (
+            <Chip
+              key={option.value}
+              label={option.label}
+              size="small"
+              color={followFilter === option.value ? option.color : 'default'}
+              variant={followFilter === option.value ? 'filled' : 'outlined'}
+              onClick={() => setFollowFilter(option.value)}
+            />
+          ))}
+        </Stack>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={onlyWithNotes}
+              onChange={(event) => setOnlyWithNotes(event.target.checked)}
+            />
+          }
+          label="Only hosts with notes"
+        />
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -220,11 +333,34 @@ export default function Hosts() {
             Try adjusting your filters or upload more scan results
           </Typography>
         </Box>
+      ) : filteredHosts.length === 0 ? (
+        <Box textAlign="center" py={8}>
+          <ComputerIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No hosts match current filters
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Clear the follow or notes filters, or adjust the advanced filters above.
+          </Typography>
+        </Box>
       ) : (
         <Grid container spacing={3}>
-          {hosts.map((host) => {
+          {filteredHosts.map((host) => {
             const openPorts = host.ports?.filter(port => port.state === 'open') || [];
             const topServices = getTopServices(host.ports || []);
+            const portsOfInterest = openPorts.filter((port) => PORTS_OF_INTEREST_SET.has(port.port_number));
+            const hasCritical = host.vulnerability_summary?.critical && host.vulnerability_summary.critical > 0;
+            const noteCount = host.note_count ?? host.notes?.length ?? 0;
+            const latestNote = host.notes && host.notes.length > 0 ? host.notes[0] : undefined;
+            const latestNotePreview = latestNote?.body
+              ? `${latestNote.body.slice(0, 160)}${latestNote.body.length > 160 ? '…' : ''}`
+              : null;
+            const followStatus = host.follow?.status ?? null;
+            const followOption = followStatus
+              ? FOLLOW_STATUS_OPTIONS.find(option => option.value === followStatus) ?? null
+              : null;
+            const followLabel = followOption?.label ?? 'Follow';
+            const followChipColor = followOption?.color ?? 'default';
             
             return (
               <Grid item xs={12} sm={6} md={4} key={host.id}>
@@ -237,11 +373,69 @@ export default function Hosts() {
                           {host.ip_address}
                         </Typography>
                       </Box>
-                      <Chip
-                        label={host.state || 'unknown'}
-                        color={getStateColor(host.state)}
-                        size="small"
-                      />
+                      <Stack direction="row" gap={1} alignItems="center">
+                        <Tooltip
+                          title={noteCount > 0 ? (
+                            <Box>
+                              <Typography variant="caption" display="block">
+                                {`${noteCount} note${noteCount === 1 ? '' : 's'} added`}
+                              </Typography>
+                              {latestNotePreview && (
+                                <Typography variant="caption" color="text.secondary">
+                                  “{latestNotePreview}”
+                                </Typography>
+                              )}
+                            </Box>
+                          ) : 'No notes yet'}
+                        >
+                          <Chip
+                            icon={<NoteIcon />}
+                            label={`${noteCount}`}
+                            size="small"
+                            color={noteCount > 0 ? 'secondary' : 'default'}
+                            variant={noteCount > 0 ? 'filled' : 'outlined'}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Update follow status">
+                          <Chip
+                            icon={followStatus ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+                            label={followLabel}
+                            color={followChipColor}
+                            size="small"
+                            clickable
+                            onClick={(event) => handleFollowMenuOpen(event, host.id)}
+                            disabled={updatingHostId === host.id}
+                            variant={followStatus ? 'filled' : 'outlined'}
+                          />
+                        </Tooltip>
+                        {portsOfInterest.length > 0 && (
+                          <Tooltip
+                            title={
+                              <Box>
+                                {portsOfInterest.map((port) => {
+                                  const definition = PORTS_OF_INTEREST.find((entry) => entry.port === port.port_number);
+                                  return (
+                                    <Typography variant="caption" key={`${host.id}-poi-${port.port_number}`} display="block">
+                                      {port.port_number}/{port.service_name || 'unknown'} – {definition?.label || 'High-value port'}
+                                    </Typography>
+                                  );
+                                })}
+                              </Box>
+                            }
+                            arrow
+                          >
+                            <Chip label="Ports of interest" color="warning" size="small" />
+                          </Tooltip>
+                        )}
+                        {hasCritical && (
+                          <Chip label="Critical vulns" color="error" size="small" />
+                        )}
+                          <Chip
+                            label={host.state || 'unknown'}
+                            color={getStateColor(host.state)}
+                            size="small"
+                          />
+                      </Stack>
                     </Box>
 
                     {host.hostname && (
@@ -262,6 +456,12 @@ export default function Hosts() {
                           <strong>OS:</strong> {host.os_name}
                         </Typography>
                       </Box>
+                    )}
+
+                    {latestNotePreview && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        “{latestNotePreview}”
+                      </Typography>
                     )}
 
                     <Box display="flex" gap={1} mb={2}>
@@ -305,6 +505,52 @@ export default function Hosts() {
                       </Box>
                     )}
 
+                    {/* Vulnerability Information */}
+                    {host.vulnerability_summary && host.vulnerability_summary.total_vulnerabilities > 0 && (
+                      <Box mb={2}>
+                        <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+                          Vulnerabilities:
+                        </Typography>
+                        <Box display="flex" gap={0.5} flexWrap="wrap">
+                          {host.vulnerability_summary.critical > 0 && (
+                            <Chip
+                              label={`${host.vulnerability_summary.critical} Critical`}
+                              size="small"
+                              sx={{ backgroundColor: '#d32f2f', color: 'white' }}
+                            />
+                          )}
+                          {host.vulnerability_summary.high > 0 && (
+                            <Chip
+                              label={`${host.vulnerability_summary.high} High`}
+                              size="small"
+                              sx={{ backgroundColor: '#f57c00', color: 'white' }}
+                            />
+                          )}
+                          {host.vulnerability_summary.medium > 0 && (
+                            <Chip
+                              label={`${host.vulnerability_summary.medium} Medium`}
+                              size="small"
+                              sx={{ backgroundColor: '#ffa000', color: 'white' }}
+                            />
+                          )}
+                          {host.vulnerability_summary.low > 0 && (
+                            <Chip
+                              label={`${host.vulnerability_summary.low} Low`}
+                              size="small"
+                              sx={{ backgroundColor: '#388e3c', color: 'white' }}
+                            />
+                          )}
+                          {host.vulnerability_summary.info > 0 && (
+                            <Chip
+                              label={`${host.vulnerability_summary.info} Info`}
+                              size="small"
+                              color="primary"
+                            />
+                          )}
+                        </Box>
+                      </Box>
+                    )}
+
                     <Button
                       fullWidth
                       variant="outlined"
@@ -321,12 +567,39 @@ export default function Hosts() {
         </Grid>
       )}
 
+      <Menu
+        anchorEl={followMenu?.anchorEl ?? null}
+        open={Boolean(followMenu)}
+        onClose={handleFollowMenuClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        {followMenu && FOLLOW_STATUS_OPTIONS.map((option) => (
+          <MenuItem
+            key={option.value}
+            selected={hosts.find(host => host.id === followMenu.hostId)?.follow?.status === option.value}
+            onClick={() => handleFollowChange(followMenu.hostId, option.value)}
+            disabled={updatingHostId === followMenu.hostId}
+          >
+            {option.label}
+          </MenuItem>
+        ))}
+        {followMenu && (
+          <MenuItem
+            onClick={() => handleFollowChange(followMenu.hostId, 'none')}
+            disabled={updatingHostId === followMenu.hostId || !hosts.find(host => host.id === followMenu.hostId)?.follow}
+          >
+            Stop Following
+          </MenuItem>
+        )}
+      </Menu>
+
       {/* Reports Dialog */}
       <ReportsDialog
         open={reportsDialogOpen}
         onClose={() => setReportsDialogOpen(false)}
         filters={filters}
-        totalHosts={hosts.length}
+        totalHosts={filteredHosts.length}
       />
 
       {/* Tool Ready Output Dialog */}

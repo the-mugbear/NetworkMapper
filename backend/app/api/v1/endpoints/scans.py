@@ -21,6 +21,7 @@ def get_scans(
             models.Scan.id,
             models.Scan.filename,
             models.Scan.scan_type,
+            models.Scan.tool_name,
             models.Scan.created_at,
             func.count(models.HostScanHistory.id).label('total_hosts'),
             func.sum(case((models.Host.state == 'up', 1), else_=0)).label('up_hosts')
@@ -56,6 +57,7 @@ def get_scans(
             id=result.id,
             filename=result.filename,
             scan_type=result.scan_type,
+            tool_name=result.tool_name,
             created_at=result.created_at,
             total_hosts=result.total_hosts or 0,
             up_hosts=result.up_hosts or 0,

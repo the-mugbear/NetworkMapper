@@ -5,7 +5,7 @@ This endpoint works with the new v2 schema that eliminates duplicates
 at the database level, making the API much simpler and more efficient.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict
 import ipaddress
 import json
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -16,7 +16,19 @@ from app.api.v1.endpoints.auth import get_current_user
 from app.db.models_auth import User
 from app.db import models
 from app.db.models_confidence import HostConfidence, PortConfidence, ConflictHistory
-from app.schemas.schemas import Host as HostSchema
+from app.db.models_vulnerability import Vulnerability
+from app.schemas.schemas import (
+    Host as HostSchema,
+    HostVulnerabilitySummary,
+    HostFollowInfo,
+    HostNote,
+    HostNoteCreate,
+    HostNoteUpdate,
+    HostFollowUpdate,
+)
+from app.services.vulnerability_service import VulnerabilityService
+from app.services.host_follow_service import HostFollowService
+from app.db.models import HostFollow, FollowStatus, HostNote as HostNoteModel, NoteStatus
 
 # Service port mappings (same as v1)
 SERVICE_PORT_MAPPINGS = {
@@ -93,6 +105,11 @@ def get_hosts_v2(
     has_open_ports: Optional[bool] = Query(None, description="Filter hosts that have any open ports"),
     os_filter: Optional[str] = Query(None, description="Filter by operating system"),
     subnets: Optional[str] = Query(None, description="Comma-separated list of subnet CIDRs (e.g., '192.168.1.0/24,10.0.0.0/8')"),
+    has_critical_vulns: Optional[bool] = Query(None, description="Filter hosts with critical vulnerabilities"),
+    has_high_vulns: Optional[bool] = Query(None, description="Filter hosts with high vulnerabilities"),
+    has_medium_vulns: Optional[bool] = Query(None, description="Filter hosts with medium vulnerabilities"),
+    has_low_vulns: Optional[bool] = Query(None, description="Filter hosts with low vulnerabilities"),
+    min_risk_score: Optional[int] = Query(None, description="Filter hosts with minimum risk score (0-100)"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -105,7 +122,8 @@ def get_hosts_v2(
     # Base query with eager loading
     query = db.query(models.Host).options(
         selectinload(models.Host.ports).selectinload(models.Port.scripts),
-        selectinload(models.Host.host_scripts)
+        selectinload(models.Host.host_scripts),
+        selectinload(models.Host.notes).selectinload(models.HostNote.author)
     )
     
     # Apply filters
@@ -195,23 +213,93 @@ def get_hosts_v2(
             combined_search = or_(*host_search_conditions)
         
         query = query.filter(combined_search)
-    
+
+    # Vulnerability filtering
+    if has_critical_vulns is not None or has_high_vulns is not None or has_medium_vulns is not None or has_low_vulns is not None:
+        # Create subquery to find hosts with vulnerabilities of specified severities
+        vuln_conditions = []
+
+        if has_critical_vulns:
+            vuln_conditions.append(Vulnerability.severity == 'CRITICAL')
+        if has_high_vulns:
+            vuln_conditions.append(Vulnerability.severity == 'HIGH')
+        if has_medium_vulns:
+            vuln_conditions.append(Vulnerability.severity == 'MEDIUM')
+        if has_low_vulns:
+            vuln_conditions.append(Vulnerability.severity == 'LOW')
+
+        if vuln_conditions:
+            vuln_host_subquery = db.query(models.Host.id).join(Vulnerability).filter(or_(*vuln_conditions))
+            query = query.filter(models.Host.id.in_(vuln_host_subquery))
+
     # Apply pagination and return
     hosts = query.offset(skip).limit(limit).all()
-    return hosts
+    host_ids = [host.id for host in hosts]
+
+    try:
+        vulnerability_service = VulnerabilityService(db)
+        vuln_map = {
+            host.id: vulnerability_service.get_host_vulnerability_summary(host.id)
+            for host in hosts
+        }
+    except Exception:
+        vuln_map = {host.id: {'total': 0, 'by_severity': {}} for host in hosts}
+
+    follow_records = []
+    if host_ids:
+        follow_records = (
+            db.query(HostFollow)
+            .filter(HostFollow.user_id == current_user.id, HostFollow.host_id.in_(host_ids))
+            .all()
+        )
+    follow_map = {record.host_id: record for record in follow_records}
+
+    serialized_hosts = []
+    for host in hosts:
+        serialized = _serialize_host_base(host, vuln_map.get(host.id))
+        follow = follow_map.get(host.id)
+        serialized["follow"] = _serialize_follow(follow) if follow else None
+
+        host_notes = sorted(host.notes, key=lambda note: note.created_at or note.updated_at, reverse=True)
+        serialized["note_count"] = len(host_notes)
+        serialized["notes"] = [
+            _serialize_note(note) for note in host_notes[:3]
+        ]
+        serialized_hosts.append(serialized)
+
+    return serialized_hosts
 
 
 @router.get("/{host_id}", response_model=HostSchema)
-def get_host_v2(host_id: int, db: Session = Depends(get_db)):
-    """Get a specific host by ID"""
+def get_host_v2(
+    host_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get a specific host by ID with vulnerability information"""
     host = db.query(models.Host).options(
         selectinload(models.Host.ports).selectinload(models.Port.scripts),
         selectinload(models.Host.host_scripts)
     ).filter(models.Host.id == host_id).first()
-    
+
     if not host:
         raise HTTPException(status_code=404, detail="Host not found")
-    return host
+
+    follow_service = HostFollowService(db)
+
+    try:
+        vulnerability_service = VulnerabilityService(db)
+        vuln_summary = vulnerability_service.get_host_vulnerability_summary(host_id)
+    except Exception:
+        vuln_summary = {
+            'total': 0,
+            'by_severity': {},
+        }
+
+    follow_record = follow_service.get_follow(host_id, current_user.id)
+    notes = follow_service.list_notes(host_id)
+
+    return _serialize_host_detail(host, vuln_summary, follow_record, notes)
 
 
 @router.get("/filters/data")
@@ -306,6 +394,117 @@ def get_host_filter_data_v2(db: Session = Depends(get_db)):
             for subnet in subnets
         ]
     }
+
+
+@router.post("/{host_id}/follow", response_model=HostFollowInfo)
+def follow_host(
+    host_id: int,
+    payload: HostFollowUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    host = db.query(models.Host).filter(models.Host.id == host_id).first()
+    if not host:
+        raise HTTPException(status_code=404, detail="Host not found")
+
+    follow_service = HostFollowService(db)
+    follow = follow_service.set_follow_status(host_id, current_user.id, payload.status)
+    return _serialize_follow(follow)
+
+
+@router.delete("/{host_id}/follow", status_code=204)
+def unfollow_host(
+    host_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    host = db.query(models.Host).filter(models.Host.id == host_id).first()
+    if not host:
+        raise HTTPException(status_code=404, detail="Host not found")
+
+    follow_service = HostFollowService(db)
+    follow_service.unfollow(host_id, current_user.id)
+    return Response(status_code=204)
+
+
+@router.get("/{host_id}/notes", response_model=List[HostNote])
+def list_host_notes(
+    host_id: int,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    host = db.query(models.Host).filter(models.Host.id == host_id).first()
+    if not host:
+        raise HTTPException(status_code=404, detail="Host not found")
+
+    follow_service = HostFollowService(db)
+    notes = follow_service.list_notes(host_id, limit=limit)
+    return [_serialize_note(note) for note in notes]
+
+
+@router.post("/{host_id}/notes", response_model=HostNote)
+def create_host_note(
+    host_id: int,
+    payload: HostNoteCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    host = db.query(models.Host).filter(models.Host.id == host_id).first()
+    if not host:
+        raise HTTPException(status_code=404, detail="Host not found")
+
+    follow_service = HostFollowService(db)
+    note = follow_service.create_note(host_id, current_user.id, payload.body, payload.status)
+    return _serialize_note(note)
+
+
+@router.patch("/{host_id}/notes/{note_id}", response_model=HostNote)
+def update_host_note(
+    host_id: int,
+    note_id: int,
+    payload: HostNoteUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    host = db.query(models.Host).filter(models.Host.id == host_id).first()
+    if not host:
+        raise HTTPException(status_code=404, detail="Host not found")
+
+    follow_service = HostFollowService(db)
+    try:
+        note = follow_service.update_note(
+            note_id,
+            current_user.id,
+            body=payload.body,
+            status=payload.status,
+        )
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Note not found")
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this note")
+    return _serialize_note(note)
+
+
+@router.delete("/{host_id}/notes/{note_id}", status_code=204)
+def delete_host_note(
+    host_id: int,
+    note_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    host = db.query(models.Host).filter(models.Host.id == host_id).first()
+    if not host:
+        raise HTTPException(status_code=404, detail="Host not found")
+
+    follow_service = HostFollowService(db)
+    try:
+        follow_service.delete_note(note_id, current_user.id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Note not found")
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this note")
+    return Response(status_code=204)
 
 
 @router.get("/scan/{scan_id}", response_model=List[HostSchema])
@@ -432,6 +631,79 @@ def get_host_conflicts(host_id: int, db: Session = Depends(get_db)):
         })
 
     return confidence_data
+
+
+
+
+def _build_vuln_summary(data: Optional[dict]) -> Optional[HostVulnerabilitySummary]:
+    if not data or data.get('total', 0) == 0:
+        return None
+    return HostVulnerabilitySummary(
+        total_vulnerabilities=data.get('total', 0),
+        critical=data.get('by_severity', {}).get('critical', 0),
+        high=data.get('by_severity', {}).get('high', 0),
+        medium=data.get('by_severity', {}).get('medium', 0),
+        low=data.get('by_severity', {}).get('low', 0),
+        info=data.get('by_severity', {}).get('info', 0),
+    )
+
+
+def _serialize_follow(follow: HostFollow) -> HostFollowInfo:
+    return HostFollowInfo(
+        status=follow.status,
+        created_at=follow.created_at,
+        updated_at=follow.updated_at,
+    )
+
+
+def _serialize_note(note: HostNoteModel) -> HostNote:
+    author_name = None
+    if note.author:
+        author_name = note.author.full_name or note.author.username
+    return HostNote(
+        id=note.id,
+        body=note.body,
+        status=note.status,
+        author_id=note.user_id,
+        author_name=author_name,
+        created_at=note.created_at,
+        updated_at=note.updated_at,
+    )
+
+
+def _serialize_host_base(host: models.Host, vuln_data: Optional[dict]) -> dict:
+    note_count = len(getattr(host, "notes", []))
+    return {
+        "id": host.id,
+        "ip_address": host.ip_address,
+        "hostname": host.hostname,
+        "state": host.state,
+        "state_reason": host.state_reason,
+        "os_name": host.os_name,
+        "os_family": host.os_family,
+        "os_generation": host.os_generation,
+        "os_type": host.os_type,
+        "os_vendor": host.os_vendor,
+        "os_accuracy": host.os_accuracy,
+        "last_updated_scan_id": host.last_updated_scan_id,
+        "ports": host.ports,
+        "host_scripts": host.host_scripts,
+        "vulnerability_summary": _build_vuln_summary(vuln_data),
+        "note_count": note_count,
+    }
+
+
+def _serialize_host_detail(
+    host: models.Host,
+    vuln_data: Optional[dict],
+    follow: Optional[HostFollow],
+    notes: List[HostNoteModel],
+) -> dict:
+    serialized = _serialize_host_base(host, vuln_data)
+    serialized["follow"] = _serialize_follow(follow) if follow else None
+    serialized["notes"] = [_serialize_note(note) for note in notes]
+    serialized["note_count"] = len(notes)
+    return serialized
 
 
 def _parse_subnets(subnet_str: str):

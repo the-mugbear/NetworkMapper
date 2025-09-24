@@ -181,6 +181,21 @@ class Scan(ScanBase):
     class Config:
         from_attributes = True
 
+class ScanPortBreakdown(BaseModel):
+    unique_ports: int = 0
+    open_tcp_ports: int = 0
+    open_udp_ports: int = 0
+
+
+class ScanVulnerabilitySummary(BaseModel):
+    total: int = 0
+    critical: int = 0
+    high: int = 0
+    medium: int = 0
+    low: int = 0
+    info: int = 0
+
+
 class ScanSummary(BaseModel):
     id: int
     filename: str
@@ -191,7 +206,9 @@ class ScanSummary(BaseModel):
     up_hosts: int
     total_ports: int
     open_ports: int
-    
+    port_breakdown: Optional[ScanPortBreakdown] = None
+    vulnerability_summary: Optional[ScanVulnerabilitySummary] = None
+
     class Config:
         from_attributes = True
 

@@ -35,7 +35,7 @@ import {
   CloudUpload as UploadIcon,
 } from '@mui/icons-material';
 import { getScans, deleteScan, uploadFile, getIngestionJob } from '../services/api';
-import type { Scan, IngestionJob } from '../services/api';
+import type { Scan, IngestionJob, ScanVulnerabilitySummary } from '../services/api';
 
 export default function Scans() {
   const navigate = useNavigate();
@@ -205,12 +205,184 @@ export default function Scans() {
     setScanToDelete(null);
   };
 
+  const isNessusScan = (scan: Scan) => (scan.tool_name || scan.scan_type || '').toLowerCase().includes('nessus');
+  const isMasscanScan = (scan: Scan) => (scan.tool_name || scan.scan_type || '').toLowerCase().includes('masscan');
+
   const getStatusColor = (upHosts: number, totalHosts: number) => {
     if (totalHosts === 0) return 'default';
     const ratio = upHosts / totalHosts;
     if (ratio > 0.8) return 'success';
     if (ratio > 0.5) return 'warning';
     return 'error';
+  };
+
+  const renderStatusChip = (scan: Scan) => {
+    if (isNessusScan(scan)) {
+      const summary = scan.vulnerability_summary;
+      const totalFindings = summary?.total ?? 0;
+      const critical = summary?.critical ?? 0;
+
+      const chipColor: 'default' | 'error' | 'warning' | 'success' = critical > 0
+        ? 'error'
+        : totalFindings > 0
+        ? 'warning'
+        : 'success';
+
+      return (
+        <Chip
+          label={`${totalFindings} findings${critical > 0 ? ` (${critical} critical)` : ''}`}
+          color={chipColor}
+          size="small"
+        />
+      );
+    }
+
+    if (isMasscanScan(scan)) {
+      const openPorts = scan.open_ports || 0;
+      return (
+        <Chip
+          label={`${openPorts} open services`}
+          color={openPorts > 0 ? 'info' : 'default'}
+          size="small"
+        />
+      );
+    }
+
+    return (
+      <Chip
+        label={scan.total_hosts > 0 ? `${((scan.up_hosts / scan.total_hosts) * 100).toFixed(0)}% hosts up` : 'No hosts'}
+        color={getStatusColor(scan.up_hosts, scan.total_hosts)}
+        size="small"
+      />
+    );
+  };
+
+  const renderNessusMetrics = (summary: ScanVulnerabilitySummary | null | undefined) => {
+    const critical = summary?.critical ?? 0;
+    const high = summary?.high ?? 0;
+    const medium = summary?.medium ?? 0;
+    const total = summary?.total ?? 0;
+
+    return (
+      <Box display="flex" alignItems="center" gap={3} flexWrap="wrap">
+        <Box textAlign="center">
+          <Typography variant="body2" color="error.main">
+            Critical
+          </Typography>
+          <Typography variant="h6" color="error.main">
+            {critical}
+          </Typography>
+        </Box>
+        <Box textAlign="center">
+          <Typography variant="body2" color="warning.main">
+            High
+          </Typography>
+          <Typography variant="h6" color="warning.main">
+            {high}
+          </Typography>
+        </Box>
+        <Box textAlign="center">
+          <Typography variant="body2" color="text.secondary">
+            Medium
+          </Typography>
+          <Typography variant="h6">
+            {medium}
+          </Typography>
+        </Box>
+        <Box textAlign="center">
+          <Typography variant="body2" color="text.secondary">
+            Total Findings
+          </Typography>
+          <Typography variant="h6">
+            {total}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  };
+
+  const renderMasscanMetrics = (scan: Scan) => {
+    const tcp = scan.port_breakdown?.open_tcp_ports ?? scan.open_ports ?? 0;
+    const udp = scan.port_breakdown?.open_udp_ports ?? 0;
+    const unique = scan.port_breakdown?.unique_ports ?? 0;
+
+    return (
+      <Box display="flex" alignItems="center" gap={3} flexWrap="wrap">
+        <Box textAlign="center">
+          <Typography variant="body2" color="text.secondary">
+            Hosts Detected
+          </Typography>
+          <Typography variant="h6">
+            {scan.up_hosts}
+          </Typography>
+        </Box>
+        <Box textAlign="center">
+          <Typography variant="body2" color="text.secondary">
+            Open TCP
+          </Typography>
+          <Typography variant="h6" color="primary.main">
+            {tcp}
+          </Typography>
+        </Box>
+        <Box textAlign="center">
+          <Typography variant="body2" color="text.secondary">
+            Open UDP
+          </Typography>
+          <Typography variant="h6" color="secondary.main">
+            {udp}
+          </Typography>
+        </Box>
+        <Box textAlign="center">
+          <Typography variant="body2" color="text.secondary">
+            Unique Ports
+          </Typography>
+          <Typography variant="h6">
+            {unique}
+          </Typography>
+        </Box>
+      </Box>
+    );
+  };
+
+  const renderDefaultMetrics = (scan: Scan) => (
+    <Box display="flex" alignItems="center" gap={3} flexWrap="wrap">
+      <Box textAlign="center">
+        <Typography variant="body2" color="text.secondary">
+          Hosts
+        </Typography>
+        <Typography variant="h6">
+          {scan.up_hosts}/{scan.total_hosts}
+        </Typography>
+      </Box>
+      <Box textAlign="center">
+        <Typography variant="body2" color="text.secondary">
+          Open Ports
+        </Typography>
+        <Typography variant="h6" color="success.main">
+          {scan.open_ports || 0}
+        </Typography>
+      </Box>
+      <Box textAlign="center">
+        <Typography variant="body2" color="text.secondary">
+          Total Ports
+        </Typography>
+        <Typography variant="h6">
+          {scan.total_ports || 0}
+        </Typography>
+      </Box>
+    </Box>
+  );
+
+  const renderScanMetrics = (scan: Scan) => {
+    if (isNessusScan(scan)) {
+      return renderNessusMetrics(scan.vulnerability_summary);
+    }
+
+    if (isMasscanScan(scan)) {
+      return renderMasscanMetrics(scan);
+    }
+
+    return renderDefaultMetrics(scan);
   };
 
   if (loading) {
@@ -512,39 +684,10 @@ export default function Scans() {
 
                     {/* Bottom section - Statistics */}
                     <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-                      <Box display="flex" alignItems="center" gap={3} flexWrap="wrap">
-                        <Box textAlign="center">
-                          <Typography variant="body2" color="text.secondary">
-                            Hosts
-                          </Typography>
-                          <Typography variant="h6">
-                            {scan.up_hosts}/{scan.total_hosts}
-                          </Typography>
-                        </Box>
-                        <Box textAlign="center">
-                          <Typography variant="body2" color="text.secondary">
-                            Open Ports
-                          </Typography>
-                          <Typography variant="h6" color="success.main">
-                            {scan.open_ports || 0}
-                          </Typography>
-                        </Box>
-                        <Box textAlign="center">
-                          <Typography variant="body2" color="text.secondary">
-                            Total Ports
-                          </Typography>
-                          <Typography variant="h6">
-                            {scan.total_ports || 0}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      
+                      {renderScanMetrics(scan)}
+
                       {/* Status indicator */}
-                      <Chip
-                        label={scan.total_hosts > 0 ? `${((scan.up_hosts / scan.total_hosts) * 100).toFixed(0)}% hosts up` : 'No hosts'}
-                        color={getStatusColor(scan.up_hosts, scan.total_hosts)}
-                        size="small"
-                      />
+                      {renderStatusChip(scan)}
                     </Box>
                   </Box>
                 </CardContent>

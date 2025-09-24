@@ -1,10 +1,20 @@
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, case
+from sqlalchemy import func, desc, case, distinct, and_
+
 from app.db.session import get_db
 from app.db import models
-from app.schemas.schemas import Scan, ScanSummary, EyewitnessResult, OutOfScopeHost, DNSRecord
+from app.db.models_vulnerability import Vulnerability, VulnerabilitySeverity
+from app.schemas.schemas import (
+    Scan,
+    ScanSummary,
+    ScanPortBreakdown,
+    ScanVulnerabilitySummary,
+    EyewitnessResult,
+    OutOfScopeHost,
+    DNSRecord,
+)
 from app.services.command_explanation_service import CommandExplanationService
 
 router = APIRouter()
@@ -44,7 +54,26 @@ def get_scans(
         port_stats = (
             db.query(
                 func.count(models.Port.id).label('total_ports'),
-                func.sum(case((models.Port.state == 'open', 1), else_=0)).label('open_ports')
+                func.sum(case((models.Port.state == 'open', 1), else_=0)).label('open_ports'),
+                func.count(distinct(models.Port.port_number)).label('unique_ports'),
+                func.sum(
+                    case(
+                        (
+                            and_(models.Port.state == 'open', models.Port.protocol == 'tcp'),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).label('open_tcp_ports'),
+                func.sum(
+                    case(
+                        (
+                            and_(models.Port.state == 'open', models.Port.protocol == 'udp'),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                ).label('open_udp_ports'),
             )
             .select_from(models.Port)
             .join(models.Host, models.Port.host_id == models.Host.id)
@@ -52,7 +81,41 @@ def get_scans(
             .filter(models.HostScanHistory.scan_id == result.id)
             .first()
         )
-        
+
+        port_breakdown = None
+        if port_stats:
+            port_breakdown = ScanPortBreakdown(
+                unique_ports=port_stats.unique_ports or 0,
+                open_tcp_ports=port_stats.open_tcp_ports or 0,
+                open_udp_ports=port_stats.open_udp_ports or 0,
+            )
+
+        vulnerability_summary = None
+        tool_name = (result.tool_name or result.scan_type or "").lower()
+        if "nessus" in tool_name:
+            vuln_stats = (
+                db.query(
+                    func.count(Vulnerability.id).label('total'),
+                    func.sum(case((Vulnerability.severity == VulnerabilitySeverity.CRITICAL, 1), else_=0)).label('critical'),
+                    func.sum(case((Vulnerability.severity == VulnerabilitySeverity.HIGH, 1), else_=0)).label('high'),
+                    func.sum(case((Vulnerability.severity == VulnerabilitySeverity.MEDIUM, 1), else_=0)).label('medium'),
+                    func.sum(case((Vulnerability.severity == VulnerabilitySeverity.LOW, 1), else_=0)).label('low'),
+                    func.sum(case((Vulnerability.severity == VulnerabilitySeverity.INFO, 1), else_=0)).label('info'),
+                )
+                .filter(Vulnerability.scan_id == result.id)
+                .first()
+            )
+
+            if vuln_stats:
+                vulnerability_summary = ScanVulnerabilitySummary(
+                    total=vuln_stats.total or 0,
+                    critical=vuln_stats.critical or 0,
+                    high=vuln_stats.high or 0,
+                    medium=vuln_stats.medium or 0,
+                    low=vuln_stats.low or 0,
+                    info=vuln_stats.info or 0,
+                )
+
         scan_summaries.append(ScanSummary(
             id=result.id,
             filename=result.filename,
@@ -62,7 +125,9 @@ def get_scans(
             total_hosts=result.total_hosts or 0,
             up_hosts=result.up_hosts or 0,
             total_ports=port_stats.total_ports if port_stats and port_stats.total_ports else 0,
-            open_ports=port_stats.open_ports if port_stats and port_stats.open_ports else 0
+            open_ports=port_stats.open_ports if port_stats and port_stats.open_ports else 0,
+            port_breakdown=port_breakdown,
+            vulnerability_summary=vulnerability_summary,
         ))
     
     return scan_summaries

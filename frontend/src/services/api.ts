@@ -45,6 +45,21 @@ api.interceptors.response.use(
   }
 );
 
+export interface ScanVulnerabilitySummary {
+  total: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  info: number;
+}
+
+export interface ScanPortBreakdown {
+  unique_ports: number;
+  open_tcp_ports: number;
+  open_udp_ports: number;
+}
+
 export interface Scan {
   id: number;
   filename: string;
@@ -55,6 +70,8 @@ export interface Scan {
   up_hosts: number;
   total_ports: number;
   open_ports: number;
+  port_breakdown?: ScanPortBreakdown | null;
+  vulnerability_summary?: ScanVulnerabilitySummary | null;
 }
 
 export interface HostVulnerabilitySummary {

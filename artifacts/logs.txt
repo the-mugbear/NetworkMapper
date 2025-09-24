@@ -1,177 +1,21 @@
-=== ALL CONTAINER LOGS COMBINED ===
-backend-1  | 2025-09-24T06:14:46.720064619Z Traceback (most recent call last):
-backend-1  | 2025-09-24T06:14:46.720115115Z   File "/opt/venv/bin/uvicorn", line 7, in <module>
-backend-1  | 2025-09-24T06:14:46.720119142Z     sys.exit(main())
-backend-1  | 2025-09-24T06:14:46.720127873Z              ^^^^^^
-backend-1  | 2025-09-24T06:14:46.720129995Z   File "/opt/venv/lib/python3.11/site-packages/click/core.py", line 1462, in __call__
-backend-1  | 2025-09-24T06:14:46.720415052Z     return self.main(*args, **kwargs)
-backend-1   | 2025-09-24T06:14:46.720422717Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.720424588Z   File "/opt/venv/lib/python3.11/site-packages/click/core.py", line 1383, in main
-backend-1   | 2025-09-24T06:14:46.720707627Z     rv = self.invoke(ctx)
-backend-1   | 2025-09-24T06:14:46.720711462Z          ^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.720713395Z   File "/opt/venv/lib/python3.11/site-packages/click/core.py", line 1246, in invoke
-backend-1   | 2025-09-24T06:14:46.720965090Z     return ctx.invoke(self.callback, **ctx.params)
-backend-1   | 2025-09-24T06:14:46.720978395Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.720980555Z   File "/opt/venv/lib/python3.11/site-packages/click/core.py", line 814, in invoke
-backend-1   | 2025-09-24T06:14:46.721160400Z     return callback(*args, **kwargs)
-backend-1   | 2025-09-24T06:14:46.721167572Z            ^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.721169590Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/main.py", line 415, in main
-backend-1   | 2025-09-24T06:14:46.721302410Z     run(
-backend-1   | 2025-09-24T06:14:46.721305534Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/main.py", line 582, in run
-backend-1   | 2025-09-24T06:14:46.721430706Z     server.run()
-backend-1   | 2025-09-24T06:14:46.721434433Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/server.py", line 67, in run
-backend-1   | 2025-09-24T06:14:46.721496373Z     return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
-backend-1   | 2025-09-24T06:14:46.721537904Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.721540916Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/_compat.py", line 23, in asyncio_run
-backend-1   | 2025-09-24T06:14:46.721585205Z     return runner.run(main)
-backend-1   | 2025-09-24T06:14:46.721604897Z            ^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.721607109Z   File "/usr/local/lib/python3.11/asyncio/runners.py", line 118, in run
-backend-1   | 2025-09-24T06:14:46.721677778Z     return self._loop.run_until_complete(task)
-backend-1   | 2025-09-24T06:14:46.721706077Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.721708523Z   File "/usr/local/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
-backend-1   | 2025-09-24T06:14:46.721860349Z     return future.result()
-backend-1   | 2025-09-24T06:14:46.721863599Z            ^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.721865301Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/server.py", line 71, in serve
-backend-1   | 2025-09-24T06:14:46.721927657Z     await self._serve(sockets)
-backend-1   | 2025-09-24T06:14:46.721937474Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/server.py", line 78, in _serve
-backend-1   | 2025-09-24T06:14:46.722004532Z     config.load()
-backend-1   | 2025-09-24T06:14:46.722008194Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/config.py", line 436, in load
-backend-1   | 2025-09-24T06:14:46.722144787Z     self.loaded_app = import_from_string(self.app)
-backend-1   | 2025-09-24T06:14:46.722155312Z                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.722158305Z   File "/opt/venv/lib/python3.11/site-packages/uvicorn/importer.py", line 19, in import_from_string
-backend-1   | 2025-09-24T06:14:46.722215088Z     module = importlib.import_module(module_str)
-backend-1   | 2025-09-24T06:14:46.722222206Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.722224200Z   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
-backend-1   | 2025-09-24T06:14:46.722282088Z     return _bootstrap._gcd_import(name[level:], package, level)
-backend-1   | 2025-09-24T06:14:46.722348117Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend-1   | 2025-09-24T06:14:46.722351449Z   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
-backend-1   | 2025-09-24T06:14:46.722353581Z   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
-backend-1   | 2025-09-24T06:14:46.722355463Z   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
-backend-1   | 2025-09-24T06:14:46.722357236Z   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
-backend-1   | 2025-09-24T06:14:46.722359012Z   File "<frozen importlib._bootstrap_external>", line 940, in exec_module
-backend-1   | 2025-09-24T06:14:46.722360938Z   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
-backend-1   | 2025-09-24T06:14:46.722362717Z   File "/app/app/main.py", line 8, in <module>
-backend-1   | 2025-09-24T06:14:46.722383408Z     from app.api.v1.api import api_router
-backend-1   | 2025-09-24T06:14:46.722424627Z   File "/app/app/api/v1/api.py", line 2, in <module>
-backend-1   | 2025-09-24T06:14:46.722443985Z     from app.api.v1.endpoints import scans, hosts, dashboard, upload, scopes, export, dns, parse_errors, reports, auth, risk, audit, users
-backend-1   | 2025-09-24T06:14:46.722476877Z   File "/app/app/api/v1/endpoints/hosts.py", line 30, in <module>
-backend-1   | 2025-09-24T06:14:46.722515601Z     from app.services.host_follow_service import HostFollowService
-backend-1   | 2025-09-24T06:14:46.722535306Z   File "/app/app/services/host_follow_service.py", line 10, in <module>
-backend-1   | 2025-09-24T06:14:46.722580103Z     from app.db.models import HostFollow, FollowStatus, HostNote, NoteStatus
-backend-1   | 2025-09-24T06:14:46.722608025Z ImportError: cannot import name 'HostFollow' from 'app.db.models' (/app/app/db/models.py)
-db-1        | 2025-09-24T06:14:44.792626490Z The files belonging to this database system will be owned by user "postgres".
-db-1        | 2025-09-24T06:14:44.792672584Z This user must also own the server process.
-db-1        | 2025-09-24T06:14:44.792676136Z 
-db-1        | 2025-09-24T06:14:44.792936475Z The database cluster will be initialized with locale "en_US.utf8".
-db-1        | 2025-09-24T06:14:44.792946848Z The default database encoding has accordingly been set to "UTF8".
-db-1        | 2025-09-24T06:14:44.792949538Z The default text search configuration will be set to "english".
-db-1        | 2025-09-24T06:14:44.792951456Z 
-db-1        | 2025-09-24T06:14:44.792953146Z Data page checksums are disabled.
-db-1        | 2025-09-24T06:14:44.792955078Z 
-db-1        | 2025-09-24T06:14:44.792956634Z fixing permissions on existing directory /var/lib/postgresql/data ... ok
-db-1        | 2025-09-24T06:14:44.793695252Z creating subdirectories ... ok
-db-1        | 2025-09-24T06:14:44.793854255Z selecting dynamic shared memory implementation ... posix
-db-1        | 2025-09-24T06:14:44.817282028Z selecting default max_connections ... 100
-db-1        | 2025-09-24T06:14:44.840869703Z selecting default shared_buffers ... 128MB
-db-1        | 2025-09-24T06:14:44.858002281Z selecting default time zone ... Etc/UTC
-db-1        | 2025-09-24T06:14:44.858385178Z creating configuration files ... ok
-db-1        | 2025-09-24T06:14:45.007709170Z running bootstrap script ... ok
-db-1        | 2025-09-24T06:14:45.497280465Z performing post-bootstrap initialization ... ok
-db-1        | 2025-09-24T06:14:45.603539195Z syncing data to disk ... ok
-db-1        | 2025-09-24T06:14:45.603602201Z 
-db-1        | 2025-09-24T06:14:45.606172196Z initdb: warning: enabling "trust" authentication for local connections
-db-1        | 2025-09-24T06:14:45.606384944Z initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
-db-1        | 2025-09-24T06:14:45.606525081Z 
-db-1        | 2025-09-24T06:14:45.606529592Z Success. You can now start the database server using:
-db-1        | 2025-09-24T06:14:45.606531820Z 
-db-1        | 2025-09-24T06:14:45.606533527Z     pg_ctl -D /var/lib/postgresql/data -l logfile start
-db-1        | 2025-09-24T06:14:45.606535553Z 
-db-1        | 2025-09-24T06:14:45.666746205Z waiting for server to start....2025-09-24 06:14:45.665 UTC [48] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-db-1        | 2025-09-24T06:14:45.672495298Z 2025-09-24 06:14:45.672 UTC [48] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-db-1        | 2025-09-24T06:14:45.679292585Z 2025-09-24 06:14:45.677 UTC [51] LOG:  database system was shut down at 2025-09-24 06:14:45 UTC
-db-1        | 2025-09-24T06:14:45.692773894Z 2025-09-24 06:14:45.691 UTC [48] LOG:  database system is ready to accept connections
-db-1        | 2025-09-24T06:14:45.738080608Z  done
-db-1        | 2025-09-24T06:14:45.738110968Z server started
-db-1        | 2025-09-24T06:14:45.885686437Z CREATE DATABASE
-db-1        | 2025-09-24T06:14:45.888661282Z 
-db-1        | 2025-09-24T06:14:45.888748904Z 
-db-1        | 2025-09-24T06:14:45.888764137Z /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
-db-1        | 2025-09-24T06:14:45.888766318Z 
-db-1        | 2025-09-24T06:14:45.890055533Z 2025-09-24 06:14:45.889 UTC [48] LOG:  received fast shutdown request
-db-1        | 2025-09-24T06:14:45.893881500Z waiting for server to shut down....2025-09-24 06:14:45.893 UTC [48] LOG:  aborting any active transactions
-db-1        | 2025-09-24T06:14:45.901635426Z 2025-09-24 06:14:45.901 UTC [48] LOG:  background worker "logical replication launcher" (PID 54) exited with exit code 1
-db-1        | 2025-09-24T06:14:45.908128670Z 2025-09-24 06:14:45.907 UTC [49] LOG:  shutting down
-db-1        | 2025-09-24T06:14:45.911577251Z 2025-09-24 06:14:45.911 UTC [49] LOG:  checkpoint starting: shutdown immediate
-db-1        | 2025-09-24T06:14:45.968450056Z 2025-09-24 06:14:45.968 UTC [49] LOG:  checkpoint complete: wrote 922 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.032 s, sync=0.015 s, total=0.061 s; sync files=301, longest=0.005 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
-db-1        | 2025-09-24T06:14:45.978332445Z 2025-09-24 06:14:45.973 UTC [48] LOG:  database system is shut down
-db-1        | 2025-09-24T06:14:45.990472277Z  done
-db-1        | 2025-09-24T06:14:45.990490153Z server stopped
-db-1        | 2025-09-24T06:14:45.992152966Z 
-db-1        | 2025-09-24T06:14:45.992160929Z PostgreSQL init process complete; ready for start up.
-db-1        | 2025-09-24T06:14:45.992163002Z 
-frontend-1  | 2025-09-24T06:14:45.548108596Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
-frontend-1  | 2025-09-24T06:14:45.548199425Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
-frontend-1  | 2025-09-24T06:14:45.550131254Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
-frontend-1  | 2025-09-24T06:14:45.551401799Z 10-listen-on-ipv6-by-default.sh: info: can not modify /etc/nginx/conf.d/default.conf (read-only file system?)
-frontend-1  | 2025-09-24T06:14:45.551694795Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
-frontend-1  | 2025-09-24T06:14:45.551701189Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
-frontend-1  | 2025-09-24T06:14:45.555634680Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
-frontend-1  | 2025-09-24T06:14:45.558647406Z /docker-entrypoint.sh: Configuration complete; ready for start up
-frontend-1  | 2025-09-24T06:14:45.568110430Z 2025/09/24 06:14:45 [warn] 1#1: the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
-db-1        | 2025-09-24T06:14:46.034246912Z 2025-09-24 06:14:46.034 UTC [1] LOG:  starting PostgreSQL 15.14 (Debian 15.14-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
-db-1        | 2025-09-24T06:14:46.034383850Z 2025-09-24 06:14:46.034 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-db-1        | 2025-09-24T06:14:46.035998328Z 2025-09-24 06:14:46.035 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-db-1        | 2025-09-24T06:14:46.042354857Z 2025-09-24 06:14:46.042 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-db-1        | 2025-09-24T06:14:46.054600887Z 2025-09-24 06:14:46.053 UTC [64] LOG:  database system was shut down at 2025-09-24 06:14:45 UTC
-db-1        | 2025-09-24T06:14:46.061045433Z 2025-09-24 06:14:46.060 UTC [1] LOG:  database system is ready to accept connections
-db-1        | 2025-09-24T06:18:18.951617058Z 2025-09-24 06:18:18.951 UTC [81] ERROR:  relation "ingestion_jobs" does not exist at character 128
-db-1        | 2025-09-24T06:18:18.951640802Z 2025-09-24 06:18:18.951 UTC [81] STATEMENT:  SELECT id, original_filename, status, tool_name, file_size, message, parse_error_id, created_at, started_at, completed_at FROM ingestion_jobs ORDER BY created_at DESC LIMIT 25;
-db-1        | 2025-09-24T06:18:19.093801884Z 2025-09-24 06:18:19.093 UTC [88] ERROR:  relation "parse_errors" does not exist at character 69
-db-1        | 2025-09-24T06:18:19.093827042Z 2025-09-24 06:18:19.093 UTC [88] STATEMENT:  SELECT id, filename, file_type, error_type, status, created_at FROM parse_errors ORDER BY created_at DESC LIMIT 25;
-frontend-1  | 2025-09-24T06:14:45.573960525Z nginx: [warn] the "listen ... http2" directive is deprecated, use the "http2" directive instead in /etc/nginx/conf.d/default.conf:9
-frontend-1  | 2025-09-24T06:14:45.588725292Z 2025/09/24 06:14:45 [notice] 1#1: using the "epoll" event method
-frontend-1  | 2025-09-24T06:14:45.590398340Z 2025/09/24 06:14:45 [notice] 1#1: nginx/1.29.1
-frontend-1  | 2025-09-24T06:14:45.590405056Z 2025/09/24 06:14:45 [notice] 1#1: built by gcc 14.2.0 (Alpine 14.2.0) 
-frontend-1  | 2025-09-24T06:14:45.590407273Z 2025/09/24 06:14:45 [notice] 1#1: OS: Linux 6.10.11-amd64
-frontend-1  | 2025-09-24T06:14:45.590409167Z 2025/09/24 06:14:45 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1073741816:1073741816
-frontend-1  | 2025-09-24T06:14:45.590411022Z 2025/09/24 06:14:45 [notice] 1#1: start worker processes
-frontend-1  | 2025-09-24T06:14:45.590413083Z 2025/09/24 06:14:45 [notice] 1#1: start worker process 20
-frontend-1  | 2025-09-24T06:14:45.590414826Z 2025/09/24 06:14:45 [notice] 1#1: start worker process 21
-frontend-1  | 2025-09-24T06:14:45.590416549Z 2025/09/24 06:14:45 [notice] 1#1: start worker process 22
-frontend-1  | 2025-09-24T06:14:45.590418190Z 2025/09/24 06:14:45 [notice] 1#1: start worker process 23
-frontend-1  | 2025-09-24T06:15:08.679416676Z 2025/09/24 06:15:08 [error] 21#21: *2 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "GET /api/v1/health HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/health", host: "<redactedIP>"
-frontend-1  | 2025-09-24T06:15:08.679625104Z <redactedIP> - - [24/Sep/2025:06:15:08 +0000] "GET /api/v1/health HTTP/2.0" 502 497 "-" "curl/8.15.0" "-"
-frontend-1  | 2025-09-24T06:15:08.697790171Z <redactedIP> - - [24/Sep/2025:06:15:08 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.15.0" "-"
-frontend-1  | 2025-09-24T06:15:15.653229646Z 127.0.0.1 - - [24/Sep/2025:06:15:15 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
-frontend-1  | 2025-09-24T06:15:18.473893839Z <redactedIP> - - [24/Sep/2025:06:15:18 +0000] "GET / HTTP/2.0" 200 599 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:18.555581635Z <redactedIP> - - [24/Sep/2025:06:15:18 +0000] "GET /assets/index-DWg2Oqx2.js HTTP/2.0" 200 304936 "https://<redactedIP>/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:21.863431572Z 2025/09/24 06:15:21 [error] 20#20: *7 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "GET /api/v1/dashboard/stats HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/dashboard/stats", host: "<redactedIP>", referrer: "https://<redactedIP>/"
-frontend-1  | 2025-09-24T06:15:21.863949754Z 2025/09/24 06:15:21 [error] 20#20: *7 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "GET /api/v1/dashboard/port-stats HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/dashboard/port-stats", host: "<redactedIP>", referrer: "https://<redactedIP>/"
-frontend-1  | 2025-09-24T06:15:21.863968993Z 2025/09/24 06:15:21 [error] 20#20: *7 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "GET /api/v1/dashboard/os-stats HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/dashboard/os-stats", host: "<redactedIP>", referrer: "https://<redactedIP>/"
-frontend-1  | 2025-09-24T06:15:21.863973357Z 2025/09/24 06:15:21 [error] 20#20: *7 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "POST /api/v1/auth/logout HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/auth/logout", host: "<redactedIP>", referrer: "https://<redactedIP>/"
-frontend-1  | 2025-09-24T06:15:21.863986057Z <redactedIP> - - [24/Sep/2025:06:15:21 +0000] "GET /api/v1/dashboard/stats HTTP/2.0" 502 497 "https://<redactedIP>/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:21.863989749Z <redactedIP> - - [24/Sep/2025:06:15:21 +0000] "GET /api/v1/dashboard/port-stats HTTP/2.0" 502 497 "https://<redactedIP>/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:21.863992812Z <redactedIP> - - [24/Sep/2025:06:15:21 +0000] "GET /api/v1/dashboard/os-stats HTTP/2.0" 502 497 "https://<redactedIP>/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:21.863995960Z <redactedIP> - - [24/Sep/2025:06:15:21 +0000] "POST /api/v1/auth/logout HTTP/2.0" 502 497 "https://<redactedIP>/" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:24.967648893Z 2025/09/24 06:15:24 [error] 20#20: *7 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "GET /api/v1/risk/hosts/risk-summary HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/risk/hosts/risk-summary", host: "<redactedIP>", referrer: "https://<redactedIP>/login"
-frontend-1  | 2025-09-24T06:15:24.967676633Z 2025/09/24 06:15:24 [error] 20#20: *7 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70", host: "<redactedIP>", referrer: "https://<redactedIP>/login"
-frontend-1  | 2025-09-24T06:15:24.967687981Z 2025/09/24 06:15:24 [error] 20#20: *7 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "POST /api/v1/auth/login HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/auth/login", host: "<redactedIP>", referrer: "https://<redactedIP>/login"
-frontend-1  | 2025-09-24T06:15:24.967688965Z <redactedIP> - - [24/Sep/2025:06:15:24 +0000] "GET /api/v1/risk/hosts/risk-summary HTTP/2.0" 502 497 "https://<redactedIP>/login" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:24.967709528Z <redactedIP> - - [24/Sep/2025:06:15:24 +0000] "GET /api/v1/risk/hosts/high-risk?limit=10&min_risk_score=70 HTTP/2.0" 502 497 "https://<redactedIP>/login" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:24.967766939Z <redactedIP> - - [24/Sep/2025:06:15:24 +0000] "POST /api/v1/auth/login HTTP/2.0" 502 497 "https://<redactedIP>/login" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:30.791394179Z 2025/09/24 06:15:30 [error] 20#20: *7 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "POST /api/v1/auth/login HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/auth/login", host: "<redactedIP>", referrer: "https://<redactedIP>/login"
-frontend-1  | 2025-09-24T06:15:30.791605217Z <redactedIP> - - [24/Sep/2025:06:15:30 +0000] "POST /api/v1/auth/login HTTP/2.0" 502 497 "https://<redactedIP>/login" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:32.770488844Z <redactedIP> - - [24/Sep/2025:06:15:32 +0000] "GET /login HTTP/2.0" 200 599 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:32.836969610Z <redactedIP> - - [24/Sep/2025:06:15:32 +0000] "GET /assets/index-DWg2Oqx2.js HTTP/2.0" 200 304936 "https://<redactedIP>/login" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:33.034980541Z 2025/09/24 06:15:33 [error] 20#20: *16 open() "/usr/share/nginx/html/favicon.ico" failed (2: No such file or directory), client: <redactedIP>, server: _, request: "GET /favicon.ico HTTP/2.0", host: "<redactedIP>", referrer: "https://<redactedIP>/login"
-frontend-1  | 2025-09-24T06:15:33.035000703Z 2025/09/24 06:15:33 [error] 20#20: *16 open() "/usr/share/nginx/html/404.html" failed (2: No such file or directory), client: <redactedIP>, server: _, request: "GET /favicon.ico HTTP/2.0", host: "<redactedIP>", referrer: "https://<redactedIP>/login"
-frontend-1  | 2025-09-24T06:15:33.034996802Z <redactedIP> - - [24/Sep/2025:06:15:33 +0000] "GET /favicon.ico HTTP/2.0" 404 146 "https://<redactedIP>/login" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:40.039361830Z 2025/09/24 06:15:40 [error] 20#20: *16 connect() failed (113: Host is unreachable) while connecting to upstream, client: <redactedIP>, server: _, request: "POST /api/v1/auth/login HTTP/2.0", upstream: "http://172.31.0.3:8000/api/v1/auth/login", host: "<redactedIP>", referrer: "https://<redactedIP>/login"
-frontend-1  | 2025-09-24T06:15:40.039550060Z <redactedIP> - - [24/Sep/2025:06:15:40 +0000] "POST /api/v1/auth/login HTTP/2.0" 502 497 "https://<redactedIP>/login" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:42.055543783Z <redactedIP> - - [24/Sep/2025:06:15:42 +0000] "GET /assets/index-DWg2Oqx2.js.map HTTP/2.0" 200 4563556 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0" "-"
-frontend-1  | 2025-09-24T06:15:45.728361813Z 127.0.0.1 - - [24/Sep/2025:06:15:45 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
-frontend-1  | 2025-09-24T06:16:15.804679990Z 127.0.0.1 - - [24/Sep/2025:06:16:15 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
-frontend-1  | 2025-09-24T06:16:45.879980775Z 127.0.0.1 - - [24/Sep/2025:06:16:45 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
-frontend-1  | 2025-09-24T06:17:15.956121985Z 127.0.0.1 - - [24/Sep/2025:06:17:15 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
-frontend-1  | 2025-09-24T06:17:46.051662765Z 127.0.0.1 - - [24/Sep/2025:06:17:46 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
-frontend-1  | 2025-09-24T06:18:16.147810320Z 127.0.0.1 - - [24/Sep/2025:06:18:16 +0000] "GET / HTTP/2.0" 200 599 "-" "curl/8.14.1" "-"
+> Backend never finished booting on the prod host, so nginx forwarded your /api/v1/auth/login call to a dead upstream and the frontend tried to JSON.parse the 502 HTML.
+
+  The exported logs.txt shows the failure:
+
+  - ImportError: cannot import name 'HostFollow' from 'app.db.models' while FastAPI was starting (/app/app/services/host_follow_service.py pulls in HostFollow, HostNote, etc.).
+  - Because the import blew up, Uvicorn exited and nginx logged repeated connect() failed (113: Host is unreachable) for every API call, including /api/v1/auth/login.
+
+  We just staged and committed the missing modules on our side (backend/app/services/host_follow_service.py, ports_of_interest.py, risk_insight_service.py, vulnerability_service.py along with backend/app/db/
+  models_vulnerability.py, migrate_vulnerability_schema.py, and the shared frontend utils/portsOfInterest.ts). Once you push the latest main and redeploy, rebuild the backend image so /app/app/db/models.py in the
+  container includes the HostFollow/HostNote definitions the new services need.
+
+  After pulling the updated branch on prod:
+
+  1. Run docker compose down (or the appropriate option in scripts/deploy.sh) to clear the broken backend.
+  2. Rebuild/restart (docker compose up -d --build or rerun ./scripts/deploy.sh) so the container picks up the new models/services.
+  3. Verify the backend now stays up (docker compose logs backend | tail -n 20 should show “Application startup complete” with no import errors).
+  4. Retry the login—you should get a 200 JSON payload again.
+
+  If anything else goes sideways during the next deploy, re-run ./scripts/collect-logs.sh on prod and send back the archive; it now includes both the container logs and the latest ingestion_jobs / parse_errors
+  rows, so we’ll have everything we need to troubleshoot quickly.
+

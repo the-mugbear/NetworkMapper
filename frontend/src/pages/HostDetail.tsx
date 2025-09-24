@@ -303,31 +303,7 @@ export default function HostDetail() {
     );
   }
 
-  if (!host) {
-    return (
-      <Box textAlign="center" py={8}>
-        <Typography variant="h6" color="error">
-          Host not found
-        </Typography>
-        <Button onClick={() => navigate('/hosts')} sx={{ mt: 2 }}>
-          Back to Hosts
-        </Button>
-      </Box>
-    );
-  }
-
-  const openPorts = host.ports.filter(port => port.state === 'open');
-  const closedPorts = host.ports.filter(port => port.state === 'closed');
-  const filteredPorts = host.ports.filter(port => port.state === 'filtered');
-  const followInfo = host.follow;
-  const followSelectValue = followStatus || 'none';
-  const followHelperText = followStatus
-    ? FOLLOW_STATUS_META[followStatus].description
-    : 'Select a review status to keep track of this host.';
-  const followChipColor = followStatus ? FOLLOW_STATUS_META[followStatus].chipColor : 'default';
-  const noteList = notes;
   const webLinks = useMemo<HostWebLink[]>(() => (host ? getHostWebLinks(host) : []), [host]);
-  const primaryWebLink = webLinks[0] ?? null;
   const sortedVulnerabilities = useMemo<HostVulnerability[]>(() => {
     if (!host?.vulnerabilities) {
       return [];
@@ -360,6 +336,31 @@ export default function HostDetail() {
   }, [showAllVulnerabilities, sortedVulnerabilities]);
 
   const totalVulnerabilities = sortedVulnerabilities.length;
+
+  if (!host) {
+    return (
+      <Box textAlign="center" py={8}>
+        <Typography variant="h6" color="error">
+          Host not found
+        </Typography>
+        <Button onClick={() => navigate('/hosts')} sx={{ mt: 2 }}>
+          Back to Hosts
+        </Button>
+      </Box>
+    );
+  }
+
+  const openPorts = host.ports.filter(port => port.state === 'open');
+  const closedPorts = host.ports.filter(port => port.state === 'closed');
+  const filteredPorts = host.ports.filter(port => port.state === 'filtered');
+  const followInfo = host.follow;
+  const followSelectValue = followStatus || 'none';
+  const followHelperText = followStatus
+    ? FOLLOW_STATUS_META[followStatus].description
+    : 'Select a review status to keep track of this host.';
+  const followChipColor = followStatus ? FOLLOW_STATUS_META[followStatus].chipColor : 'default';
+  const noteList = notes;
+  const primaryWebLink = webLinks[0] ?? null;
 
   return (
     <Box>

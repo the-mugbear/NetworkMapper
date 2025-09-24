@@ -1,61 +1,43 @@
-[2025-09-24T21:33:06.261Z] [DEBUG] [PROTECTED_ROUTE] Access granted - rendering children 
-Object { pathname: "/hosts", requiredRole: "viewer", userRole: "admin", userId: 1, username: "admin" }
+[2025-09-24T22:19:40.141Z] [DEBUG] [PROTECTED_ROUTE] ProtectedRoute render 
+Object { pathname: "/hosts/4", requiredRole: "viewer", isAuthenticated: true, isLoading: false, hasUser: true, userId: 1, username: "admin", userRole: "admin", hasPermission: true }
 logger.ts:106:16
-[2025-09-24T21:33:06.268Z] [DEBUG] [PROTECTED_ROUTE] ProtectedRoute render 
-Object { pathname: "/hosts", requiredRole: "viewer", isAuthenticated: true, isLoading: false, hasUser: true, userId: 1, username: "admin", userRole: "admin", hasPermission: true }
-logger.ts:106:16
-[2025-09-24T21:33:06.268Z] [DEBUG] [PROTECTED_ROUTE] ProtectedRoute render 
-Object { pathname: "/hosts", requiredRole: undefined, isAuthenticated: true, isLoading: false, hasUser: true, userId: 1, username: "admin", userRole: "admin", hasPermission: true }
-logger.ts:106:16
-[2025-09-24T21:33:10.624Z] [DEBUG] [AUTH] AuthProvider initialized 
-Object { pathname: "/hosts/1", search: "", state: null }
-logger.ts:106:16
-[2025-09-24T21:33:10.628Z] [DEBUG] [PROTECTED_ROUTE] Access granted - rendering children 
-Object { pathname: "/hosts/1", requiredRole: undefined, userRole: "admin", userId: 1, username: "admin" }
-logger.ts:106:16
-[2025-09-24T21:33:10.640Z] [DEBUG] [PROTECTED_ROUTE] Access granted - rendering children 
-Object { pathname: "/hosts/1", requiredRole: "viewer", userRole: "admin", userId: 1, username: "admin" }
-logger.ts:106:16
-[2025-09-24T21:33:10.678Z] [DEBUG] [PROTECTED_ROUTE] ProtectedRoute render 
-Object { pathname: "/hosts/1", requiredRole: "viewer", isAuthenticated: true, isLoading: false, hasUser: true, userId: 1, username: "admin", userRole: "admin", hasPermission: true }
-logger.ts:106:16
-[2025-09-24T21:33:10.679Z] [DEBUG] [PROTECTED_ROUTE] ProtectedRoute render 
-Object { pathname: "/hosts/1", requiredRole: undefined, isAuthenticated: true, isLoading: false, hasUser: true, userId: 1, username: "admin", userRole: "admin", hasPermission: true }
+[2025-09-24T22:19:40.142Z] [DEBUG] [PROTECTED_ROUTE] ProtectedRoute render 
+Object { pathname: "/hosts/4", requiredRole: undefined, isAuthenticated: true, isLoading: false, hasUser: true, userId: 1, username: "admin", userRole: "admin", hasPermission: true }
 logger.ts:106:16
 Error: Minified React error #310; visit https://reactjs.org/docs/error-decoder.html?invariant=310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
     React 3
-    wH HostDetail.tsx:306
+    bH HostDetail.tsx:306
     React 8
     k scheduler.production.min.js:13
     D scheduler.production.min.js:14
-    XP scheduler.production.min.js:14
-    XP scheduler.production.min.js:19
-    QP index.js:4
+    GP scheduler.production.min.js:14
+    GP scheduler.production.min.js:19
+    YP index.js:4
     React 4
 react-dom.production.min.js:188:119
-[2025-09-24T21:33:10.752Z] [ERROR] [GLOBAL] Unhandled error 
-Object { message: "Error: Minified React error #310; visit https://reactjs.org/docs/error-decoder.html?invariant=310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.", filename: "https://10.32.56.174/assets/index-CUhojP-p.js", lineno: 38, colno: 18416, error: Error }
- getStackTrace@https://10.32.56.174/assets/index-CUhojP-p.js:275:27035
-createLogEntry@https://10.32.56.174/assets/index-CUhojP-p.js:275:27307
-error@https://10.32.56.174/assets/index-CUhojP-p.js:275:28383
-@https://10.32.56.174/assets/index-CUhojP-p.js:275:29238
-EventListener.handleEvent*@https://10.32.56.174/assets/index-CUhojP-p.js:275:29206
+    React 9
+    k scheduler.production.min.js:13
+    D scheduler.production.min.js:14
+    (Async: EventHandlerNonNull)
+    GP scheduler.production.min.js:14
+    GP scheduler.production.min.js:19
+    YP index.js:4
+    React 4
+[2025-09-24T22:19:40.260Z] [ERROR] [GLOBAL] Unhandled error 
+Object { message: "Error: Minified React error #310; visit https://reactjs.org/docs/error-decoder.html?invariant=310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.", filename: "https://10.32.56.174/assets/index-DonCfQbA.js", lineno: 38, colno: 18246, error: Error }
+ getStackTrace@https://10.32.56.174/assets/index-DonCfQbA.js:275:27045
+createLogEntry@https://10.32.56.174/assets/index-DonCfQbA.js:275:27317
+error@https://10.32.56.174/assets/index-DonCfQbA.js:275:28393
+@https://10.32.56.174/assets/index-DonCfQbA.js:275:29248
+EventListener.handleEvent*@https://10.32.56.174/assets/index-DonCfQbA.js:275:29216
 logger.ts:115:16
 Uncaught Error: Minified React error #310; visit https://reactjs.org/docs/error-decoder.html?invariant=310 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
     React 3
-    wH HostDetail.tsx:306
+    bH HostDetail.tsx:306
     React 8
     k scheduler.production.min.js:13
     D scheduler.production.min.js:14
-    XP scheduler.production.min.js:14
-    XP scheduler.production.min.js:19
-    QP index.js:4
+    GP scheduler.production.min.js:14
+    GP scheduler.production.min.js:19
+    YP index.js:4
     React 4
-        JP
-        LS
-        ZP
-        <anonymous>
-react-dom.production.min.js:161:313
-
-​
-

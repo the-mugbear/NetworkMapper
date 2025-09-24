@@ -103,6 +103,80 @@ print_info "Collecting Docker container status..."
     echo ""
 } > "$LOG_DIR/docker_status.txt"
 
+# Container image metadata (version tracking)
+print_info "Collecting container image metadata..."
+{
+    echo "=== CONTAINER IMAGES ==="
+    if docker-compose version >/dev/null 2>&1; then
+        docker-compose images 2>/dev/null || echo "Failed to list compose images"
+    elif docker compose version >/dev/null 2>&1; then
+        docker compose images 2>/dev/null || echo "Failed to list compose images"
+    else
+        docker images 2>/dev/null || echo "Failed to list docker images"
+    fi
+
+    for service in backend frontend db; do
+        if docker-compose version >/dev/null 2>&1; then
+            container_id=$(docker-compose ps -q "$service" 2>/dev/null)
+        else
+            container_id=$(docker compose ps -q "$service" 2>/dev/null)
+        fi
+        if [[ -n "$container_id" ]]; then
+            echo ""
+            echo "--- $service ---"
+            docker inspect --format 'Image: {{.Config.Image}}' "$container_id" 2>/dev/null || echo "Unable to inspect image"
+            docker inspect --format 'ImageID: {{.Image}}' "$container_id" 2>/dev/null || true
+            docker inspect --format 'Created: {{.Created}}' "$container_id" 2>/dev/null || true
+            docker inspect --format 'RepoDigests:\n{{range $idx, $digest := .RepoDigests}}  - {{$digest}}\n{{else}}  (none){{end}}' "$container_id" 2>/dev/null || true
+        fi
+    done
+} > "$LOG_DIR/container_images.txt"
+
+# Service runtime metadata (application-reported versions)
+print_info "Collecting service version metadata..."
+{
+    echo "=== SERVICE VERSION DETAILS ==="
+
+    if docker-compose version >/dev/null 2>&1; then
+        backend_container=$(docker-compose ps -q backend 2>/dev/null)
+        frontend_container=$(docker-compose ps -q frontend 2>/dev/null)
+    else
+        backend_container=$(docker compose ps -q backend 2>/dev/null)
+        frontend_container=$(docker compose ps -q frontend 2>/dev/null)
+    fi
+
+    if [[ -n "$backend_container" ]]; then
+        echo "--- backend ---"
+        (docker-compose exec -T backend python - <<'PY'
+from app.main import app
+try:
+    from app.core.config import settings
+except Exception:
+    settings = None
+
+print(f"fastapi_app_version: {getattr(app, 'version', 'unknown')}")
+if settings is not None:
+    print(f"ingestion_workers: {getattr(settings, 'INGESTION_WORKERS', 'unknown')}")
+    print(f"nessus_commit_batch_size: {getattr(settings, 'NESSUS_COMMIT_BATCH_SIZE', 'unknown')}")
+    print(f"nessus_plugin_output_max_chars: {getattr(settings, 'NESSUS_PLUGIN_OUTPUT_MAX_CHARS', 'unknown')}")
+PY
+        ) 2>/dev/null || echo "Unable to query backend version"
+    else
+        echo "--- backend ---"
+        echo "backend container not running"
+    fi
+
+    if [[ -n "$frontend_container" ]]; then
+        echo
+        echo "--- frontend ---"
+        (docker-compose exec -T frontend sh -c 'grep -ao "REACT_APP_[A-Z_]*=[^\" ]*" /usr/share/nginx/html/assets/index-*.js 2>/dev/null | sort | uniq') 2>/dev/null || echo "Unable to extract frontend build metadata"
+    else
+        echo
+        echo "--- frontend ---"
+        echo "frontend container not running"
+    fi
+} > "$LOG_DIR/service_versions.txt"
+
 # Ingestion job metadata (for background parser debugging)
 print_info "Collecting ingestion job metadata..."
 if docker-compose ps db > /dev/null 2>&1; then
@@ -374,6 +448,8 @@ print_info "Creating troubleshooting summary..."
     echo "- network_info.txt: Network configuration and connectivity"
     echo "- environment_config.txt: Environment and Docker configuration"
     echo "- docker_status.txt: Docker container, image, and network status"
+    echo "- container_images.txt: Image tags/digests for deployed services"
+    echo "- service_versions.txt: Application-reported version knobs"
     echo "- backend_logs.txt: Backend application logs"
     echo "- frontend_logs.txt: Frontend application logs"
     echo "- database_logs.txt: Database logs"

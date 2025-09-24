@@ -231,6 +231,7 @@ class IngestionService:
 
     def _process_job(self, db: Session, job: IngestionJob) -> Optional[Dict[str, object]]:
         """Run parser detection and execute the first successful parser."""
+        job_id = job.id
         storage_path = Path(job.storage_path)
         if not storage_path.exists():
             raise FileNotFoundError(f"Uploaded file missing at {storage_path}")
@@ -259,7 +260,7 @@ class IngestionService:
             try:
                 logger.info(
                     "Job %s: attempting parser %s for %s",
-                    job.id,
+                    job_id,
                     parser_class.__name__,
                     job.original_filename,
                 )
@@ -267,7 +268,7 @@ class IngestionService:
                 elapsed = time.time() - start
                 logger.info(
                     "Job %s: parser %s succeeded in %.2fs",
-                    job.id,
+                    job_id,
                     parser_class.__name__,
                     elapsed,
                 )
@@ -277,7 +278,7 @@ class IngestionService:
                 elapsed = time.time() - start
                 logger.warning(
                     "Job %s: parser %s failed after %.2fs: %s",
-                    job.id,
+                    job_id,
                     parser_class.__name__,
                     elapsed,
                     exc,

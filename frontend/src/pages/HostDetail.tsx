@@ -328,6 +328,32 @@ export default function HostDetail() {
   const followChipColor = followStatus ? FOLLOW_STATUS_META[followStatus].chipColor : 'default';
   const noteList = notes;
   const primaryWebLink = webLinks[0] ?? null;
+  const toTimestamp = (value: string | null | undefined) => (value ? new Date(value).getTime() : 0);
+  const vulnerabilities = (host.vulnerabilities ?? []).slice();
+  const sortedVulnerabilities = vulnerabilities.sort((a, b) => {
+    const severityA = (a.severity ?? 'unknown').toLowerCase();
+    const severityB = (b.severity ?? 'unknown').toLowerCase();
+    const severityRankA = VULNERABILITY_SEVERITY_ORDER[severityA] ?? VULNERABILITY_SEVERITY_ORDER['unknown'];
+    const severityRankB = VULNERABILITY_SEVERITY_ORDER[severityB] ?? VULNERABILITY_SEVERITY_ORDER['unknown'];
+
+    if (severityRankA !== severityRankB) {
+      return severityRankA - severityRankB;
+    }
+
+    const timeA = toTimestamp(a.last_seen ?? a.first_seen);
+    const timeB = toTimestamp(b.last_seen ?? b.first_seen);
+
+    if (timeA !== timeB) {
+      return timeB - timeA;
+    }
+
+    return b.id - a.id;
+  });
+  const totalVulnerabilities = host.vulnerability_summary?.total_vulnerabilities ?? sortedVulnerabilities.length;
+  const displayedVulnerabilities = showAllVulnerabilities
+    ? sortedVulnerabilities
+    : sortedVulnerabilities.slice(0, VULNERABILITY_PREVIEW_LIMIT);
+  const hasVulnerabilities = sortedVulnerabilities.length > 0;
 
   return (
     <Box>
@@ -611,7 +637,7 @@ export default function HostDetail() {
         </CardContent>
       </Card>
 
-      {totalVulnerabilities > 0 && (
+      {hasVulnerabilities && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -680,7 +706,7 @@ export default function HostDetail() {
                 );
               })}
             </Stack>
-            {totalVulnerabilities > VULNERABILITY_PREVIEW_LIMIT && (
+            {sortedVulnerabilities.length > VULNERABILITY_PREVIEW_LIMIT && (
               <Box display="flex" justifyContent="flex-end" mt={2}>
                 <Button size="small" onClick={() => setShowAllVulnerabilities((prev) => !prev)}>
                   {showAllVulnerabilities ? 'Show fewer findings' : `Show all findings (${totalVulnerabilities})`}

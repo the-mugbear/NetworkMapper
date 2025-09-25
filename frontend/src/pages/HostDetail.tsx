@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -128,6 +128,7 @@ const NOTE_STATUS_META: Record<NoteStatus, { label: string; chipColor: 'default'
 export default function HostDetail() {
   const { hostId } = useParams<{ hostId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [host, setHost] = useState<Host | null>(null);
   const [conflicts, setConflicts] = useState<HostConflict[]>([]);
   const [showConflicts, setShowConflicts] = useState(false);
@@ -303,6 +304,15 @@ export default function HostDetail() {
     );
   }
 
+  const handleBackToHosts = () => {
+    const fromHosts = (location.state as { fromHosts?: string } | null)?.fromHosts;
+    if (fromHosts) {
+      navigate(fromHosts);
+    } else {
+      navigate('/hosts');
+    }
+  };
+
   const webLinks: HostWebLink[] = host ? getHostWebLinks(host) : [];
   if (!host) {
     return (
@@ -310,7 +320,7 @@ export default function HostDetail() {
         <Typography variant="h6" color="error">
           Host not found
         </Typography>
-        <Button onClick={() => navigate('/hosts')} sx={{ mt: 2 }}>
+        <Button onClick={handleBackToHosts} sx={{ mt: 2 }}>
           Back to Hosts
         </Button>
       </Box>
@@ -361,7 +371,7 @@ export default function HostDetail() {
         <Box display="flex" alignItems="center">
           <Button
             startIcon={<BackIcon />}
-            onClick={() => navigate('/hosts')}
+            onClick={handleBackToHosts}
             sx={{ mr: 2 }}
           >
             Back to Hosts

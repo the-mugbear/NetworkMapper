@@ -121,6 +121,8 @@ def get_hosts_v2(
     has_medium_vulns: Optional[bool] = Query(None, description="Filter hosts with medium vulnerabilities"),
     has_low_vulns: Optional[bool] = Query(None, description="Filter hosts with low vulnerabilities"),
     min_risk_score: Optional[int] = Query(None, description="Filter hosts with minimum risk score (0-100)"),
+    follow_status: Optional[str] = Query(None, description="Filter hosts by personal follow status"),
+    out_of_scope_only: Optional[bool] = Query(None, description="Return only hosts without scope mappings"),
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
@@ -224,6 +226,26 @@ def get_hosts_v2(
             combined_search = or_(*host_search_conditions)
         
         query = query.filter(combined_search)
+
+    if follow_status:
+        valid_statuses = {status.value for status in FollowStatus}
+        if follow_status not in valid_statuses:
+            raise HTTPException(status_code=400, detail="Invalid follow status filter")
+
+        follow_host_ids = (
+            db.query(HostFollow.host_id)
+            .filter(
+                HostFollow.user_id == current_user.id,
+                HostFollow.status == follow_status
+            )
+        )
+        query = query.filter(models.Host.id.in_(follow_host_ids))
+
+    if out_of_scope_only:
+        query = query.outerjoin(
+            models.HostSubnetMapping,
+            models.HostSubnetMapping.host_id == models.Host.id
+        ).filter(models.HostSubnetMapping.host_id.is_(None))
 
     # Vulnerability filtering
     if has_critical_vulns is not None or has_high_vulns is not None or has_medium_vulns is not None or has_low_vulns is not None:

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -70,6 +70,7 @@ export default function Hosts() {
   const [updatingHostId, setUpdatingHostId] = useState<number | null>(null);
   const [followFilter, setFollowFilter] = useState<'all' | FollowStatus>('all');
   const [onlyWithNotes, setOnlyWithNotes] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchHosts = async () => {
     try {
@@ -90,7 +91,9 @@ export default function Hosts() {
       if (filters.hasCriticalVulns !== undefined) params.has_critical_vulns = filters.hasCriticalVulns;
       if (filters.hasHighVulns !== undefined) params.has_high_vulns = filters.hasHighVulns;
       if (filters.minRiskScore !== undefined) params.min_risk_score = filters.minRiskScore;
-      
+      if (filters.outOfScopeOnly) params.out_of_scope_only = filters.outOfScopeOnly;
+      if (followFilter !== 'all') params.follow_status = followFilter;
+
       const data = await getHosts(params);
       setHosts(data);
     } catch (error) {
@@ -115,26 +118,109 @@ export default function Hosts() {
   }, []);
 
   useEffect(() => {
-    // Parse URL parameters on component mount
+    if (isInitialized) {
+      return;
+    }
+
     const urlParams = new URLSearchParams(location.search);
-    const initialFilters: HostFilterOptions = {};
-    
-    // Handle subnet filter from URL
-    const subnetsParam = urlParams.get('subnets');
-    if (subnetsParam) {
-      initialFilters.subnets = [decodeURIComponent(subnetsParam)];
+
+    let savedState: { filters?: HostFilterOptions; followFilter?: FollowStatus; onlyWithNotes?: boolean } | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('hostFiltersState');
+        savedState = raw ? JSON.parse(raw) : null;
+      } catch (error) {
+        savedState = null;
+      }
     }
-    
-    if (Object.keys(initialFilters).length > 0) {
-      setFilters(initialFilters);
+
+    const initialFilters: HostFilterOptions = savedState?.filters ? { ...savedState.filters } : {};
+
+    const applyListParam = (param: string, key: keyof HostFilterOptions) => {
+      if (urlParams.has(param)) {
+        const raw = urlParams.get(param) || '';
+        if (raw) {
+          const values = raw.split(',').map((value) => value.trim()).filter(Boolean);
+          (initialFilters as any)[key] = values;
+        } else {
+          delete (initialFilters as any)[key];
+        }
+      }
+    };
+
+    const applyStringParam = (param: string, key: keyof HostFilterOptions) => {
+      if (urlParams.has(param)) {
+        const value = urlParams.get(param);
+        if (value) {
+          (initialFilters as any)[key] = value;
+        } else {
+          delete (initialFilters as any)[key];
+        }
+      }
+    };
+
+    applyStringParam('search', 'search');
+    applyStringParam('state', 'state');
+    applyListParam('subnets', 'subnets');
+    applyListParam('ports', 'ports');
+    applyListParam('services', 'services');
+
+    if (urlParams.has('out_of_scope')) {
+      initialFilters.outOfScopeOnly = urlParams.get('out_of_scope') === 'true';
+    } else if (savedState?.filters?.outOfScopeOnly) {
+      initialFilters.outOfScopeOnly = true;
     }
-  }, [location.search]);
+
+    if (urlParams.has('has_open_ports')) {
+      initialFilters.hasOpenPorts = urlParams.get('has_open_ports') === 'true';
+    } else if (savedState?.filters?.hasOpenPorts !== undefined) {
+      initialFilters.hasOpenPorts = savedState.filters.hasOpenPorts;
+    }
+
+    if (urlParams.has('min_risk_score')) {
+      const score = Number(urlParams.get('min_risk_score'));
+      if (!Number.isNaN(score)) {
+        initialFilters.minRiskScore = score;
+      }
+    } else if (savedState?.filters?.minRiskScore !== undefined) {
+      initialFilters.minRiskScore = savedState.filters.minRiskScore;
+    }
+
+    const followParam = urlParams.get('follow');
+    const savedFollow = savedState?.followFilter ?? 'all';
+    const initialFollow: 'all' | FollowStatus = followParam && ['watching', 'in_review', 'reviewed'].includes(followParam)
+      ? (followParam as FollowStatus)
+      : savedFollow;
+
+    const notesParam = urlParams.get('with_notes');
+    const initialNotes = notesParam === 'true' ? true : notesParam === 'false' ? false : savedState?.onlyWithNotes ?? false;
+
+    setFilters(initialFilters);
+    setFollowFilter(initialFollow);
+    setOnlyWithNotes(initialNotes);
+    setIsInitialized(true);
+  }, [isInitialized, location.search]);
 
   useEffect(() => {
+    if (!isInitialized) {
+      return;
+    }
     fetchHosts();
-    // Refresh filter data when filters change to ensure latest data
-    fetchFilterData();
-  }, [filters]);
+  }, [filters, followFilter, isInitialized]);
+
+  useEffect(() => {
+    if (!isInitialized) {
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      const stateToPersist = {
+        filters,
+        followFilter,
+        onlyWithNotes,
+      };
+      sessionStorage.setItem('hostFiltersState', JSON.stringify(stateToPersist));
+    }
+  }, [filters, followFilter, onlyWithNotes, isInitialized]);
 
   // Refresh filter data when page becomes visible (e.g., after uploading scans)
   useEffect(() => {
@@ -161,7 +247,16 @@ export default function Hosts() {
   };
 
   const handleViewHost = (hostId: number) => {
-    navigate(`/hosts/${hostId}`);
+    if (typeof window !== 'undefined') {
+      const stateToPersist = {
+        filters,
+        followFilter,
+        onlyWithNotes,
+      };
+      sessionStorage.setItem('hostFiltersState', JSON.stringify(stateToPersist));
+    }
+    const returnTo = `${location.pathname}${location.search}` || '/hosts';
+    navigate(`/hosts/${hostId}`, { state: { fromHosts: returnTo } });
   };
 
   const getServiceIcon = (serviceName: string) => {
@@ -224,19 +319,21 @@ export default function Hosts() {
     }
   };
 
-  const filteredHosts = hosts.filter((host) => {
-    const noteCount = host.note_count ?? host.notes?.length ?? 0;
+  const filteredHosts = useMemo(() => {
+    return hosts.filter((host) => {
+      const noteCount = host.note_count ?? host.notes?.length ?? 0;
 
-    if (followFilter !== 'all' && host.follow?.status !== followFilter) {
-      return false;
-    }
+      if (followFilter !== 'all' && host.follow?.status !== followFilter) {
+        return false;
+      }
 
-    if (onlyWithNotes && noteCount === 0) {
-      return false;
-    }
+      if (onlyWithNotes && noteCount === 0) {
+        return false;
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [hosts, followFilter, onlyWithNotes]);
 
   if (loading && !hosts.length) {
     return (
@@ -274,6 +371,12 @@ export default function Hosts() {
           </Badge>
         </Box>
       </Box>
+
+      {filters.outOfScopeOnly && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Showing only hosts that are not mapped to any configured scope.
+        </Alert>
+      )}
 
       {/* Advanced Filters */}
       <HostFilters

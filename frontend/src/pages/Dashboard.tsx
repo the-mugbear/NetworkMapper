@@ -18,6 +18,7 @@ import {
   Tooltip,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   Divider,
   Stack,
@@ -47,8 +48,7 @@ import type {
   IngestionJob,
 } from '../services/api';
 import RiskAssessmentWidget from '../components/RiskAssessmentWidget';
-import RiskSummaryWidget from '../components/RiskSummaryWidget';
-import CriticalFindingsWidget from '../components/CriticalFindingsWidget';
+import ScopeCoverageWidget from '../components/ScopeCoverageWidget';
 import NoteAltIcon from '@mui/icons-material/NoteAlt';
 import BookmarkIcon from '@mui/icons-material/BookmarkAdded';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -144,15 +144,11 @@ export default function Dashboard() {
 
       <Grid container spacing={3}>
         <Grid item xs={12} lg={6}>
-          <RiskSummaryWidget />
+          <ScopeCoverageWidget />
         </Grid>
 
         <Grid item xs={12} lg={6}>
-          <CriticalFindingsWidget />
-        </Grid>
-
-        <Grid item xs={12}>
-          <Card sx={{ mb: 2 }}>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Environment Overview
@@ -213,44 +209,49 @@ export default function Dashboard() {
                 <List dense sx={{ maxHeight: 360, overflow: 'auto' }}>
                   {highRiskHosts.slice(0, 6).map((host) => (
                     <React.Fragment key={host.host_id}>
-                      <ListItem alignItems="flex-start">
-                        <ListItemText
-                          primary={
-                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                              <Box>
-                                <Typography variant="subtitle1" fontFamily="monospace">
-                                  {host.ip_address}
-                                </Typography>
-                                {host.hostname && (
-                                  <Typography variant="body2" color="text.secondary">
-                                    {host.hostname}
+                      <ListItem disablePadding alignItems="flex-start">
+                        <ListItemButton
+                          alignItems="flex-start"
+                          onClick={() => navigate(`/hosts/${host.host_id}`)}
+                        >
+                          <ListItemText
+                            primary={
+                              <Box display="flex" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                  <Typography variant="subtitle1" fontFamily="monospace">
+                                    {host.ip_address}
                                   </Typography>
-                                )}
+                                  {host.hostname && (
+                                    <Typography variant="body2" color="text.secondary">
+                                      {host.hostname}
+                                    </Typography>
+                                  )}
+                                </Box>
+                                <Chip label={`Score ${host.risk_score}`} color="error" size="small" />
                               </Box>
-                              <Chip label={`Score ${host.risk_score}`} color="error" size="small" />
-                            </Box>
-                          }
-                          secondary={
-                            <Box mt={1}>
-                              <Box display="flex" gap={0.5} flexWrap="wrap" mb={1}>
-                                {host.ports_of_interest.map((port) => (
-                                  <Chip
-                                    key={`${host.host_id}-${port.port}`}
-                                    label={`${port.port}/${port.service}`}
-                                    size="small"
-                                    variant="outlined"
-                                    color="warning"
-                                  />
-                                ))}
+                            }
+                            secondary={
+                              <Box mt={1}>
+                                <Box display="flex" gap={0.5} flexWrap="wrap" mb={1}>
+                                  {host.ports_of_interest.map((port) => (
+                                    <Chip
+                                      key={`${host.host_id}-${port.port}`}
+                                      label={`${port.port}/${port.service}`}
+                                      size="small"
+                                      variant="outlined"
+                                      color="warning"
+                                    />
+                                  ))}
+                                </Box>
+                                <Box display="flex" gap={1}>
+                                  <Chip label={`${host.critical} critical`} color="error" size="small" />
+                                  <Chip label={`${host.high} high`} color="warning" size="small" />
+                                  <Chip label={`${host.medium} medium`} color="info" size="small" />
+                                </Box>
                               </Box>
-                              <Box display="flex" gap={1}>
-                                <Chip label={`${host.critical} critical`} color="error" size="small" />
-                                <Chip label={`${host.high} high`} color="warning" size="small" />
-                                <Chip label={`${host.medium} medium`} color="info" size="small" />
-                              </Box>
-                            </Box>
-                          }
-                        />
+                            }
+                          />
+                        </ListItemButton>
                       </ListItem>
                       <Divider component="li" />
                     </React.Fragment>
@@ -281,7 +282,12 @@ export default function Dashboard() {
                     </TableHead>
                     <TableBody>
                       {portSummary.slice(0, 8).map((port) => (
-                        <TableRow key={port.port}>
+                        <TableRow
+                          key={port.port}
+                          hover
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => navigate(`/hosts?ports=${port.port}`)}
+                        >
                           <TableCell>
                             <Tooltip title={port.rationale} arrow>
                               <Box>
@@ -350,6 +356,7 @@ export default function Dashboard() {
                       return (
                         <React.Fragment key={`note-${note.note_id}`}>
                           <ListItem
+                            disablePadding
                             alignItems="flex-start"
                             secondaryAction={
                               <Chip
@@ -359,23 +366,29 @@ export default function Dashboard() {
                               />
                             }
                           >
-                            <ListItemText
-                              primary={
-                                <Typography variant="subtitle2" fontFamily="monospace">
-                                  {note.ip_address}
-                                  {note.hostname ? ` · ${note.hostname}` : ''}
-                                </Typography>
-                              }
-                              secondary={
-                                <Typography variant="body2" color="text.secondary">
-                                  {note.preview}
-                                  <Typography component="span" variant="caption" display="block">
-                                    Logged {new Date(note.created_at).toLocaleString()}
-                                    {note.updated_at && ` · Updated ${new Date(timestamp).toLocaleString()}`}
+                            <ListItemButton
+                              alignItems="flex-start"
+                              onClick={() => navigate(`/hosts/${note.host_id}`)}
+                              sx={{ alignItems: 'flex-start', pr: 9 }}
+                            >
+                              <ListItemText
+                                primary={
+                                  <Typography variant="subtitle2" fontFamily="monospace">
+                                    {note.ip_address}
+                                    {note.hostname ? ` · ${note.hostname}` : ''}
                                   </Typography>
-                                </Typography>
-                              }
-                            />
+                                }
+                                secondary={
+                                  <Typography variant="body2" color="text.secondary">
+                                    {note.preview}
+                                    <Typography component="span" variant="caption" display="block">
+                                      Logged {new Date(note.created_at).toLocaleString()}
+                                      {note.updated_at && ` · Updated ${new Date(timestamp).toLocaleString()}`}
+                                    </Typography>
+                                  </Typography>
+                                }
+                              />
+                            </ListItemButton>
                           </ListItem>
                           <Divider component="li" />
                         </React.Fragment>
@@ -509,22 +522,24 @@ export default function Dashboard() {
               <List dense sx={{ maxHeight: 320, overflow: 'auto' }}>
                 {vulnerabilityHotspots.slice(0, 6).map((host) => (
                   <React.Fragment key={`hotspot-${host.host_id}`}>
-                    <ListItem alignItems="flex-start">
-                      <ListItemText
-                        primary={
-                          <Typography variant="body1" fontFamily="monospace">
-                            {host.ip_address}
-                          </Typography>
-                        }
-                        secondary={
-                          <Box display="flex" gap={1} mt={1}>
-                            <Chip label={`${host.critical} critical`} color="error" size="small" />
-                            <Chip label={`${host.high} high`} color="warning" size="small" />
-                            <Chip label={`${host.medium} medium`} color="info" size="small" />
-                            <Chip label={`Score ${host.risk_score}`} size="small" />
-                          </Box>
-                        }
-                      />
+                    <ListItem disablePadding>
+                      <ListItemButton onClick={() => navigate(`/hosts/${host.host_id}`)}>
+                        <ListItemText
+                          primary={
+                            <Typography variant="body1" fontFamily="monospace">
+                              {host.ip_address}
+                            </Typography>
+                          }
+                          secondary={
+                            <Box display="flex" gap={1} mt={1}>
+                              <Chip label={`${host.critical} critical`} color="error" size="small" />
+                              <Chip label={`${host.high} high`} color="warning" size="small" />
+                              <Chip label={`${host.medium} medium`} color="info" size="small" />
+                              <Chip label={`Score ${host.risk_score}`} size="small" />
+                            </Box>
+                          }
+                        />
+                      </ListItemButton>
                     </ListItem>
                     <Divider component="li" />
                   </React.Fragment>
@@ -546,46 +561,42 @@ export default function Dashboard() {
                 <List dense sx={{ maxHeight: 320, overflow: 'auto' }}>
                   {ingestionJobs.map((job) => (
                     <React.Fragment key={`job-${job.id}`}>
-                      <ListItem alignItems="flex-start">
-                        <ListItemText
-                          primary={
-                            <Box display="flex" justifyContent="space-between" alignItems="center">
-                              <Box>
-                                <Typography variant="subtitle2">{job.original_filename}</Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  Submitted {new Date(job.created_at).toLocaleString()}
-                                </Typography>
+                      <ListItem disablePadding alignItems="flex-start">
+                        <ListItemButton
+                          alignItems="flex-start"
+                          onClick={() => job.scan_id && navigate(`/scans/${job.scan_id}`)}
+                          sx={{ alignItems: 'flex-start' }}
+                          disableRipple={!job.scan_id}
+                        >
+                          <ListItemText
+                            primary={
+                              <Box display="flex" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                  <Typography variant="subtitle2">{job.original_filename}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Submitted {new Date(job.created_at).toLocaleString()}
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  label={job.status.toUpperCase()}
+                                  color={
+                                    job.status === 'completed'
+                                      ? 'success'
+                                      : job.status === 'failed'
+                                      ? 'error'
+                                      : 'info'
+                                  }
+                                  size="small"
+                                />
                               </Box>
-                              <Chip
-                                label={job.status.toUpperCase()}
-                                color={
-                                  job.status === 'completed'
-                                    ? 'success'
-                                    : job.status === 'failed'
-                                    ? 'error'
-                                    : 'info'
-                                }
-                                size="small"
-                              />
-                            </Box>
-                          }
-                          secondary={
-                            <Box mt={1}>
+                            }
+                            secondary={
                               <Typography variant="body2" color="text.secondary">
                                 {job.message || job.error_message || 'Processing pending…'}
                               </Typography>
-                              {job.scan_id && (
-                                <Button
-                                  size="small"
-                                  sx={{ mt: 0.5, pl: 0 }}
-                                  onClick={() => navigate(`/scans/${job.scan_id}`)}
-                                >
-                                  View scan
-                                </Button>
-                              )}
-                            </Box>
-                          }
-                        />
+                            }
+                          />
+                        </ListItemButton>
                       </ListItem>
                       <Divider component="li" />
                     </React.Fragment>

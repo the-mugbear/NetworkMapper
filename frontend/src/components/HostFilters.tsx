@@ -50,6 +50,7 @@ export interface HostFilterOptions {
   minRiskScore?: number;
   exposedServices?: boolean;
   dangerousPorts?: boolean;
+  outOfScopeOnly?: boolean;
 }
 
 export interface HostFiltersProps {
@@ -216,13 +217,15 @@ const HostFilters: React.FC<HostFiltersProps> = ({
   // Debounced search effect
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (localSearchValue !== filters.search) {
-        onFiltersChange({ ...filters, search: localSearchValue || undefined });
+      const normalizedFilterSearch = filters.search ?? '';
+      if (localSearchValue !== normalizedFilterSearch) {
+        onFiltersChange({ ...filters, search: localSearchValue });
       }
     }, 300); // 300ms delay
 
     return () => clearTimeout(timeoutId);
-  }, [localSearchValue]); // Only depend on localSearchValue to avoid infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localSearchValue]);
 
   // Handle local search input changes
   const handleSearchChange = (value: string) => {

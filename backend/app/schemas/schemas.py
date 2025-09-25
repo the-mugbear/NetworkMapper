@@ -393,6 +393,26 @@ class ScopeSummary(BaseModel):
     class Config:
         from_attributes = True
 
+
+class ScopeCoverageHost(BaseModel):
+    host_id: int
+    ip_address: str
+    hostname: Optional[str] = None
+    last_seen: Optional[datetime] = None
+    last_scan_id: Optional[int] = None
+    last_scan_filename: Optional[str] = None
+
+
+class ScopeCoverageSummary(BaseModel):
+    total_scopes: int
+    total_subnets: int
+    total_hosts: int
+    scoped_hosts: int
+    out_of_scope_hosts: int
+    coverage_percentage: float
+    has_scope_configuration: bool
+    recent_out_of_scope_hosts: List[ScopeCoverageHost]
+
 class HostSubnetMapping(BaseModel):
     id: int
     host_id: int

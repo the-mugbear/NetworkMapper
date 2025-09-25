@@ -1,9 +1,11 @@
+import logging
 import os
 import tempfile
 from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form, Query
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session, aliased
+from app.db import models
 from app.db.session import get_db
 from app.db.models import Scope, Subnet, HostSubnetMapping
 from app.schemas.schemas import (
@@ -11,12 +13,15 @@ from app.schemas.schemas import (
     ScopeSummary, 
     ScopeCreate, 
     SubnetFileUploadResponse,
-    HostSubnetMapping as HostSubnetMappingSchema
+    HostSubnetMapping as HostSubnetMappingSchema,
+    ScopeCoverageSummary,
+    ScopeCoverageHost,
 )
 from app.parsers.subnet_parser import SubnetParser
 from app.services.subnet_correlation import SubnetCorrelationService
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 @router.post("/upload-subnets", response_model=SubnetFileUploadResponse)
 async def upload_subnet_file(
@@ -56,14 +61,29 @@ async def upload_subnet_file(
     try:
         # Parse subnets
         parser = SubnetParser(db)
+        correlation_service = SubnetCorrelationService(db)
+
         scope, subnets_added = parser.parse_subnet_file(
-            file_content, 
-            scope_name, 
+            file_content,
+            scope_name,
             scope_description
         )
-        
+
+        # Ensure future lookups see the new subnets
+        correlation_service.invalidate_subnet_cache()
+
+        correlated_hosts = None
+        try:
+            correlated_hosts = correlation_service.correlate_all_hosts_to_subnets()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning("Subnet correlation after upload failed: %s", exc)
+
+        message = f"Scope created successfully with {subnets_added} subnets"
+        if correlated_hosts is not None:
+            message += f"; correlated {correlated_hosts} host-subnet relationships"
+
         return SubnetFileUploadResponse(
-            message=f"Scope created successfully with {subnets_added} subnets",
+            message=message,
             scope_id=scope.id,
             subnets_added=subnets_added,
             filename=file.filename
@@ -96,6 +116,69 @@ def get_scopes(db: Session = Depends(get_db)):
         )
         for scope in scopes
     ]
+
+
+@router.get("/coverage", response_model=ScopeCoverageSummary)
+def get_scope_coverage(
+    limit: int = Query(25, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """Return aggregate coverage information and recent out-of-scope hosts."""
+
+    total_scopes = db.query(func.count(Scope.id)).scalar() or 0
+    total_subnets = db.query(func.count(Subnet.id)).scalar() or 0
+    total_hosts = db.query(func.count(models.Host.id)).scalar() or 0
+    scoped_hosts = (
+        db.query(func.count(func.distinct(HostSubnetMapping.host_id))).scalar() or 0
+    )
+
+    out_of_scope_count = max(total_hosts - scoped_hosts, 0)
+    coverage_percentage = (
+        (scoped_hosts / total_hosts) * 100 if total_hosts > 0 else 0.0
+    )
+
+    scan_alias = aliased(models.Scan)
+
+    recent_out_of_scope = (
+        db.query(
+            models.Host.id.label("host_id"),
+            models.Host.ip_address,
+            models.Host.hostname,
+            models.Host.last_seen,
+            models.Host.last_updated_scan_id,
+            scan_alias.filename.label("scan_filename"),
+        )
+        .outerjoin(HostSubnetMapping, HostSubnetMapping.host_id == models.Host.id)
+        .outerjoin(scan_alias, scan_alias.id == models.Host.last_updated_scan_id)
+        .filter(HostSubnetMapping.host_id.is_(None))
+        .order_by(models.Host.last_seen.desc().nullslast())
+        .limit(limit)
+        .all()
+    )
+
+    recent_entries = [
+        ScopeCoverageHost(
+            host_id=row.host_id,
+            ip_address=row.ip_address,
+            hostname=row.hostname,
+            last_seen=row.last_seen,
+            last_scan_id=row.last_updated_scan_id,
+            last_scan_filename=row.scan_filename,
+        )
+        for row in recent_out_of_scope
+    ]
+
+    return ScopeCoverageSummary(
+        total_scopes=total_scopes,
+        total_subnets=total_subnets,
+        total_hosts=total_hosts,
+        scoped_hosts=scoped_hosts,
+        out_of_scope_hosts=out_of_scope_count,
+        coverage_percentage=coverage_percentage,
+        has_scope_configuration=total_subnets > 0,
+        recent_out_of_scope_hosts=recent_entries,
+    )
+
 
 @router.get("/{scope_id}", response_model=ScopeSchema)
 def get_scope(

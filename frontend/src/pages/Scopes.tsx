@@ -7,36 +7,24 @@ import {
   Alert,
   Card,
   CardContent,
-  CardActions,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  FormControlLabel,
-  Checkbox,
   CircularProgress,
   Chip,
   Grid,
   IconButton,
   Divider,
-  LinearProgress,
   Paper,
-  Tooltip,
-  Collapse,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  Radio
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
 } from '@mui/material';
 import {
-  Upload as UploadIcon,
   Download as ExportIcon,
   Refresh as CorrelateIcon,
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   CloudUpload,
-  Close as CloseIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -46,7 +34,9 @@ import {
   correlateAllHosts,
   exportScopeReport,
   exportOutOfScopeReport,
-  ScopeSummary 
+  ScopeSummary,
+  ScopeCoverageSummary,
+  getScopeCoverage,
 } from '../services/api';
 import ExportDialog from '../components/ExportDialog';
 
@@ -57,13 +47,13 @@ const Scopes: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [correlating, setCorrelating] = useState(false);
+  const [coverage, setCoverage] = useState<ScopeCoverageSummary | null>(null);
 
   // Upload state
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [scopeName, setScopeName] = useState('');
   const [scopeDescription, setScopeDescription] = useState('');
-  const [showUploadOptions, setShowUploadOptions] = useState(false);
 
   // Export dialog state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -72,20 +62,28 @@ const Scopes: React.FC = () => {
   const [exportItemName, setExportItemName] = useState<string>('');
 
   useEffect(() => {
-    loadScopes();
+    loadData(true);
   }, []);
 
-  const loadScopes = async () => {
-    try {
+  const loadData = async (showSpinner = false) => {
+    if (showSpinner) {
       setLoading(true);
-      const data = await getScopes();
-      setScopes(data);
+    }
+    try {
+      const [scopeData, coverageData] = await Promise.all([
+        getScopes(),
+        getScopeCoverage(),
+      ]);
+      setScopes(scopeData);
+      setCoverage(coverageData);
       setError(null);
     } catch (err) {
-      setError('Failed to load scopes');
-      console.error('Error loading scopes:', err);
+      setError('Failed to load scope data');
+      console.error('Error loading scope data:', err);
     } finally {
-      setLoading(false);
+      if (showSpinner) {
+        setLoading(false);
+      }
     }
   };
 
@@ -102,23 +100,22 @@ const Scopes: React.FC = () => {
 
     setUploading(true);
     setUploadError(null);
-    setUploadSuccess(null);
+    setStatusMessage(null);
 
     try {
-      await uploadSubnetFile(file, scopeName.trim(), scopeDescription.trim() || undefined);
-      setUploadSuccess(`Subnet file "${file.name}" uploaded successfully!`);
+      const response = await uploadSubnetFile(file, scopeName.trim(), scopeDescription.trim() || undefined);
+      setStatusMessage(response.message || `Subnet file "${file.name}" uploaded successfully!`);
 
       // Reset form
       setScopeName('');
       setScopeDescription('');
-      setShowUploadOptions(false);
 
       // Reload scopes
-      await loadScopes();
+      await loadData();
 
       // Clear success message after 3 seconds
       setTimeout(() => {
-        setUploadSuccess(null);
+        setStatusMessage(null);
       }, 3000);
     } catch (err: any) {
       setUploadError(err.response?.data?.detail || 'Upload failed. Please try again.');
@@ -140,7 +137,7 @@ const Scopes: React.FC = () => {
     if (window.confirm(`Are you sure you want to delete the scope "${scopeName}"? This will also delete all its subnets and mappings.`)) {
       try {
         await deleteScope(scopeId);
-        await loadScopes();
+        await loadData();
       } catch (err) {
         setError('Failed to delete scope');
         console.error('Error deleting scope:', err);
@@ -155,8 +152,13 @@ const Scopes: React.FC = () => {
         setError(null);
         
         const result = await correlateAllHosts();
-        setError(null); // Clear any errors and show success
-        
+        setError(null);
+        if (result?.message) {
+          setStatusMessage(result.message);
+          setTimeout(() => setStatusMessage(null), 3000);
+        }
+        await loadData();
+
       } catch (err: any) {
         setError(err.response?.data?.detail || 'Failed to correlate hosts to subnets');
         console.error('Error correlating hosts:', err);
@@ -185,6 +187,14 @@ const Scopes: React.FC = () => {
     setExportItemId(undefined);
     setExportItemName('');
   };
+
+  const coverageChipColor = (() => {
+    if (!coverage) return 'default' as const;
+    if (coverage.coverage_percentage >= 90) return 'success' as const;
+    if (coverage.coverage_percentage >= 50) return 'warning' as const;
+    if (coverage.coverage_percentage > 0) return 'error' as const;
+    return 'default' as const;
+  })();
 
   if (loading) {
     return (
@@ -221,129 +231,218 @@ const Scopes: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Upload Section */}
-      <Paper
-        {...getRootProps()}
-        sx={{
-          p: 4,
-          mb: 4,
-          border: '2px dashed',
-          borderColor: isDragActive ? 'primary.main' : 'grey.300',
-          bgcolor: isDragActive ? 'action.hover' : 'background.paper',
-          cursor: 'pointer',
-          textAlign: 'center',
-          '&:hover': {
-            borderColor: 'primary.main',
-            bgcolor: 'action.hover',
-          }
-        }}
-      >
-        <input {...getInputProps()} />
-        <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-        <Typography variant="h6" gutterBottom>
-          {isDragActive ? 'Drop the subnet files here...' : 'Upload Subnet Files'}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" mb={2}>
-          Drag and drop your subnet files here, or click to select files
-        </Typography>
-        <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-          Supported formats: .txt, .csv (one subnet per line, e.g., 192.168.1.0/24)
-        </Typography>
+      {coverage && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">Scope Coverage</Typography>
+              <Chip
+                label={`${coverage.coverage_percentage.toFixed(1)}% covered`}
+                color={coverageChipColor}
+                variant={coverageChipColor === 'default' ? 'outlined' : 'filled'}
+                size="small"
+              />
+            </Box>
 
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1, border: 1, borderColor: 'divider' }}>
-          <Tooltip
-            title={
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  Subnet File Configuration
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  Configure scope details before uploading your subnet file:
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
-                  • <strong>Scope Name:</strong> Unique identifier for this network scope
-                </Typography>
-                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
-                  • <strong>Description:</strong> Optional details about this scope's purpose
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
-                  Note: Scope name is required before uploading any files.
-                </Typography>
-              </Box>
-            }
-            arrow
-            placement="top"
-          >
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={showUploadOptions}
-                  onChange={(e) => setShowUploadOptions(e.target.checked)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              }
-              label={
-                <Box display="flex" alignItems="center" gap={1}>
-                  <span>Configure scope details</span>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{
-                      fontStyle: 'italic',
-                      textDecoration: 'underline dotted',
-                      cursor: 'help'
-                    }}
-                  >
-                    (hover for details)
+            <Grid container spacing={2} mb={coverage.out_of_scope_hosts > 0 ? 2 : 0}>
+              <Grid item xs={6} md={3}>
+                <Box textAlign="center">
+                  <Typography variant="h5" color="primary">
+                    {coverage.total_hosts}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Hosts
                   </Typography>
                 </Box>
-              }
-              onClick={(e) => e.stopPropagation()}
-            />
-          </Tooltip>
+              </Grid>
+              <Grid item xs={6} md={3}>
+                <Box textAlign="center">
+                  <Typography variant="h5" color="success.main">
+                    {coverage.scoped_hosts}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    In Scope
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6} md={3}>
+                <Box textAlign="center">
+                  <Typography variant="h5" color={coverage.out_of_scope_hosts ? 'error.main' : 'text.secondary'}>
+                    {coverage.out_of_scope_hosts}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Out of Scope
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={6} md={3}>
+                <Box textAlign="center">
+                  <Typography variant="h5" color="text.secondary">
+                    {coverage.total_subnets}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Subnets Defined
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
 
-          <Collapse in={showUploadOptions}>
-            <Box sx={{ mt: 2, ml: 4 }}>
-              <Box sx={{ mb: 2 }}>
-                <TextField
-                  label="Scope Name"
-                  placeholder="e.g., Internal Network, DMZ, External Ranges"
-                  value={scopeName}
-                  onChange={(e) => setScopeName(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  size="small"
-                  fullWidth
-                  required
-                  helperText="Required: Enter a unique name for this network scope"
-                  error={!scopeName.trim() && showUploadOptions}
-                />
-              </Box>
+            {coverage.out_of_scope_hosts > 0 ? (
               <Box>
-                <TextField
-                  label="Description"
-                  placeholder="Optional description of this scope's purpose or coverage"
-                  value={scopeDescription}
-                  onChange={(e) => setScopeDescription(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  size="small"
-                  fullWidth
-                  multiline
-                  rows={2}
-                  helperText="Optional: Describe the purpose or coverage of this scope"
-                />
-              </Box>
-            </Box>
-          </Collapse>
-        </Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  Hosts discovered outside configured scopes
+                </Typography>
+                <List dense sx={{ maxHeight: 260, overflow: 'auto' }}>
+                  {coverage.recent_out_of_scope_hosts.map((host) => {
+                    const lastSeen = host.last_seen ? new Date(host.last_seen).toLocaleString() : 'Unknown';
+                    const scanLabel = host.last_scan_filename
+                      ? host.last_scan_filename
+                      : host.last_scan_id
+                      ? `Scan #${host.last_scan_id}`
+                      : null;
 
-        {uploading && (
-          <Box mt={2}>
-            <CircularProgress size={24} />
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              Uploading and processing...
+                    return (
+                      <ListItem disablePadding key={`oos-${host.host_id}`}>
+                        <ListItemButton onClick={() => navigate(`/hosts/${host.host_id}`)}>
+                          <ListItemText
+                            primary={
+                              <Box display="flex" justifyContent="space-between" alignItems="center" gap={1}>
+                                <Typography variant="subtitle2" fontFamily="monospace">
+                                  {host.ip_address}
+                                </Typography>
+                                {host.hostname && (
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    noWrap
+                                    sx={{ maxWidth: { xs: '50%', md: '60%' } }}
+                                  >
+                                    {host.hostname}
+                                  </Typography>
+                                )}
+                              </Box>
+                            }
+                            secondary={
+                              <Typography variant="body2" color="text.secondary">
+                                Last seen {lastSeen}
+                                {scanLabel && ` · ${scanLabel}`}
+                              </Typography>
+                            }
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    );
+                  })}
+                </List>
+                {coverage.out_of_scope_hosts > coverage.recent_out_of_scope_hosts.length && (
+                  <Typography variant="caption" color="text.secondary">
+                    Showing the most recent {coverage.recent_out_of_scope_hosts.length} of {coverage.out_of_scope_hosts} hosts.
+                  </Typography>
+                )}
+                <Button
+                  size="small"
+                  sx={{ mt: 1 }}
+                  onClick={() => navigate('/hosts?out_of_scope=true')}
+                >
+                  View all out-of-scope hosts
+                </Button>
+              </Box>
+            ) : coverage.has_scope_configuration ? (
+              <Alert severity="success" sx={{ mt: 1 }}>
+                All hosts currently map to defined scopes.
+              </Alert>
+            ) : (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                No subnet scopes configured yet. Upload a subnet file to begin tracking out-of-scope hosts.
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Upload Section */}
+      <Paper sx={{ p: 4, mb: 4 }}>
+        <Grid container spacing={3} alignItems="stretch">
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6" gutterBottom>
+              Scope Details
             </Typography>
-          </Box>
-        )}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Provide a name and optional description before uploading your subnet file.
+            </Typography>
+            <TextField
+              label="Scope Name"
+              placeholder="e.g., Internal Network, DMZ, External Ranges"
+              value={scopeName}
+              onChange={(e) => setScopeName(e.target.value)}
+              fullWidth
+              required
+              helperText="Required before selecting a subnet file"
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Description"
+              placeholder="Optional description of this scope's purpose or coverage"
+              value={scopeDescription}
+              onChange={(e) => setScopeDescription(e.target.value)}
+              fullWidth
+              multiline
+              minRows={3}
+              helperText="Optional context for teammates"
+            />
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <Box
+              {...getRootProps()}
+              sx={{
+                p: 4,
+                borderRadius: 2,
+                border: '2px dashed',
+                borderColor: uploading
+                  ? 'grey.300'
+                  : isDragActive
+                  ? 'primary.main'
+                  : 'grey.300',
+                bgcolor: isDragActive ? 'action.hover' : 'background.paper',
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                opacity: uploading ? 0.6 : 1,
+                textAlign: 'center',
+                transition: 'border-color 0.2s ease',
+                '&:hover': uploading
+                  ? {}
+                  : {
+                      borderColor: 'primary.main',
+                      bgcolor: 'action.hover',
+                    },
+              }}
+            >
+              <input {...getInputProps()} disabled={uploading} />
+              <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                {isDragActive ? 'Drop the subnet files here…' : 'Upload Subnet Files'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Drag and drop your subnet files here, or click to select files.
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" mb={1.5}>
+                Supported formats: .txt, .csv (one subnet per line, e.g., 192.168.1.0/24)
+              </Typography>
+              {!scopeName.trim() && (
+                <Typography variant="caption" color="error">
+                  Enter a scope name before uploading to flag out-of-scope hosts correctly.
+                </Typography>
+              )}
+            </Box>
+            {uploading && (
+              <Box mt={2} display="flex" flexDirection="column" alignItems="center">
+                <CircularProgress size={24} />
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  Uploading and processing...
+                </Typography>
+              </Box>
+            )}
+          </Grid>
+        </Grid>
       </Paper>
 
       {/* Upload Status Messages */}
@@ -352,9 +451,9 @@ const Scopes: React.FC = () => {
           {uploadError}
         </Alert>
       )}
-      {uploadSuccess && (
+      {statusMessage && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          {uploadSuccess}
+          {statusMessage}
         </Alert>
       )}
       {error && (

@@ -277,6 +277,26 @@ export interface HostSubnetMapping {
   subnet: Subnet;
 }
 
+export interface ScopeCoverageHost {
+  host_id: number;
+  ip_address: string;
+  hostname: string | null;
+  last_seen: string | null;
+  last_scan_id: number | null;
+  last_scan_filename: string | null;
+}
+
+export interface ScopeCoverageSummary {
+  total_scopes: number;
+  total_subnets: number;
+  total_hosts: number;
+  scoped_hosts: number;
+  out_of_scope_hosts: number;
+  coverage_percentage: number;
+  has_scope_configuration: boolean;
+  recent_out_of_scope_hosts: ScopeCoverageHost[];
+}
+
 export interface EyewitnessResult {
   id: number;
   scan_id: number;
@@ -496,6 +516,14 @@ export const getHosts = async (params: {
   port_states?: string;
   has_open_ports?: boolean;
   os_filter?: string;
+  subnets?: string;
+  has_critical_vulns?: boolean;
+  has_high_vulns?: boolean;
+  has_medium_vulns?: boolean;
+  has_low_vulns?: boolean;
+  min_risk_score?: number;
+  out_of_scope_only?: boolean;
+  follow_status?: string;
   skip?: number;
   limit?: number;
 }): Promise<Host[]> => {
@@ -597,6 +625,11 @@ export const uploadSubnetFile = async (
 
 export const getScopeHostMappings = async (scopeId: number): Promise<HostSubnetMapping[]> => {
   const response = await api.get(`/scopes/${scopeId}/host-mappings`);
+  return response.data;
+};
+
+export const getScopeCoverage = async (limit: number = 25): Promise<ScopeCoverageSummary> => {
+  const response = await api.get(`/scopes/coverage?limit=${limit}`);
   return response.data;
 };
 

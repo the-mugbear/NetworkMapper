@@ -644,6 +644,12 @@ export default function Scans() {
                               variant="outlined"
                             />
                           )}
+                          <Chip
+                            label={scan.total_hosts > 0 ? `${scan.total_hosts} host${scan.total_hosts === 1 ? '' : 's'}` : 'No hosts detected'}
+                            size="small"
+                            color={scan.total_hosts > 0 ? 'success' : 'default'}
+                            variant="outlined"
+                          />
                         </Box>
                         <Typography variant="body2" color="text.secondary">
                           Uploaded: {new Date(scan.created_at).toLocaleString()}
